@@ -1,4 +1,4 @@
 syntax: glob
 nbproject/
 logs/
-
+test*ini
