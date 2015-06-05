@@ -17,17 +17,21 @@ class Settings
     function init()
     {
         #####################################
-        # CLI OPTIONS
+        # HELP
         #####################################
-        $options = getopt("f:");
-        if (!count($options))
+        $options = getopt("c:h:");
+        if (!count($options) || @$argv[1] == '--help')
         {
-            $this->App->fail("Usage: " . $_SERVER['PHP_SELF'] . " -f [configfile]");
+            die("Usage: " . $_SERVER['PHP_SELF'] . " -c {configfile} [-h {host}]\n");
         }
-        //validate cli options
-        if (isset($options['f']))
+        #####################################
+        # VALIDATE CONFIG FILE
+        #####################################
+        $this->App->out("Validate configuration file...", 'header');
+        //validate config file
+        if (isset($options['c']))
         {
-            $configfile = $options['f'];
+            $configfile = $options['c'];
             if (!file_exists($configfile))
             {
                 $this->App->fail("Config file not found!");
@@ -39,17 +43,30 @@ class Settings
         }
         else
         {
-            $this->App->fail("Option -f [configfile] is required!");
+            $this->App->fail("Option -c {configfile} is required!");
         }
-        $this->App->out("Validate configuration file ($configfile)...", 'header');
         #####################################
-        # REMOTE SETTINGS
+        # REMOTE VARIABLES
         #####################################
         $this->App->out('Validate remote variables...');
+        //validate user
         $this->settings['remote']['user'] = ( empty($this->settings['remote']['user'])) ? 'root' : $this->settings['remote']['user'];
+        //validate host
+        if (isset($options['h']))
+        {
+            if($this->settings['remote']['host'])
+            {
+                $this->App->fail("Option -h is set while host is not empty in ini file!");
+            }
+            else
+            {
+                $this->settings['remote']['host'] = $options['h'];
+            }
+        }
+        //check if remote host is set
         if (!$this->settings['remote']['host'])
         {
-            $this->App->fail("Error in ini file. Remote host variable empty!");
+            $this->App->fail("Remote host variable empty! Check ini file!");
         }
         else
         {
@@ -83,9 +100,20 @@ class Settings
         #####################################
         $this->App->out('Validate snapshot dir...');
         //validate dir
-        if (!file_exists($this->settings['local']['snapshotdir']))
+        $d = $this->settings['local']['snapshotdir'].'/'.$this->settings['remote']['host'];
+        //to avoid confusion, an absolute path is required
+        if(!preg_match('/^\//', $d))
         {
-            $this->App->fail("Snapshotdir " . $this->settings['local']['snapshotdir'] . " does not exist!");
+            $this->App->fail("Snapshotdir must be an absolute path!");
+        }
+        //check if dir exists
+        if (!file_exists($d))
+        {
+            $this->App->fail("Snapshotdir " . $d . " does not exist!");
+        }
+        else
+        {
+            $this->settings['local']['snapshotdir'] = $d;
         }
         #####################################
         # SYNC AND PERIODIC DIRS
@@ -105,6 +133,11 @@ class Settings
         # LOGFILE DIR
         #####################################
         $this->App->out('Validate logfile dir...');
+        //to avoid confusion, an absolute path is required
+        if(!preg_match('/^\//', $this->settings['local']['logfiledir']))
+        {
+            $this->App->fail("Logfiledir must be an absolute path!");
+        }
         //validate dir
         if (!file_exists($this->settings['local']['logfiledir']))
         {

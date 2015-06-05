@@ -35,7 +35,7 @@ class Application
         # SIGNATURE
         #####################################
         $this->out("$this->name v$this->version - SCRIPT STARTED ".date('Y-m-d H:i:s', $this->start_time), 'title');
-        $this->out('Validate local environment...', 'header');
+        $this->out('Validate local settings...', 'header');
         #####################################
         # USER
         #####################################
@@ -50,6 +50,10 @@ class Application
         #####################################
         $this->out('Validate local operating system...');
         $this->OS = trim(shell_exec('uname'));
+        if(!in_array($this->OS, ['Linux', 'SunOS']))
+        {
+            $this->fail('Local OS '.$this->OS.' currently not supported!');
+        }
     }
     
     function log($message)

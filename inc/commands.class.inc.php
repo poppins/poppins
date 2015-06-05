@@ -62,7 +62,7 @@ class LinuxCommands extends Commands
 
 }
 
-class OpenIndianaCommands extends Commands
+class SunOSCommands extends Commands
 {
 
     function map()
