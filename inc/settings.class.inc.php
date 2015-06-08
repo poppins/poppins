@@ -66,7 +66,7 @@ class Settings
         //check if remote host is set
         if (!$this->settings['remote']['host'])
         {
-            $this->App->fail("Remote host variable empty! Check ini file!");
+            $this->App->fail("Remote host is empty! Update the ini file or use -h parameter!");
         }
         else
         {

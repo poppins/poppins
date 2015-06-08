@@ -82,7 +82,7 @@ $App->out('Gather information about disk layout...');
 # remote disk layout and packages
 if ($_settings['remote']['os'] == "Linux")
 {
-    $Cmd->exe("ssh $U@$H '( df -hT ; vgs ; pvs ; lvs ; blkid ; lsblk -fi ; for disk in $(ls /dev/sd[a-z]) ; do fdisk -l \$disk; done )' > $SNAPDIR/incremental/".$_settings['remote']['host'].'.'.date('Y-m-d_H.i.s', $App->start_time).".poppins.disk-layout.txt", 'passthru');
+    $Cmd->exe("ssh $U@$H '( df -hT ; vgs ; pvs ; lvs ; blkid ; lsblk -fi ; for disk in $(ls /dev/sd[a-z]) ; do fdisk -l \$disk; done )' > $SNAPDIR/incremental/".$_settings['remote']['host'].'.'.date('Y-m-d_H.i.s', $App->start_time).".poppins.disk-layout.txt 2>&1");
 }
 $App->out('Gather information about packages...');
 switch ($_settings['remote']['distro'])
