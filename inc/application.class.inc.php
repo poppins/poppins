@@ -167,7 +167,7 @@ class Application
             $this->settings['local']['hostdir'] = $d;
         }
         #####################################
-        # SYNC AND ARCHIVE DIR
+        # INCREM AND ARCHIVE DIR
         #####################################
         $this->out('Validate hostdir subdirectories...');
         //validate dir
@@ -282,11 +282,8 @@ class Application
         }
         //time script
         $lapse = date('U')-$this->start_time;
-        if(true)
-        {
-            $lapse = gmdate('H:i:s', $lapse);
-            $this->log("Script time (HH:MM:SS) : $lapse");
-        }
+        $lapse = gmdate('H:i:s', $lapse);
+        $this->log("Script time (HH:MM:SS) : $lapse");
         //remove LOCK file if exists
         if($error != 'LOCKED' && file_exists($this->settings['local']['hostdir']."/LOCK"))
         {
@@ -303,7 +300,10 @@ class Application
         {
             $content []= 'Write to log file...';
             $success = file_put_contents($this->settings['local']['logfile'], $messages);
-            $content []= ($success)? 'OK':'FAILED!';
+            if(!$success)
+            {
+                $content []= 'FAILED!';
+            }
         }
         $content []= "Bye...";
         //last newline

@@ -24,11 +24,13 @@ class Backup
         $this->validate();
         //pre backup
         $this->jobs();
+        //create dirs
+        $this->prepare();
         //remote system info
         $this->audit();
-        $this->App->quit();
         //mysql
         $this->mysql();
+        $this->App->quit();
         //rsync
         $this->rsync();
     }
@@ -143,26 +145,22 @@ class Backup
     function audit()
     {
         //variables
-        $incremdir = $this->App->settings['local']['incremdir'];
-        $filebase = strtolower($this->settings['remote']['host'] . '.' . date('Y-m-d_H.i.s', $this->App->start_time).'.'.$this->App->settings['signature']['application']);
+        $dir = $this->settings['local']['hostdir'].'/'.$this->syncdir;
+        $filebase = strtolower($this->settings['remote']['host'] . '.'.$this->App->settings['signature']['application']);
         
         $this->App->out('Gather information about disk layout...');
         # remote disk layout and packages
         if ($this->settings['remote']['os'] == "Linux")
         {
-            $this->Cmd->exe("$this->ssh '( df -hT ; vgs ; pvs ; lvs ; blkid ; lsblk -fi ; for disk in $(ls /dev/sd[a-z]) ; do fdisk -l \$disk; done )' > $incremdir/" . $filebase . ".disk-layout.txt 2>&1");
+            $this->Cmd->exe("$this->ssh '( df -hT ; vgs ; pvs ; lvs ; blkid ; lsblk -fi ; for disk in $(ls /dev/sd[a-z]) ; do fdisk -l \$disk; done )' > $dir/" . $filebase . ".disk-layout.txt 2>&1");
         }
         $this->App->out('Gather information about packages...');
         switch ($this->App->settings['remote']['distro'])
         {
             case 'Debian':
             case 'Ubuntu':
-                $success = $this->Cmd->exe("$this->ssh \"aptitude search '~i !~M' -F '%p' --disable-columns | sort -u\" > $incremdir/" . $filebase . ".packages.txt", 'passthru');
-                if ($success)
-                {
-                    //$this->App->out('OK');
-                }
-                else
+                $success = $this->Cmd->exe("$this->ssh \"aptitude search '~i !~M' -F '%p' --disable-columns | sort -u\" > $dir/" . $filebase . ".packages.txt", 'passthru');
+                if (!$success)
                 {
                     $this->App->fail('Failed to retrieve package list!');
                 }
@@ -170,6 +168,18 @@ class Backup
             default:
                 $this->App->out('Remote OS not supported.');
                 break;
+        }
+    }
+    
+    function prepare()
+    {
+        #####################################
+        # SYNC DIR
+        #####################################
+        if (!file_exists( $this->settings['local']['hostdir'].'/'.$this->syncdir))
+        {
+            $this->App->out('Create Sync dir...');
+            $this->Cmd->exe("mkdir " .  $this->settings['local']['hostdir'].'/'.$this->syncdir, 'passthru');
         }
     }
     
@@ -259,11 +269,11 @@ class Backup
             $this->Cmd->exe("touch " .  $this->settings['local']['hostdir'] . "/LOCK", 'passthru');
         }
     }
-
 }
 
 class BTRFSBackup extends Backup
 {
+    protected $syncdir = 'rsync.btrfs.subvol';
 
     function validate()
     {
@@ -301,9 +311,10 @@ class BTRFSBackup extends Backup
 
 class DefaultBackup extends Backup
 {
-    
+    protected $syncdir = 'rsync.dir';
 }
 
 class ZFSBackup extends Backup
 {
+    protected $syncdir = 'rsync.zfs.subvol';
 }
