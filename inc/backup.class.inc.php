@@ -8,23 +8,24 @@ class Backup
     public $settings;
     
             
-    function __construct($application)
+    function __construct($App)
     {
-        $this->App = $application;
-        $this->Cms =  $this->App->Cmd;
+        $this->App = $App;
+        $this->Cmd =  $this->App->Cmd;
         
         $this->settings = $this->App->settings;
         
-        $this->snapshotdir = $settings['local']['snapshotdir'];
+        $this->snapshotdir = $App->settings['local']['snapshotdir'];
         
     }
     
     function init()
     {
-        //validate
+        //validate (check if LOCK file exists)
         $this->validate();
-        //pre rotate
-        $this->prerotate();
+        $this->App->quit();
+        //pre backup
+        $this->prebackup();
         //prepare 
         $this->prepare();
         //gather remote system info
@@ -33,8 +34,6 @@ class Backup
         $this->mysql();
         //rsync
         $this->rsync();
-        //wrapup
-        $this->wrapup();
     }
     
     function mysql()
@@ -48,7 +47,7 @@ class Backup
 
             # BTRFS: rsync.tmp is OK, we will snapshot that
             //TODO localdir removed, ok?
-            $MYSQLDUMPDIR = ($_settings['filesystem']['type'] == 'ZFS') ? "$SNAPDIR/mysqldumps" : "$SNAPDIR/rsync.tmp/mysqldumps";
+            $MYSQLDUMPDIR = ($_settings['local']['filesystem'] == 'ZFS') ? "$SNAPDIR/mysqldumps" : "$SNAPDIR/rsync.tmp/mysqldumps";
 
             $Cmd->exe($_settings['cmd']['rm'] . " -rf $MYSQLDUMPDIR");
             $Cmd->exe("mkdir -p $MYSQLDUMPDIR");
@@ -115,7 +114,7 @@ class Backup
         }
     }
 
-    function prerotate()
+    function prebackup()
     {
         #####################################
         # PRE ROTATE JOB
@@ -123,17 +122,17 @@ class Backup
         # do our thing on the remote end. Best to put this in a separate script.
         # you can dump databases, take file system snapshots etc. 
         //check if jobs
-        if ($this->settings['actions']['pre_rotate_remote_job'])
+        if ($this->settings['actions']['pre_backup_remote_job'])
         {
             $this->App->out('Found remote job, executing... (' . date('Y-m-d.H-i-s') . ')');
-            $success = $this->Cmd->exe("ssh $U@$H " . $_settings['actions']['pre_rotate_remote_job'], 'passthru');
+            $success = $this->Cmd->exe("ssh $U@$H " . $_settings['actions']['pre_backup_remote_job'], 'passthru');
             if ($success)
             {
                 $this->App->out('OK! Job done... (' . date('Y-m-d.H-i-s') . ')');
             }
             else
             {
-                $this->App->fail("Cannot execute remote job: '" . $_settings['actions']['pre_rotate_remote_job'] . "'");
+                $this->App->fail("Cannot execute remote job: '" . $_settings['actions']['pre_backup_remote_job'] . "'");
             }
         }
         else
@@ -173,13 +172,13 @@ class Backup
     function rsync()
     {
         #####################################
-# RSYNC OPTIONS
-#####################################
+        # RSYNC OPTIONS
+        #####################################
         $App->out('Validate rsync options...');
         $o = [];
         $o [] = "--numeric-ids";
 
-# general options
+        # general options
         if ($this->settings['rsync']['verbose'])
         {
             $o [] = "-v";
@@ -192,17 +191,17 @@ class Backup
         {
             $o [] = "-z --compress-level=" . $this->settings['rsync']['compresslevel'];
         }
-# "ZFS" means using the features of the ZFS file system, which allows to take 
-# snapshots of the file system instead of creating new trees of hardlinks.
-# In this case it is interesting to rewrite as little blocks as possible.
-        if (in_array($this->settings['filesystem']['type'], ['ZFS', 'BTRFS']))
+        # "ZFS" means using the features of the ZFS file system, which allows to take 
+        # snapshots of the file system instead of creating new trees of hardlinks.
+        # In this case it is interesting to rewrite as little blocks as possible.
+        if (in_array($this->settings['local']['filesystem'], ['ZFS', 'BTRFS']))
         {
             $o [] = "--inplace";
         }
         $RSYNC_OPTIONS = implode(' ', $o);
-#####################################
-# RSYNC DIRECTORIES
-#####################################
+        #####################################
+        # RSYNC DIRECTORIES
+        #####################################
         foreach ($_settings['directories'] as $sourcedir => $targetdir)
         {
             $dirs = explode(',', str_replace(' ', '', $_settings['exclude'][$sourcedir]));
@@ -216,7 +215,7 @@ class Backup
             print "rsync $targetdir...";
             # the difference: on a plain old classic file system we use snapshot
             # directories and hardlinks;
-            switch ($_settings['filesystem']['type'])
+            switch ($_settings['local']['filesystem'])
             {
                 case 'ZFS':
                     $Cmd->exe("mkdir -p $SNAPDIR/$targetdir");
@@ -302,34 +301,4 @@ class DefaultBackup extends Backup
 
 class ZFSBackup extends Backup
 {
-
-    function wrap()
-    {
-
-#####################################
-# ZFS
-#####################################
-#to reflect the backup time
-        if ($_settings['filesystem']['type'] == 'ZFS')
-        {
-            $Cmd->exe("touch $SNAPDIR");
-        }
-        else
-        {
-            if (file_exists("$SNAPDIR/rsync.tmp"))
-            {
-                # when rotating, the directories will have timestamps on them - 
-                # so we can check when it's time for a weekly or monthly snapshot
-                $Cmd->exe("touch $SNAPDIR/rsync.tmp  | tee -a $LOGFILE");
-            }
-            else
-            {
-                $Cmd->exe("echo not touching rsync.tmp - not a directory! | tee -a $LOGFILE");
-            }
-        }
-
-        $Cmd->exe("echo -n rsyncing done -  | tee -a $LOGFILE");
-        $Cmd->exe("date | tee -a $LOGFILE");
-    }
-
 }

@@ -2,38 +2,42 @@
 
 class Factory
 {
-
+    private $App;
+    
+    private $settings;
 }
 
 class BackupFactory extends Factory
 {
     const base = 'Backup';
     
-    function create($settings)
+    function create($App)
     {
+        //settings
+        $settings = $App->settings;
         // build the class
         $classname = self::base;
-        if (in_array($settings['filesystem']['type'], ['ZFS', 'BTRFS']))
+        if (in_array($settings['local']['filesystem'], ['ZFS', 'BTRFS']))
         {
-            $classname = $settings['filesystem']['type'].$classname;
+            $classname = $settings['local']['filesystem'].$classname;
         }
         else
         {
-            $classname = ucfirst($settings['filesystem']['type']).$classname;
+            $classname = ucfirst($settings['local']['filesystem']).$classname;
         }
-        return new $classname($settings);
+        return new $classname($App);
     }
 }
 
 class CmdFactory extends Factory
 {
-    const base = 'Commands';
+    const base = 'Cmd';
     
-    function create($App)
+    function create($settings)
     {
         // build the class
         $classname = self::base;
-        $classname = $App->OS.self::base;
+        $classname = $settings['local']['os'].self::base;
         return new $classname();
     }
 }
@@ -42,14 +46,16 @@ class RotatorFactory extends Factory
 {
     const base = 'Rotator';
     
-    function create($interval, $settings)
+    function create($App, $interval)
     {
+        //settings
+        $settings = $App->settings;
         // build the class
         $classname = ucfirst($interval).self::base;
-        if (in_array($settings['filesystem']['type'], ['ZFS', 'BTRFS']))
+        if (in_array($settings['local']['filesystem'], ['ZFS', 'BTRFS']))
         {
-            $classname = $settings['filesystem']['type'].$classname;
+            $classname = $settings['local']['filesystem'].$classname;
         }
-        return new $classname($settings);
+        return new $classname($App);
     }
 }

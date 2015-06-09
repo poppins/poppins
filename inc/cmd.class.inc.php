@@ -1,6 +1,6 @@
 <?php
 
-class Commands
+class Cmd
 {
 
     function __construct()
@@ -48,7 +48,7 @@ class Commands
     }
 }
 
-class LinuxCommands extends Commands
+class LinuxCmd extends Cmd
 {
 
     function map()
@@ -62,7 +62,7 @@ class LinuxCommands extends Commands
 
 }
 
-class SunOSCommands extends Commands
+class SunOSCmd extends Cmd
 {
 
     function map()

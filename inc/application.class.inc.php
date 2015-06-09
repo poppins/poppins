@@ -6,8 +6,6 @@ class Application
     
     private $messages;
     
-    public $OS;
-    
     public $start_time;
     
     public $settings;
@@ -20,6 +18,7 @@ class Application
         $this->start_time = date('U');
         
         $this->name = $name;
+        
         $this->version = $version;
     }
     
@@ -36,30 +35,188 @@ class Application
         # SIGNATURE
         #####################################
         $this->out("$this->name v$this->version - SCRIPT STARTED ".date('Y-m-d H:i:s', $this->start_time), 'title');
-        $this->out('Validate local settings...', 'header');
+        $this->out('Validate local environment...', 'header');
+        #####################################
+        # CHECK OS
+        #####################################
+        $this->out('Validate local operating system...');
+        $OS = trim(shell_exec('uname'));
+        if(!in_array($OS, ['Linux', 'SunOS']))
+        {
+            $this->fail('Local OS '.$OS.' currently not supported!');
+        }
         #####################################
         # USER
         #####################################
-        $this->out('Validate user...');
+        $this->out('Validate local user...');
         $whoami = trim(shell_exec('whoami'));
         if ($whoami != "root")
         {
             $this->fail("You must run this script as root or else the permissions in the snapshot will be wrong.");
         }
         #####################################
-        # OS
+        # HELP
         #####################################
-        $this->out('Validate local operating system...');
-        $this->OS = trim(shell_exec('uname'));
-        if(!in_array($this->OS, ['Linux', 'SunOS']))
+        $options = getopt("c:h:");
+        if (!count($options) || @$argv[1] == '--help')
         {
-            $this->fail('Local OS '.$this->OS.' currently not supported!');
+            die("Usage: " . $_SERVER['PHP_SELF'] . " -c {configfile} [-h {host}]\n");
         }
-    }
-    
-    static function get_instance()
-    {
-        return self::$db;
+        #####################################
+        # VALIDATE CONFIG FILE
+        #####################################
+        $this->out("Validate configuration file...", 'header');
+        //validate config file
+        if (isset($options['c']))
+        {
+            $configfile = $options['c'];
+            if (!file_exists($configfile))
+            {
+                $this->fail("Config file not found!");
+            }
+            else
+            {
+                $this->settings = parse_ini_file($configfile, 1);
+                $this->settings['local']['os'] = $OS;
+            }
+        }
+        else
+        {
+            $this->fail("Option -c {configfile} is required!");
+        }
+        #####################################
+        # COMMANDS
+        #####################################
+        $Cmd = CmdFactory::create($this->settings);
+        //load commands
+        $this->Cmd = $Cmd;
+        #####################################
+        # REMOTE VARIABLES
+        #####################################
+        $this->out('Validate remote variables...');
+        //validate user
+        $this->settings['remote']['user'] = ( empty($this->settings['remote']['user'])) ? 'root' : $this->settings['remote']['user'];
+        //validate host
+        if (isset($options['h']))
+        {
+            if($this->settings['remote']['host'])
+            {
+                $this->fail("Option -h is set while host is not empty in ini file!");
+            }
+            else
+            {
+                $this->settings['remote']['host'] = $options['h'];
+            }
+        }
+        //check if remote host is set
+        if (!$this->settings['remote']['host'])
+        {
+            $this->fail("Remote host is empty! Update the ini file or use -h parameter!");
+        }
+        else
+        {
+            $_h = $this->settings['remote']['host'];
+            $_u = $this->settings['remote']['user'];
+            $ping = $this->Cmd->exe("ping -c 1 $_h > /dev/null 2>&1 && echo OK || false");
+            if (!$ping)
+            {
+                $this->fail("Cannot reach remote host $_u@$_h!");
+            }
+        }
+        $this->out('Validate ssh connection...');
+        $sshtest = $this->Cmd->exe("ssh -o BatchMode=yes $_u@$_h echo OK");
+        if(!$sshtest)
+        {
+            $this->fail("SSH login attempt failed at remote host $_u@$_h!");
+        }
+        //get remote os
+        $this->settings['remote']['os'] = $this->Cmd->exe("ssh $_u@$_h uname");
+        //get distro
+        foreach(['Debian', 'Ubuntu', 'SunOS', 'OpenIndiana', 'Red Hat', 'CentOS', 'Fedora'] as $d)
+        {
+            if(preg_match("/$d/i", $this->Cmd->exe("ssh $_u@$_h 'cat /etc/*release'")))
+            {
+                $this->settings['remote']['distro'] = $d;
+                break;
+            }
+        }
+        #####################################
+        # SNAPSHOT DIR
+        #####################################
+        $this->out('Validate snapshot dir...');
+        //validate dir
+        $d = $this->settings['local']['snapshotdir'].'/'.$this->settings['remote']['host'];
+        //to avoid confusion, an absolute path is required
+        if(!preg_match('/^\//', $d))
+        {
+            $this->fail("Snapshotdir must be an absolute path!");
+        }
+        //check if dir exists
+        if (!file_exists($d))
+        {
+            $this->fail("Snapshotdir " . $d . " does not exist!");
+        }
+        else
+        {
+            $this->settings['local']['snapshotdir'] = $d;
+        }
+        #####################################
+        # SYNC AND PERIODIC DIRS
+        #####################################
+        $this->out('Validate snapshot subdirectories...');
+        //validate dir
+        foreach(['incremental', 'hourly', 'daily', 'weekly', 'monthly', 'yearly'] as $d)
+        {
+            $dd = $this->settings['local']['snapshotdir'].'/'.$d;
+            if (!is_dir($dd))
+            {
+               $this->out('Create subdirectory '.$dd.'...'); 
+               $this->Cmd->exe("mkdir ".$dd, 'passthru');
+            }
+        }
+        #####################################
+        # LOGFILE DIR
+        #####################################
+        $this->out('Validate logfile dir...');
+        //to avoid confusion, an absolute path is required
+        if(!preg_match('/^\//', $this->settings['local']['logfiledir']))
+        {
+            $this->fail("Logfiledir must be an absolute path!");
+        }
+        //validate dir
+        if (!file_exists($this->settings['local']['logfiledir']))
+        {
+            $this->fail("Logfiledir " . $this->settings['local']['logfiledir'] . " does not exist!");
+        }
+        //logfile
+        $this->settings['local']['logfile'] = $this->settings['local']['logfiledir'].'/'.$this->settings['remote']['host'].'.'.date('Y-m-d.H-i-s', $this->start_time).'.poppins.log';
+        $this->out('Create logfile '.$this->settings['local']['logfile'].'...');
+        $this->Cmd->exe("touch ".$this->settings['local']['logfile'], 'passthru');
+        #####################################
+        # DUMP ALL SETTINGS
+        #####################################
+        $this->out('LIST CONFIGURATION...', 'header');
+        $output = [];
+        ksort($this->settings);
+        foreach($this->settings as $k => $v)
+        {
+            if(is_array($v))
+            {
+                ksort($v);
+                $output []= "\n[$k]";
+                foreach($v as $kk => $vv)
+                {
+                    $vv = ($vv)? $vv:'""';
+                    $output []= sprintf( "%s: %s" , $kk , $vv);
+                }
+            }
+            else
+            {
+                $v = ($v)? $v:'""';
+                $output []= sprintf( "%s: %s" , $k , $v);
+            }
+        }
+        $this->out(trim(implode("\n", $output)));
     }
 
     function log($message)

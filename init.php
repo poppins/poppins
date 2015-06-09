@@ -10,7 +10,7 @@ $APPNAME = 'Poppins';
 // Rewritten and maintained by brdooms and frvdamme
 $VERSION = '1.0';
 ###############################################################################################################
-# CLASSES
+# LIBRARY
 ###############################################################################################################
 require_once('inc/lib.inc.php');
 #####################################
@@ -18,29 +18,15 @@ require_once('inc/lib.inc.php');
 #####################################
 $App = new Application($APPNAME, $VERSION);
 $App->init();
-#####################################
-# COMMANDS
-#####################################
-$Cmd = CmdFactory::create($App);
-//load commands
-$App->Cmd = $Cmd;
-#####################################
-# SETTINGS
-#####################################
-$Settings = new Settings($App);
-$Settings->init();
-//load settings
-$App->settings = $Settings->get();
 ###############################################################################################################
-# START BACKUPS
+# BACKUPS
 ###############################################################################################################
 $App->out('Initiate backups...', 'header');
 #####################################
-# RSYNC BACKUPS
+# RSYNC 
 #####################################
 //initiate
-$c = BackupFactory($App);
-$c->Cmd = $Cmd;
+$c = BackupFactory::create($App);
 $c->App = $App;
 $c->init();
 #####################################
@@ -49,14 +35,10 @@ $c->init();
 foreach (['daily', 'weekly'] as $interval)
 {
     //initiate
-    $c = RotatorFactory($interval, $_settings);
+    $c = RotatorFactory($settings, $interval);
     $c->init();
 }
 #####################################
-# REMOVE LOCK
+# END
 #####################################
-#delete lock
-$Cmd->exe($_settings['cmd']['rm'] . " --verbose --force $SNAPDIR/LOCK | tee -a $LOGFILE");
-$Cmd->exe("exit $failed"); # 1 is failed, 0 is OK
-
 $App->succeed();
