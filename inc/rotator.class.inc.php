@@ -1,17 +1,4 @@
 <?php
-class RotatorFactory
-{
-    function create($interval, $settings)
-    {
-        // build the class
-        $classname = ucfirst($interval).'Rotator';
-        if (in_array($settings['filesystem']['type'], ['ZFS', 'BTRFS']))
-        {
-            $classname = $settings['filesystem']['type'].$classname;
-        }
-        return new $classname($settings);
-    }
-}
 
 class Rotator
 {    

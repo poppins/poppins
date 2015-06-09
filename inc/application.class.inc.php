@@ -1,4 +1,5 @@
 <?php
+
 class Application
 {
     public $Cmd;
@@ -56,6 +57,11 @@ class Application
         }
     }
     
+    static function get_instance()
+    {
+        return self::$db;
+    }
+
     function log($message)
     {
         $this->messages []= $message;

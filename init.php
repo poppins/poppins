@@ -9,36 +9,36 @@ $APPNAME = 'Poppins';
 // Based on rotating rsync script by frvdamme
 // Rewritten and maintained by brdooms and frvdamme
 $VERSION = '1.0';
-#####################################
-# LIBRARY
-#####################################
+###############################################################################################################
+# CLASSES
+###############################################################################################################
 require_once('inc/lib.inc.php');
-
-//application
+#####################################
+# APPLICATION
+#####################################
 $App = new Application($APPNAME, $VERSION);
 $App->init();
-
-//commands
-$classname = $App->OS.'Commands';
-$Cmd = new $classname();
-
-//settings
-$Settings = new Settings($App, $Cmd);
-$Settings->init();
-$_settings = $Settings->get();
-
-//load settings
-$App->settings = $_settings;
-//commands
+#####################################
+# COMMANDS
+#####################################
+$Cmd = CmdFactory::create($App);
+//load commands
 $App->Cmd = $Cmd;
-
 #####################################
+# SETTINGS
+#####################################
+$Settings = new Settings($App);
+$Settings->init();
+//load settings
+$App->settings = $Settings->get();
+###############################################################################################################
 # START BACKUPS
-#####################################
+###############################################################################################################
 $App->out('Initiate backups...', 'header');
 #####################################
 # CREATE LOCK FILE
 #####################################
+$_settings = $Settings->get();
 # check for lock
 if (file_exists($_settings['local']['snapshotdir']."/LOCK"))
 {
@@ -78,30 +78,15 @@ else
 {
     $App->out('No remote jobs found...');
 }
-$App->out('Gather information about disk layout...');
-# remote disk layout and packages
-if ($_settings['remote']['os'] == "Linux")
-{
-    $Cmd->exe("ssh $U@$H '( df -hT ; vgs ; pvs ; lvs ; blkid ; lsblk -fi ; for disk in $(ls /dev/sd[a-z]) ; do fdisk -l \$disk; done )' > $SNAPDIR/incremental/".$_settings['remote']['host'].'.'.date('Y-m-d_H.i.s', $App->start_time).".poppins.disk-layout.txt 2>&1");
-}
-$App->out('Gather information about packages...');
-switch ($_settings['remote']['distro'])
-{
-    case 'Debian':
-    case 'Ubuntu':
-        $success = $Cmd->exe("ssh $U@$H \"aptitude search '~i !~M' -F '%p' --disable-columns | sort -u\" > $SNAPDIR/incremental/".$_settings['remote']['host'].'.'.date('Y-m-d_H.i.s', $App->start_time).".poppins.packages.txt", 'passthru');
-        if($success) 
-        {
-            $App->out('OK');
-        }
-        else
-        {
-            $App->fail('Failed to retrieve package list!');
-        }
-        break;
-    default:
-        break;
-}
+#####################################
+# BACKUPS
+#####################################
+//initiate
+$c = BackupFactory($_settings);
+$c->Cmd = $Cmd;
+$c->App = $App;
+$c->init();
+
 $App->quit();
 #####################################
 # BTRFS SNAPSHOTS

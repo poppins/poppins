@@ -5,13 +5,13 @@ class Settings
 
     private $settings;
 
-    function __construct($application, $commands)
+    function __construct($Application)
     {
         //Application class
-        $this->App = $application;
+        $this->App = $Application;
         
         //Commands class
-        $this->Cmd = $commands;
+        $this->Cmd = $Application->Cmd;
     }
 
     function init()
@@ -178,5 +178,4 @@ class Settings
     {
         return $this->settings;
     }
-
 }
