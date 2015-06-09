@@ -27,7 +27,6 @@ $App->out('Initiate backups...', 'header');
 #####################################
 //initiate
 $c = BackupFactory::create($App);
-$c->App = $App;
 $c->init();
 #####################################
 # ROTATE
@@ -35,7 +34,7 @@ $c->init();
 foreach (['daily', 'weekly'] as $interval)
 {
     //initiate
-    $c = RotatorFactory($settings, $interval);
+    $c = RotatorFactory($App, $interval);
     $c->init();
 }
 #####################################

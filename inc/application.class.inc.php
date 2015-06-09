@@ -46,13 +46,19 @@ class Application
             $this->fail('Local OS '.$OS.' currently not supported!');
         }
         #####################################
+        # COMMANDS
+        #####################################
+        $Cmd = CmdFactory::create($this->settings);
+        //load commands
+        $this->Cmd = $Cmd;
+        #####################################
         # USER
         #####################################
         $this->out('Validate local user...');
-        $whoami = trim(shell_exec('whoami'));
+        $whoami = $this->Cmd->exe('whoami');
         if ($whoami != "root")
         {
-            $this->fail("You must run this script as root or else the permissions in the snapshot will be wrong.");
+            $this->fail("You must run this script as root.");
         }
         #####################################
         # HELP
@@ -84,12 +90,6 @@ class Application
         {
             $this->fail("Option -c {configfile} is required!");
         }
-        #####################################
-        # COMMANDS
-        #####################################
-        $Cmd = CmdFactory::create($this->settings);
-        //load commands
-        $this->Cmd = $Cmd;
         #####################################
         # REMOTE VARIABLES
         #####################################
