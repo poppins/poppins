@@ -33,11 +33,11 @@ class CmdFactory extends Factory
 {
     const base = 'Cmd';
     
-    function create($settings)
+    function create($OS = 'Linux')
     {
         // build the class
         $classname = self::base;
-        $classname = $settings['local']['os'].self::base;
+        $classname = $OS.self::base;
         return new $classname();
     }
 }

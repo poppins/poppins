@@ -48,7 +48,7 @@ class Application
         #####################################
         # COMMANDS
         #####################################
-        $Cmd = CmdFactory::create($this->settings);
+        $Cmd = CmdFactory::create($OS);
         //load commands
         $this->Cmd = $Cmd;
         #####################################
@@ -144,30 +144,46 @@ class Application
         # SNAPSHOT DIR
         #####################################
         $this->out('Validate snapshot dir...');
-        //validate dir
-        $d = $this->settings['local']['snapshotdir'].'/'.$this->settings['remote']['host'];
-        //to avoid confusion, an absolute path is required
-        if(!preg_match('/^\//', $d))
+        //validate dir. to avoid confusion, an absolute path is required
+        if(!preg_match('/^\//', $this->settings['local']['snapshotdir']))
         {
             $this->fail("Snapshotdir must be an absolute path!");
         }
+        $this->out('Validate host dir...');
+        $d = $this->settings['local']['snapshotdir'].'/'.$this->settings['remote']['host'];
         //check if dir exists
         if (!file_exists($d))
         {
-            $this->fail("Snapshotdir " . $d . " does not exist!");
+            $this->fail("Host directory " . $d . " does not exist!");
         }
         else
         {
-            $this->settings['local']['snapshotdir'] = $d;
+            $this->settings['local']['hostdir'] = $d;
         }
         #####################################
-        # SYNC AND PERIODIC DIRS
+        # SYNC AND ARCHIVE DIR
         #####################################
-        $this->out('Validate snapshot subdirectories...');
+        $this->out('Validate hostdir subdirectories...');
         //validate dir
-        foreach(['incremental', 'hourly', 'daily', 'weekly', 'monthly', 'yearly'] as $d)
+        foreach(['incremental', 'archive'] as $d)
         {
-            $dd = $this->settings['local']['snapshotdir'].'/'.$d;
+            $dd = $this->settings['local']['hostdir'].'/'.$d;
+            if (!is_dir($dd))
+            {
+               $this->out('Create subdirectory '.$dd.'...'); 
+               $this->Cmd->exe("mkdir ".$dd, 'passthru');
+            }
+        }
+        $this->settings['local']['incdir'] = $this->settings['local']['hostdir'].'/sync';
+        $this->settings['local']['archdir'] = $this->settings['local']['hostdir'].'/archive';
+        #####################################
+        # ARCHIVES
+        #####################################
+        $this->out('Validate archive subdirectories...');
+        //validate dir
+        foreach(['hourly', 'daily', 'weekly', 'monthly', 'yearly'] as $d)
+        {
+            $dd = $this->settings['local']['archdir'].'/'.$d;
             if (!is_dir($dd))
             {
                $this->out('Create subdirectory '.$dd.'...'); 
