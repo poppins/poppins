@@ -15,21 +15,18 @@ class Backup
         
         $this->settings = $this->App->settings;
         
-        $this->snapshotdir = $App->settings['local']['snapshotdir'];
-        
+        $this->ssh = "ssh ".$this->settings['remote']['user']."@".$this->settings['remote']['host'];
     }
     
     function init()
     {
         //validate (check if LOCK file exists)
         $this->validate();
-        $this->App->quit();
         //pre backup
-        $this->prebackup();
-        //prepare 
-        $this->prepare();
-        //gather remote system info
-        $this->probe();
+        $this->jobs();
+        //remote system info
+        $this->audit();
+        $this->App->quit();
         //mysql
         $this->mysql();
         //rsync
@@ -114,25 +111,27 @@ class Backup
         }
     }
 
-    function prebackup()
+    function jobs()
     {
         #####################################
-        # PRE ROTATE JOB
+        # PRE BACKUP JOB
         #####################################
         # do our thing on the remote end. Best to put this in a separate script.
-        # you can dump databases, take file system snapshots etc. 
+        $this->App->out('PRE BACKUP REMOTE JOB...', 'header');
         //check if jobs
         if ($this->settings['actions']['pre_backup_remote_job'])
         {
             $this->App->out('Found remote job, executing... (' . date('Y-m-d.H-i-s') . ')');
-            $success = $this->Cmd->exe("ssh $U@$H " . $_settings['actions']['pre_backup_remote_job'], 'passthru');
-            if ($success)
+            $output = $this->Cmd->exe($this->ssh ." '".$this->settings['actions']['pre_backup_remote_job']."'", 'exec');
+            if ($output)
             {
                 $this->App->out('OK! Job done... (' . date('Y-m-d.H-i-s') . ')');
+                $this->App->out('Output:');
+                $this->App->out("\n" . $output . "\n");
             }
             else
             {
-                $this->App->fail("Cannot execute remote job: '" . $_settings['actions']['pre_backup_remote_job'] . "'");
+                $this->App->fail("Cannot execute remote job: \"" . $this->settings['actions']['pre_backup_remote_job'] . "\"");
             }
         }
         else
@@ -141,30 +140,35 @@ class Backup
         }
     }
 
-    function probe()
+    function audit()
     {
-        $App->out('Gather information about disk layout...');
+        //variables
+        $incremdir = $this->App->settings['local']['incremdir'];
+        $filebase = strtolower($this->settings['remote']['host'] . '.' . date('Y-m-d_H.i.s', $this->App->start_time).'.'.$this->App->settings['signature']['application']);
+        
+        $this->App->out('Gather information about disk layout...');
         # remote disk layout and packages
-        if ($_settings['remote']['os'] == "Linux")
+        if ($this->settings['remote']['os'] == "Linux")
         {
-            $Cmd->exe("ssh $U@$H '( df -hT ; vgs ; pvs ; lvs ; blkid ; lsblk -fi ; for disk in $(ls /dev/sd[a-z]) ; do fdisk -l \$disk; done )' > $SNAPDIR/incremental/" . $_settings['remote']['host'] . '.' . date('Y-m-d_H.i.s', $App->start_time) . ".poppins.disk-layout.txt 2>&1");
+            $this->Cmd->exe("$this->ssh '( df -hT ; vgs ; pvs ; lvs ; blkid ; lsblk -fi ; for disk in $(ls /dev/sd[a-z]) ; do fdisk -l \$disk; done )' > $incremdir/" . $filebase . ".disk-layout.txt 2>&1");
         }
-        $App->out('Gather information about packages...');
-        switch ($_settings['remote']['distro'])
+        $this->App->out('Gather information about packages...');
+        switch ($this->App->settings['remote']['distro'])
         {
             case 'Debian':
             case 'Ubuntu':
-                $success = $Cmd->exe("ssh $U@$H \"aptitude search '~i !~M' -F '%p' --disable-columns | sort -u\" > $SNAPDIR/incremental/" . $_settings['remote']['host'] . '.' . date('Y-m-d_H.i.s', $App->start_time) . ".poppins.packages.txt", 'passthru');
+                $success = $this->Cmd->exe("$this->ssh \"aptitude search '~i !~M' -F '%p' --disable-columns | sort -u\" > $incremdir/" . $filebase . ".packages.txt", 'passthru');
                 if ($success)
                 {
-                    $App->out('OK');
+                    //$this->App->out('OK');
                 }
                 else
                 {
-                    $App->fail('Failed to retrieve package list!');
+                    $this->App->fail('Failed to retrieve package list!');
                 }
                 break;
             default:
+                $this->App->out('Remote OS not supported.');
                 break;
         }
     }
@@ -245,14 +249,14 @@ class Backup
         # CREATE LOCK FILE
         #####################################
         # check for lock
-        if (file_exists( $this->snapshotdir . "/LOCK"))
+        if (file_exists( $this->settings['local']['hostdir'] . "/LOCK"))
         {
             $this->App->fail("LOCK file exists!", 'LOCKED');
         }
         else
         {
             $this->App->out('Create LOCK file...');
-            $this->Cmd->exe("touch " .  $this->snapshotdir . "/LOCK", 'passthru');
+            $this->Cmd->exe("touch " .  $this->settings['local']['hostdir'] . "/LOCK", 'passthru');
         }
     }
 
@@ -261,8 +265,9 @@ class Backup
 class BTRFSBackup extends Backup
 {
 
-    function prepare()
+    function validate()
     {
+        parent::validate();
         #####################################
         # BTRFS SNAPSHOTS
         #####################################

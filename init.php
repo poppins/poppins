@@ -31,7 +31,7 @@ $c->init();
 #####################################
 # ROTATE
 #####################################
-foreach (['daily', 'weekly'] as $interval)
+foreach ([$App->intervals] as $interval)
 {
     //initiate
     $c = RotatorFactory($App, $interval);

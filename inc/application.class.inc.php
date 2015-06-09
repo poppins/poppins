@@ -4,22 +4,26 @@ class Application
 {
     public $Cmd;
     
+    public $intervals;
+    
     private $messages;
     
-    public $start_time;
-    
     public $settings;
+    
+    public $start_time;
     
     private $version;
     
             
-    function __construct($name, $version)
+    function __construct($appname, $version)
     {
-        $this->start_time = date('U');
+        $this->intervals = ['hourly', 'daily', 'weekly', 'monthly', 'yearly'];
         
-        $this->name = $name;
+        $this->appname = $appname;
         
         $this->version = $version;
+        
+        $this->start_time = date('U');
     }
     
     function fail($message, $error = '')
@@ -34,7 +38,7 @@ class Application
         #####################################
         # SIGNATURE
         #####################################
-        $this->out("$this->name v$this->version - SCRIPT STARTED ".date('Y-m-d H:i:s', $this->start_time), 'title');
+        $this->out("$this->appname v$this->version - SCRIPT STARTED ".date('Y-m-d H:i:s', $this->start_time), 'title');
         $this->out('Validate local environment...', 'header');
         #####################################
         # CHECK OS
@@ -83,7 +87,9 @@ class Application
             else
             {
                 $this->settings = parse_ini_file($configfile, 1);
+                //add data
                 $this->settings['local']['os'] = $OS;
+                $this->settings['signature']['application'] = $this->appname;
             }
         }
         else
@@ -174,8 +180,8 @@ class Application
                $this->Cmd->exe("mkdir ".$dd, 'passthru');
             }
         }
-        $this->settings['local']['incdir'] = $this->settings['local']['hostdir'].'/sync';
-        $this->settings['local']['archdir'] = $this->settings['local']['hostdir'].'/archive';
+        $this->settings['local']['incremdir'] = $this->settings['local']['hostdir'].'/incremental';
+        $this->settings['local']['archivedir'] = $this->settings['local']['hostdir'].'/archive';
         #####################################
         # ARCHIVES
         #####################################
@@ -183,7 +189,7 @@ class Application
         //validate dir
         foreach(['hourly', 'daily', 'weekly', 'monthly', 'yearly'] as $d)
         {
-            $dd = $this->settings['local']['archdir'].'/'.$d;
+            $dd = $this->settings['local']['archivedir'].'/'.$d;
             if (!is_dir($dd))
             {
                $this->out('Create subdirectory '.$dd.'...'); 
@@ -268,7 +274,7 @@ class Application
     
     function quit($message = '', $error = '')
     {
-        $this->out("$this->name v$this->version - SCRIPT ENDED ".date('Y-m-d H:i:s', $this->start_time), 'title');
+        $this->out("$this->appname v$this->version - SCRIPT ENDED ".date('Y-m-d H:i:s', $this->start_time), 'title');
         //log message
         if($message)
         {
@@ -282,10 +288,10 @@ class Application
             $this->log("Script time (HH:MM:SS) : $lapse");
         }
         //remove LOCK file if exists
-        if($error != 'LOCKED' && file_exists($this->settings['local']['snapshotdir']."/LOCK"))
+        if($error != 'LOCKED' && file_exists($this->settings['local']['hostdir']."/LOCK"))
         {
             $this->log("Remove LOCK file...");
-            $this->Cmd->exe('{RM} '.$this->settings['local']['snapshotdir']."/LOCK", 'passthru', true);
+            $this->Cmd->exe('{RM} '.$this->settings['local']['hostdir']."/LOCK", 'passthru', true);
         }
         //format messages
         $messages = implode("\n", $this->messages);
@@ -297,19 +303,11 @@ class Application
         {
             $content []= 'Write to log file...';
             $success = file_put_contents($this->settings['local']['logfile'], $messages);
-            if(!$success)
-            {
-                $content []= 'FAILED!';
-            }
-            else
-            {
-                 $content []= 'OK';
-            }
+            $content []= ($success)? 'OK':'FAILED!';
         }
         $content []= "Bye...";
         //last newline
         $content []= "";
-        //write to log file
         //output
         print implode("\n", $content);
         die();
