@@ -35,7 +35,6 @@ class Backup
         {
             $this->mysql();
         }
-        $this->App->quit();
         //rsync
         $this->rsync();
     }
@@ -61,7 +60,7 @@ class Backup
             else
             {
                 $configfiles = [];
-                $this->App->out('WARNING! No mysql config files found in remote dir ' . $dir.'!', 'warning');
+                $this->App->out('WARNING! No mysql config files found in remote dir ' . $dir.'...', 'warning');
                 continue;
             }
             //iterate config files
@@ -75,7 +74,7 @@ class Backup
                 $contents = $this->App->Cmd->exe("$this->ssh 'cd $dir;cat .my.cnf*'");
                 if(in_array($contents, $cached))
                 {
-                    $this->App->out("WARNING! Found duplicate mysql config file $dir/$configfile!", 'warning');
+                    $this->App->out("WARNING! Found duplicate mysql config file $dir/$configfile...", 'warning');
                     continue;
                 }
                 else
@@ -199,12 +198,14 @@ class Backup
     
     function rsync()
     {
+        //rsync backups
+        $this->App->out('Rsync directories', 'header');
         #####################################
         # RSYNC OPTIONS
         #####################################
-        $App->out('Validate rsync options...');
+        //options
         $o = [];
-        $o [] = "--numeric-ids";
+        $o [] = "--delete-excluded --delete --numeric-ids";
 
         # general options
         if ($this->settings['rsync']['verbose'])
@@ -226,45 +227,61 @@ class Backup
         {
             $o [] = "--inplace";
         }
-        $RSYNC_OPTIONS = implode(' ', $o);
+        $rsync_options = implode(' ', $o);
         #####################################
         # RSYNC DIRECTORIES
         #####################################
-        foreach ($this->settings['directories'] as $sourcedir => $targetdir)
+        foreach ($this->settings['included'] as $source => $target)
         {
-            $dirs = explode(',', str_replace(' ', '', $this->settings['exclude'][$sourcedir]));
-
-            $EXCLUDE = '';
-            foreach ($dirs as $dir)
+            $sourcedir = "$source/";
+            $targetdir = "$this->syncdir/files/$target/";
+            
+            //exclude dirs
+            $excluded = '';
+            if(isset($this->settings['excluded'][$source]))
             {
-                $EXCLUDE .= " --exclude=$dir";
+                $exludedirs = explode(',', $this->settings['excluded'][$source]);
+                    
+                foreach ($exludedirs as $d)
+                {
+                    $excluded .= " --exclude=$d";
+                }
             }
-
-            print "rsync $targetdir...";
+            
+            $this->App->out("rsync '$source' @ ".date('Y-m-d H:i:s')."...", 'indent');
+            if(!is_dir("$this->syncdir/files/$target"))
+            {
+                $this->App->out("Create target dir $this->syncdir/files/$target...");
+                $this->App->Cmd->exe("mkdir $this->syncdir/files/$target", 'passthru');
+            }
             # the difference: on a plain old classic file system we use snapshot
             # directories and hardlinks;
             switch ($this->settings['local']['filesystem'])
             {
-                case 'ZFS':
-                    $Cmd->exe("mkdir -p $SNAPDIR/$targetdir");
-                    $Cmd->exe("rsync --delete-excluded --delete $RSYNC_OPTIONS -xae ssh $EXCLUDE $U@$H:$sourcedir/ $SNAPDIR/$targetdir/ | tee -a $LOGFILE", $error);
-                    break;
-                case 'BTRFS':
-                    $Cmd->exe("rsync --delete-excluded --delete $RSYNC_OPTIONS -xae ssh $EXCLUDE $U@$H:$sourcedir/ $SNAPDIR/rsync.tmp/$targetdir/", $error);
-                    break;
+//                case 'ZFS':
+//                    $Cmd->exe("mkdir -p $SNAPDIR/$target");
+//                    $Cmd->exe("rsync --delete-excluded --delete $rsync_options -xae ssh $excluded $U@$H:$source/ $SNAPDIR/$target/", $error);
+//                    break;
+//                case 'BTRFS':
+//                    $Cmd->exe("rsync --delete-excluded --delete $rsync_options -xae ssh $excluded $U@$H:$source/ $SNAPDIR/rsync.tmp/$target/", $error);
+//                    break;
                 default:
-                    $Cmd->exe("mkdir -p $SNAPDIR/rsync.tmp/$targetdir");
-                    $Cmd->exe("rsync --delete-excluded --delete $RSYNC_OPTIONS -xae ssh $EXCLUDE --link-dest=$SNAPDIR/daily.0/${localdir}/ $U@$H:$sourcedir/ $SNAPDIR/rsync.tmp/$targetdir/", $error);
-            }
-            # we willen weten of alle rsyncs succesvol beëindigd zijn (source file 
-            # vanished willen we nog tolereren, kan gebeuren) en anders doen we geen rotate. 
-            $Cmd->exe("echo $targetdir - exit status: $error | tee -a $LOGFILE");
-            if ($error && $error != 24)
-            {
-                echo 'FAILED';
-                $failed = 1;
+                    $cmd =  "rsync $rsync_options -xae ssh $excluded ".$this->settings['remote']['user']."@".$this->settings['remote']['host'].":$sourcedir $targetdir";
+                    $this->App->out($cmd);
+                    $output = $this->App->Cmd->exe("$cmd && echo OK");
+                    $this->App->out($output);
+                    if(substr($output, -2, 2) == 'OK')
+                    {
+                        $this->App->out("");
+                    }
+                    else
+                    {
+                        $this->App->fail("Backup $sourcedir failed!");
+                    }
+//                    $success = $this->App->Cmd->exe("rsync --delete-excluded --delete $rsync_options -xae ssh $excluded --link-dest=$SNAPDIR/daily.0/${localdir}/ $U@$H:$source/ $SNAPDIR/rsync.tmp/$target/", $error);
             }
         }
+        $this->App->out("Done!");
     }
 
     function validate()

@@ -9,7 +9,7 @@ class Application
     private $messages;
     
     public $settings;
-    
+ 
     public $start_time;
     
     private $version;
@@ -96,10 +96,18 @@ class Application
             $this->fail("Option -c {configfile} is required!");
         }
         //trim spaces
-        $this->out("Trim spaces in configuration...");
+        $this->out("Check configuration syntax...");
         foreach($this->settings as $k => $v)
         {
-            $this->settings[$k] = str_replace(" ", "", $v);
+            foreach($v as $kk => $vv)
+            {
+                $this->settings[$k][$kk] = str_replace(" ", "", $vv);
+                //No trailing slashes
+                if(preg_match('/\/$/', $vv))
+                {
+                    $this->fail("No trailing slashes allowed in config file! $kk = $vv...");
+                }
+            }
         }
         #####################################
         # REMOTE VARIABLES
@@ -249,13 +257,13 @@ class Application
                 foreach($v as $kk => $vv)
                 {
                     $vv = ($vv)? $vv:'""';
-                    $output []= sprintf( "%s: %s" , $kk , $vv);
+                    $output []= sprintf( "%s = %s" , $kk , $vv);
                 }
             }
             else
             {
                 $v = ($v)? $v:'""';
-                $output []= sprintf( "%s: %s" , $k , $v);
+                $output []= sprintf( "%s = %s" , $k , $v);
             }
         }
         $this->out(trim(implode("\n", $output)));
@@ -288,7 +296,7 @@ class Application
                 $content []= $l;
                 break;
             case 'indent':
-                $content []= "----> ".$message;
+                $content []= "-----------> ".$message;
                 break;
             case 'title':
                 $l = "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%";
