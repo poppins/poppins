@@ -28,8 +28,7 @@ class Application
     
     function fail($message, $error = '')
     {
-        $this->log("FATAL ERROR: Application failed!");
-        $this->log("MESSAGE: '$message'");
+        $this->out("FATAL ERROR: Application failed! \nMESSAGE: $message", 'error');
         $this->quit("SCRIPT FAILED!", $error);
     }
     
@@ -151,16 +150,28 @@ class Application
         #####################################
         $this->out('Validate snapshot dir...');
         //validate dir. to avoid confusion, an absolute path is required
-        if(!preg_match('/^\//', $this->settings['local']['snapshotdir']))
+        if(!preg_match('/^\//', $this->settings['local']['rootdir']))
         {
-            $this->fail("Snapshotdir must be an absolute path!");
+            $this->fail("rootdir must be an absolute path!");
         }
-        $this->out('Validate host dir...');
-        $d = $this->settings['local']['snapshotdir'].'/'.$this->settings['remote']['host'];
+        #####################################
+        # HOSTDIR DIR
+        #####################################
+        $this->out('Validate hostdir...');
+        $d = $this->settings['local']['rootdir'].'/'.$this->settings['remote']['host'];
         //check if dir exists
         if (!file_exists($d))
         {
-            $this->fail("Host directory " . $d . " does not exist!");
+            if($this->settings['local']['hostdir.create'] == 'yes')
+            {
+                $this->out("Directory " . $d . " does not exist, creating it..");
+                $success = $this->Cmd->exe("mkdir ".$d, 'passthru');
+                if(!$success) $this->fail("Could not create directory:  " . $d . "!");;
+            }
+            else
+            {
+                $this->fail("Directory " . $d . " does not exist! Not allowed to create it..");
+            }
         }
         else
         {
@@ -201,17 +212,17 @@ class Application
         #####################################
         $this->out('Validate logfile dir...');
         //to avoid confusion, an absolute path is required
-        if(!preg_match('/^\//', $this->settings['local']['logfiledir']))
+        if(!preg_match('/^\//', $this->settings['local']['logdir']))
         {
-            $this->fail("Logfiledir must be an absolute path!");
+            $this->fail("logdir must be an absolute path!");
         }
         //validate dir
-        if (!file_exists($this->settings['local']['logfiledir']))
+        if (!file_exists($this->settings['local']['logdir']))
         {
-            $this->fail("Logfiledir " . $this->settings['local']['logfiledir'] . " does not exist!");
+            $this->fail("logdir " . $this->settings['local']['logdir'] . " does not exist!");
         }
         //logfile
-        $this->settings['local']['logfile'] = $this->settings['local']['logfiledir'].'/'.$this->settings['remote']['host'].'.'.date('Y-m-d.H-i-s', $this->start_time).'.poppins.log';
+        $this->settings['local']['logfile'] = $this->settings['local']['logdir'].'/'.$this->settings['remote']['host'].'.'.date('Y-m-d.H-i-s', $this->start_time).'.poppins.log';
         $this->out('Create logfile '.$this->settings['local']['logfile'].'...');
         $this->Cmd->exe("touch ".$this->settings['local']['logfile'], 'passthru');
         #####################################
@@ -251,15 +262,27 @@ class Application
         $content = [];
         switch($type)
         {
+            case 'error':
+                $l = '|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||';
+                $content []= '';
+                $content []= $l;
+                $content []= $l;
+                $content []=  $message;
+                $content []= $l;
+                $content []= $l;
+                $content []= '';
+                break;
             case 'title':
-                $content []= "=======================================================================================";
+                $l = "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%";
+                $content []= $l;
                 $content []= $message;
-                $content []= "=======================================================================================";
+                $content []= $l;
                 break;
             case 'header':
-                $content []= "---------------------------------------------------------------------------------------";
+                $l = "---------------------------------------------------------------------------------------";
+                $content []= $l;
                 $content []= strtoupper($message);
-                $content []= "---------------------------------------------------------------------------------------";
+                $content []= $l;
                 break;
             case 'default':
                 $content []= $message;

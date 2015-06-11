@@ -3,15 +3,15 @@
 class Backup
 {
     public $App;
-    public $Cmd;
       
     public $settings;
+    
+    private $ssh;
     
             
     function __construct($App)
     {
         $this->App = $App;
-        $this->Cmd =  $this->App->Cmd;
         
         $this->settings = $this->App->settings;
         
@@ -40,15 +40,15 @@ class Backup
         #####################################
         # MYSQL BACKUPS
         #####################################
-        if ($_settings['mysql']['enabled'])
+        if ($this->settings['mysql']['enabled'])
         {
-            $MYSQL_REMOTE_USER = ($_settings['mysql']['remote.user']) ? $_settings['mysql']['remote.user'] : 'root';
+            $MYSQL_REMOTE_USER = ($this->settings['mysql']['remote.user']) ? $this->settings['mysql']['remote.user'] : 'root';
 
             # BTRFS: rsync.tmp is OK, we will snapshot that
             //TODO localdir removed, ok?
-            $MYSQLDUMPDIR = ($_settings['local']['filesystem'] == 'ZFS') ? "$SNAPDIR/mysqldumps" : "$SNAPDIR/rsync.tmp/mysqldumps";
+            $MYSQLDUMPDIR = ($this->settings['local']['filesystem'] == 'ZFS') ? "$SNAPDIR/mysqldumps" : "$SNAPDIR/rsync.tmp/mysqldumps";
 
-            $Cmd->exe($_settings['cmd']['rm'] . " -rf $MYSQLDUMPDIR");
+            $Cmd->exe($this->settings['cmd']['rm'] . " -rf $MYSQLDUMPDIR");
             $Cmd->exe("mkdir -p $MYSQLDUMPDIR");
 
             $configfiles = trim(shell_exe("ssh $MYSQL_REMOTE_USER@$H 'ls .my.cnf*'"));
@@ -101,7 +101,7 @@ class Backup
                 else
                 {
                     $Cmd->exe("echo -n mysql databases failed!  | tee -a $LOGFILE");
-                    $Cmd->exe($_settings['cmd']['rm'] . " --verbose --force $SNAPDIR/LOCK | tee -a $LOGFILE");
+                    $Cmd->exe($this->settings['cmd']['rm'] . " --verbose --force $SNAPDIR/LOCK | tee -a $LOGFILE");
                     $Cmd->exe("date | tee -a $LOGFILE");
                     die();
                 }
@@ -124,7 +124,7 @@ class Backup
         if ($this->settings['actions']['pre_backup_remote_job'])
         {
             $this->App->out('Found remote job, executing... (' . date('Y-m-d.H-i-s') . ')');
-            $output = $this->Cmd->exe($this->ssh ." '".$this->settings['actions']['pre_backup_remote_job']."'", 'exec');
+            $output = $this->App->Cmd->exe($this->ssh ." '".$this->settings['actions']['pre_backup_remote_job']."'", 'exec');
             if ($output)
             {
                 $this->App->out('OK! Job done... (' . date('Y-m-d.H-i-s') . ')');
@@ -152,14 +152,14 @@ class Backup
         # remote disk layout and packages
         if ($this->settings['remote']['os'] == "Linux")
         {
-            $this->Cmd->exe("$this->ssh '( df -hT ; vgs ; pvs ; lvs ; blkid ; lsblk -fi ; for disk in $(ls /dev/sd[a-z]) ; do fdisk -l \$disk; done )' > $dir/" . $filebase . ".disk-layout.txt 2>&1");
+            $this->App->Cmd->exe("$this->ssh '( df -hT ; vgs ; pvs ; lvs ; blkid ; lsblk -fi ; for disk in $(ls /dev/sd[a-z]) ; do fdisk -l \$disk; done )' > $dir/" . $filebase . ".disk-layout.txt 2>&1");
         }
         $this->App->out('Gather information about packages...');
         switch ($this->App->settings['remote']['distro'])
         {
             case 'Debian':
             case 'Ubuntu':
-                $success = $this->Cmd->exe("$this->ssh \"aptitude search '~i !~M' -F '%p' --disable-columns | sort -u\" > $dir/" . $filebase . ".packages.txt", 'passthru');
+                $success = $this->App->Cmd->exe("$this->ssh \"aptitude search '~i !~M' -F '%p' --disable-columns | sort -u\" > $dir/" . $filebase . ".packages.txt", 'passthru');
                 if (!$success)
                 {
                     $this->App->fail('Failed to retrieve package list!');
@@ -179,7 +179,7 @@ class Backup
         if (!file_exists( $this->settings['local']['hostdir'].'/'.$this->syncdir))
         {
             $this->App->out('Create Sync dir...');
-            $this->Cmd->exe("mkdir " .  $this->settings['local']['hostdir'].'/'.$this->syncdir, 'passthru');
+            $this->App->Cmd->exe("mkdir " .  $this->settings['local']['hostdir'].'/'.$this->syncdir, 'passthru');
         }
     }
     
@@ -216,9 +216,9 @@ class Backup
         #####################################
         # RSYNC DIRECTORIES
         #####################################
-        foreach ($_settings['directories'] as $sourcedir => $targetdir)
+        foreach ($this->settings['directories'] as $sourcedir => $targetdir)
         {
-            $dirs = explode(',', str_replace(' ', '', $_settings['exclude'][$sourcedir]));
+            $dirs = explode(',', str_replace(' ', '', $this->settings['exclude'][$sourcedir]));
 
             $EXCLUDE = '';
             foreach ($dirs as $dir)
@@ -229,7 +229,7 @@ class Backup
             print "rsync $targetdir...";
             # the difference: on a plain old classic file system we use snapshot
             # directories and hardlinks;
-            switch ($_settings['local']['filesystem'])
+            switch ($this->settings['local']['filesystem'])
             {
                 case 'ZFS':
                     $Cmd->exe("mkdir -p $SNAPDIR/$targetdir");
@@ -266,7 +266,7 @@ class Backup
         else
         {
             $this->App->out('Create LOCK file...');
-            $this->Cmd->exe("touch " .  $this->settings['local']['hostdir'] . "/LOCK", 'passthru');
+            $this->App->Cmd->exe("touch " .  $this->settings['local']['hostdir'] . "/LOCK", 'passthru');
         }
     }
 }
@@ -292,7 +292,7 @@ class BTRFSBackup extends Backup
             else
             {
                 $Cmd->exe("echo No decent snapshottable btrfs subvolume found! | tee -a $LOGFILE");
-                $Cmd->exe($_settings['cmd']['rm'] . " --verbose --force $SNAPDIR/LOCK | tee -a $LOGFILE");
+                $Cmd->exe($this->settings['cmd']['rm'] . " --verbose --force $SNAPDIR/LOCK | tee -a $LOGFILE");
                 $Cmd->exe("date | tee -a $LOGFILE");
                 die();
             }
