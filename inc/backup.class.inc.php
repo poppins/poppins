@@ -16,6 +16,8 @@ class Backup
         $this->settings = $this->App->settings;
         
         $this->ssh = "ssh ".$this->settings['remote']['user']."@".$this->settings['remote']['host'];
+        
+        $this->syncdir = $this->settings['local']['hostdir'].'/'.$this->syncdir;
     }
     
     function init()
@@ -27,9 +29,12 @@ class Backup
         //create dirs
         $this->prepare();
         //remote system info
-        $this->audit();
+        $this->meta();
         //mysql
-        $this->mysql();
+        if ($this->settings['mysql']['enabled'])
+        {
+            $this->mysql();
+        }
         $this->App->quit();
         //rsync
         $this->rsync();
@@ -40,75 +45,67 @@ class Backup
         #####################################
         # MYSQL BACKUPS
         #####################################
-        if ($this->settings['mysql']['enabled'])
+        $this->App->out('MySQL Backups', 'header');
+        //check users
+        $dirs = explode(',', $this->settings['mysql']['configdirs']);
+        //cache config files
+        $cached = [];
+        //iterate dirs    
+        foreach ($dirs as $dir)
         {
-            $MYSQL_REMOTE_USER = ($this->settings['mysql']['remote.user']) ? $this->settings['mysql']['remote.user'] : 'root';
-
-            # BTRFS: rsync.tmp is OK, we will snapshot that
-            //TODO localdir removed, ok?
-            $MYSQLDUMPDIR = ($this->settings['local']['filesystem'] == 'ZFS') ? "$SNAPDIR/mysqldumps" : "$SNAPDIR/rsync.tmp/mysqldumps";
-
-            $Cmd->exe($this->settings['cmd']['rm'] . " -rf $MYSQLDUMPDIR");
-            $Cmd->exe("mkdir -p $MYSQLDUMPDIR");
-
-            $configfiles = trim(shell_exe("ssh $MYSQL_REMOTE_USER@$H 'ls .my.cnf*'"));
-            $dbfound = false;
-            $mysqlerror = false;
-            foreach (explode("\n", $configfiles) as $configfile)
+            $configfiles = $this->App->Cmd->exe("$this->ssh 'cd $dir;ls .my.cnf*'");
+            if ($configfiles)
             {
-                #$configfile = preg_replace('/^.+\//', '', $instance);
+                $configfiles = explode("\n", $configfiles);
+            }
+            else
+            {
+                $configfiles = [];
+                $this->App->out('WARNING! No mysql config files found in remote dir ' . $dir.'!', 'warning');
+            }
+            //iterate config files
+            foreach ($configfiles as $configfile)
+            {
+                //instance
                 $instance = preg_replace('/^.+my\.cnf(\.)?/', '', $configfile);
-                if (!trim($instance))
+                $instance = ($instance)? $instance:'default';
+                
+                //ignore if file is the same
+                $contents = $this->App->Cmd->exe("$this->ssh 'cd $dir;cat .my.cnf*'");
+                if(in_array($contents, $cached))
+                {
+                    $this->App->out("WARNING! Found duplicate mysql config file $dir/$configfile!", 'warning');
                     continue;
-                $Cmd->exe("echo instance:  $instance | tee -a $LOGFILE");
-                $Cmd->exe("mkdir $MYSQLDUMPDIR/mysql$instance");
-                $dbs = trim(shell_exe("ssh -C $MYSQL_REMOTE_USER@$H 'echo show databases | mysql --defaults-file=$configfile'"));
+                }
+                else
+                {
+                    $cached []= $contents;
+                }
+                
+                $this->App->out("Backup databases from $dir/$configfile");
+                $instancedir = "$this->syncdir/mysql/$instance";
+                if(!is_dir($instancedir))
+                {
+                    $this->App->Cmd->exe("mkdir -p $instancedir", 'passthru');
+                }    
+                //get all dbs
+                $dbs = $this->App->Cmd->exe("$this->ssh 'mysql --defaults-file=$dir/$configfile --skip-column-names -e \"show databases\" | grep -v \"^information_schema$\"'");
                 foreach (explode("\n", $dbs) as $db)
                 {
                     if (empty($db))
                     {
                         continue;
                     }
-                    elseif ($db == "information_schema")
+                    $success = $this->App->Cmd->exe("$this->ssh mysqldump --defaults-file=$configfile --ignore-table=mysql.event --routines --single-transaction --quick --databases $db | gzip > $instancedir/$db.sql.gz", 'passthru');
+                    if ($success)
                     {
-                        $Cmd->exe("echo not backing up $db | tee -a $LOGFILE");
-                        continue;
+                        $this->App->out("$db... OK.", 'indent');
                     }
                     else
                     {
-                        $dbfound = true;
-                    }
-                    $Cmd->exe("echo -n $db... ");
-                    $Cmd->exe("ssh  $MYSQL_REMOTE_USER@$H mysqldump --defaults-file=$configfile --ignore-table=mysql.event --routines --single-transaction --quick --databases $db | gzip > $MYSQLDUMPDIR/mysql$instance/$db.sql.gz", $mysqlerror);
-                    if ($mysqlerror)
-                    {
-                        break;
-                    }
-                    else
-                    {
-                        $Cmd->exe("echo mysql instance backed up. | tee -a $LOGFILE");
+                        $this->App-fail("MySQL backup failed!");
                     }
                 }
-            }
-            //valid db is found
-            if ($dbfound)
-            {
-                if (!$mysqlerror)
-                {
-                    $Cmd->exe("echo -n dumped mysql databases -  | tee -a $LOGFILE");
-                    $Cmd->exe("date | tee -a $LOGFILE");
-                }
-                else
-                {
-                    $Cmd->exe("echo -n mysql databases failed!  | tee -a $LOGFILE");
-                    $Cmd->exe($this->settings['cmd']['rm'] . " --verbose --force $SNAPDIR/LOCK | tee -a $LOGFILE");
-                    $Cmd->exe("date | tee -a $LOGFILE");
-                    die();
-                }
-            }
-            else
-            {
-                $Cmd->exe("echo -n no databases found!  | tee -a $LOGFILE");
             }
         }
     }
@@ -119,7 +116,7 @@ class Backup
         # PRE BACKUP JOB
         #####################################
         # do our thing on the remote end. Best to put this in a separate script.
-        $this->App->out('PRE BACKUP REMOTE JOB...', 'header');
+        $this->App->out('PRE BACKUP REMOTE JOB', 'header');
         //check if jobs
         if ($this->settings['actions']['pre_backup_remote_job'])
         {
@@ -142,24 +139,24 @@ class Backup
         }
     }
 
-    function audit()
+    function meta()
     {
         //variables
-        $dir = $this->settings['local']['hostdir'].'/'.$this->syncdir;
         $filebase = strtolower($this->settings['remote']['host'] . '.'.$this->App->settings['signature']['application']);
         
+        $this->App->out('Remote meta data', 'header');
         $this->App->out('Gather information about disk layout...');
         # remote disk layout and packages
         if ($this->settings['remote']['os'] == "Linux")
         {
-            $this->App->Cmd->exe("$this->ssh '( df -hT ; vgs ; pvs ; lvs ; blkid ; lsblk -fi ; for disk in $(ls /dev/sd[a-z]) ; do fdisk -l \$disk; done )' > $dir/" . $filebase . ".disk-layout.txt 2>&1");
+            $this->App->Cmd->exe("$this->ssh '( df -hT ; vgs ; pvs ; lvs ; blkid ; lsblk -fi ; for disk in $(ls /dev/sd[a-z]) ; do fdisk -l \$disk; done )' > $this->syncdir/meta/" . $filebase . ".disk-layout.txt 2>&1");
         }
         $this->App->out('Gather information about packages...');
         switch ($this->App->settings['remote']['distro'])
         {
             case 'Debian':
             case 'Ubuntu':
-                $success = $this->App->Cmd->exe("$this->ssh \"aptitude search '~i !~M' -F '%p' --disable-columns | sort -u\" > $dir/" . $filebase . ".packages.txt", 'passthru');
+                $success = $this->App->Cmd->exe("$this->ssh \"aptitude search '~i !~M' -F '%p' --disable-columns | sort -u\" > $this->syncdir/meta/" . $filebase . ".packages.txt", 'passthru');
                 if (!$success)
                 {
                     $this->App->fail('Failed to retrieve package list!');
@@ -176,10 +173,26 @@ class Backup
         #####################################
         # SYNC DIR
         #####################################
-        if (!file_exists( $this->settings['local']['hostdir'].'/'.$this->syncdir))
+        if (!file_exists($this->syncdir))
         {
-            $this->App->out('Create Sync dir...');
-            $this->App->Cmd->exe("mkdir " .  $this->settings['local']['hostdir'].'/'.$this->syncdir, 'passthru');
+            $this->App->out("Create sync dir $this->syncdir...");
+            $this->App->Cmd->exe("mkdir " .  $this->syncdir, 'passthru');
+        }
+        #####################################
+        # OTHER DIRS
+        #####################################
+        $a = ['meta', 'files']; 
+        if ($this->settings['mysql']['enabled'])
+        {
+            $a []= 'mysql';
+        }
+        foreach($a as $aa)
+        {
+            if (!file_exists($this->syncdir.'/'.$aa))
+            {
+                $this->App->out("Create $aa dir $this->syncdir/$aa...");
+                $this->App->Cmd->exe("mkdir $this->syncdir/$aa", 'passthru');
+            }
         }
     }
     

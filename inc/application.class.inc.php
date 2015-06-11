@@ -38,7 +38,7 @@ class Application
         # SIGNATURE
         #####################################
         $this->out("$this->appname v$this->version - SCRIPT STARTED ".date('Y-m-d H:i:s', $this->start_time), 'title');
-        $this->out('Validate local environment...', 'header');
+        $this->out('Validate local environment', 'header');
         #####################################
         # CHECK OS
         #####################################
@@ -94,6 +94,12 @@ class Application
         else
         {
             $this->fail("Option -c {configfile} is required!");
+        }
+        //trim spaces
+        $this->out("Trim spaces in configuration...");
+        foreach($this->settings as $k => $v)
+        {
+            $this->settings[$k] = str_replace(" ", "", $v);
         }
         #####################################
         # REMOTE VARIABLES
@@ -208,9 +214,9 @@ class Application
             }
         }
         #####################################
-        # LOGFILE DIR
+        # LOG DIR
         #####################################
-        $this->out('Validate logfile dir...');
+        $this->out('Validate logdir...');
         //to avoid confusion, an absolute path is required
         if(!preg_match('/^\//', $this->settings['local']['logdir']))
         {
@@ -226,9 +232,16 @@ class Application
         $this->out('Create logfile '.$this->settings['local']['logfile'].'...');
         $this->Cmd->exe("touch ".$this->settings['local']['logfile'], 'passthru');
         #####################################
+        # MYSQL
+        #####################################
+        if($this->settings['mysql']['enabled'] && !$this->settings['mysql']['configdirs'])
+        {
+            $this->settings['mysql']['configdirs'] = '/root';
+        }
+        ######################################
         # DUMP ALL SETTINGS
         #####################################
-        $this->out('LIST CONFIGURATION...', 'header');
+        $this->out('LIST CONFIGURATION', 'header');
         $output = [];
         ksort($this->settings);
         foreach($this->settings as $k => $v)
@@ -272,17 +285,28 @@ class Application
                 $content []= $l;
                 $content []= '';
                 break;
+            case 'header':
+                $l = "---------------------------------------------------------------------------------------";
+                $content []= $l;
+                $content []= strtoupper($message);
+                $content []= $l;
+                break;
+            case 'indent':
+                $content []= "----> ".$message;
+                break;
             case 'title':
                 $l = "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%";
                 $content []= $l;
                 $content []= $message;
                 $content []= $l;
                 break;
-            case 'header':
-                $l = "---------------------------------------------------------------------------------------";
+            case 'warning':
+                $l = '|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||';
+                $content []= '';
                 $content []= $l;
-                $content []= strtoupper($message);
+                $content []=  $message;
                 $content []= $l;
+                $content []= '';
                 break;
             case 'default':
                 $content []= $message;
