@@ -38,7 +38,7 @@ class Application
         # SIGNATURE
         #####################################
         $this->out("$this->appname v$this->version - SCRIPT STARTED ".date('Y-m-d H:i:s', $this->start_time), 'title');
-        $this->out('Validate local environment', 'header');
+        $this->out('local environment', 'header');
         #####################################
         # CHECK OS
         #####################################
@@ -74,7 +74,7 @@ class Application
         #####################################
         # VALIDATE CONFIG FILE
         #####################################
-        $this->out("Validate configuration file...", 'header');
+        $this->out("configuration file", 'header');
         //validate config file
         if (isset($options['c']))
         {
@@ -164,24 +164,20 @@ class Application
         # HOSTDIR DIR
         #####################################
         $this->out('Validate hostdir...');
-        $d = $this->settings['local']['rootdir'].'/'.$this->settings['remote']['host'];
+        $this->settings['local']['hostdir'] = $this->settings['local']['rootdir'].'/'.$this->settings['remote']['host'];
         //check if dir exists
-        if (!file_exists($d))
+        if (!file_exists($this->settings['local']['hostdir']))
         {
             if($this->settings['local']['hostdir.create'] == 'yes')
             {
-                $this->out("Directory " . $d . " does not exist, creating it..");
-                $success = $this->Cmd->exe("mkdir ".$d, 'passthru');
-                if(!$success) $this->fail("Could not create directory:  " . $d . "!");;
+                $this->out("Directory " . $this->settings['local']['hostdir'] . " does not exist, creating it..");
+                $success = $this->Cmd->exe("mkdir ".$this->settings['local']['hostdir'], 'passthru');
+                if(!$success) $this->fail("Could not create directory:  " . $this->settings['local']['hostdir'] . "!");;
             }
             else
             {
-                $this->fail("Directory " . $d . " does not exist! Not allowed to create it..");
+                $this->fail("Directory " . $this->settings['local']['hostdir'] . " does not exist! Not allowed to create it..");
             }
-        }
-        else
-        {
-            $this->settings['local']['hostdir'] = $d;
         }
         #####################################
         # INCREM AND ARCHIVE DIR

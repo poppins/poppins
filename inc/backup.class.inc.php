@@ -45,7 +45,7 @@ class Backup
         #####################################
         # MYSQL BACKUPS
         #####################################
-        $this->App->out('MySQL Backups', 'header');
+        $this->App->out('Mysql backups', 'header');
         //check users
         $dirs = explode(',', $this->settings['mysql']['configdirs']);
         //cache config files
@@ -53,7 +53,7 @@ class Backup
         //iterate dirs    
         foreach ($dirs as $dir)
         {
-            $configfiles = $this->App->Cmd->exe("$this->ssh 'cd $dir;ls .my.cnf*'");
+            $configfiles = $this->App->Cmd->exe("$this->ssh 'cd $dir;ls .my.cnf* 2>/dev/null'");
             if ($configfiles)
             {
                 $configfiles = explode("\n", $configfiles);
@@ -62,6 +62,7 @@ class Backup
             {
                 $configfiles = [];
                 $this->App->out('WARNING! No mysql config files found in remote dir ' . $dir.'!', 'warning');
+                continue;
             }
             //iterate config files
             foreach ($configfiles as $configfile)
