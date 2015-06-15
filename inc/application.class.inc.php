@@ -2,51 +2,46 @@
 
 class Application
 {
+
     public $Cmd;
-    
     public $intervals;
-    
     private $messages;
-    
     public $settings;
- 
     public $start_time;
-    
     private $version;
-    
-            
+
     function __construct($appname, $version)
     {
         $this->intervals = ['hourly', 'daily', 'weekly', 'monthly', 'yearly'];
-        
+
         $this->appname = $appname;
-        
+
         $this->version = $version;
-        
+
         $this->start_time = date('U');
     }
-    
-    function fail($message, $error = '')
+
+    function fail($message, $error = 'generic')
     {
         $this->out("FATAL ERROR: Application failed! \nMESSAGE: $message", 'error');
         $this->quit("SCRIPT FAILED!", $error);
     }
-    
+
     function init()
     {
         #####################################
         # SIGNATURE
         #####################################
-        $this->out("$this->appname v$this->version - SCRIPT STARTED ".date('Y-m-d H:i:s', $this->start_time), 'title');
+        $this->out("$this->appname v$this->version - SCRIPT STARTED " . date('Y-m-d H:i:s', $this->start_time), 'title');
         $this->out('local environment', 'header');
         #####################################
         # CHECK OS
         #####################################
         $this->out('Validate local operating system...');
         $OS = trim(shell_exec('uname'));
-        if(!in_array($OS, ['Linux', 'SunOS']))
+        if (!in_array($OS, ['Linux', 'SunOS']))
         {
-            $this->fail('Local OS '.$OS.' currently not supported!');
+            $this->fail('Local OS ' . $OS . ' currently not supported!');
         }
         #####################################
         # COMMANDS
@@ -97,13 +92,13 @@ class Application
         }
         //trim spaces
         $this->out("Check configuration syntax...");
-        foreach($this->settings as $k => $v)
+        foreach ($this->settings as $k => $v)
         {
-            foreach($v as $kk => $vv)
+            foreach ($v as $kk => $vv)
             {
                 $this->settings[$k][$kk] = str_replace(" ", "", $vv);
                 //No trailing slashes
-                if(preg_match('/\/$/', $vv))
+                if (preg_match('/\/$/', $vv))
                 {
                     $this->fail("No trailing slashes allowed in config file! $kk = $vv...");
                 }
@@ -118,7 +113,7 @@ class Application
         //validate host
         if (isset($options['h']))
         {
-            if($this->settings['remote']['host'])
+            if ($this->settings['remote']['host'])
             {
                 $this->fail("Option -h is set while host is not empty in ini file!");
             }
@@ -144,19 +139,34 @@ class Application
         }
         $this->out('Validate ssh connection...');
         $sshtest = $this->Cmd->exe("ssh -o BatchMode=yes $_u@$_h echo OK");
-        if(!$sshtest)
+        if (!$sshtest)
         {
             $this->fail("SSH login attempt failed at remote host $_u@$_h!");
         }
         //get remote os
         $this->settings['remote']['os'] = $this->Cmd->exe("ssh $_u@$_h uname");
         //get distro
-        foreach(['Debian', 'Ubuntu', 'SunOS', 'OpenIndiana', 'Red Hat', 'CentOS', 'Fedora'] as $d)
+        foreach (['Debian', 'Ubuntu', 'SunOS', 'OpenIndiana', 'Red Hat', 'CentOS', 'Fedora'] as $d)
         {
-            if(preg_match("/$d/i", $this->Cmd->exe("ssh $_u@$_h 'cat /etc/*release'")))
+            if (preg_match("/$d/i", $this->Cmd->exe("ssh $_u@$_h 'cat /etc/*release'")))
             {
                 $this->settings['remote']['distro'] = $d;
                 break;
+            }
+        }
+        #####################################
+        # RSYNC INSTALLATION
+        #####################################
+        foreach (['local', 'remote'] as $host)
+        {
+            $c = [];
+            $c['local'] = 'rsync --version && echo OK';
+            $c['remote'] = "ssh $_u@$_h '". $c['local']."'";
+            //check if rsync is installed on remote machine
+            $rsync_installed = $this->Cmd->exe($c[$host]);
+            if (substr($rsync_installed, -2, 2) != 'OK')
+            {
+                $this->fail("Rsync not installed on remote machine!");
             }
         }
         #####################################
@@ -164,7 +174,7 @@ class Application
         #####################################
         $this->out('Validate snapshot dir...');
         //validate dir. to avoid confusion, an absolute path is required
-        if(!preg_match('/^\//', $this->settings['local']['rootdir']))
+        if (!preg_match('/^\//', $this->settings['local']['rootdir']))
         {
             $this->fail("rootdir must be an absolute path!");
         }
@@ -172,15 +182,16 @@ class Application
         # HOSTDIR DIR
         #####################################
         $this->out('Validate hostdir...');
-        $this->settings['local']['hostdir'] = $this->settings['local']['rootdir'].'/'.$this->settings['remote']['host'];
+        $this->settings['local']['hostdir'] = $this->settings['local']['rootdir'] . '/' . $this->settings['remote']['host'];
         //check if dir exists
         if (!file_exists($this->settings['local']['hostdir']))
         {
-            if($this->settings['local']['hostdir.create'] == 'yes')
+            if ($this->settings['local']['hostdir.create'] == 'yes')
             {
                 $this->out("Directory " . $this->settings['local']['hostdir'] . " does not exist, creating it..");
-                $success = $this->Cmd->exe("mkdir ".$this->settings['local']['hostdir'], 'passthru');
-                if(!$success) $this->fail("Could not create directory:  " . $this->settings['local']['hostdir'] . "!");;
+                $success = $this->Cmd->exe("mkdir " . $this->settings['local']['hostdir'], 'passthru');
+                if (!$success)
+                    $this->fail("Could not create directory:  " . $this->settings['local']['hostdir'] . "!");;
             }
             else
             {
@@ -192,29 +203,29 @@ class Application
         #####################################
         $this->out('Validate hostdir subdirectories...');
         //validate dir
-        foreach(['incremental', 'archive'] as $d)
+        foreach (['incremental', 'archive'] as $d)
         {
-            $dd = $this->settings['local']['hostdir'].'/'.$d;
+            $dd = $this->settings['local']['hostdir'] . '/' . $d;
             if (!is_dir($dd))
             {
-               $this->out('Create subdirectory '.$dd.'...'); 
-               $this->Cmd->exe("mkdir ".$dd, 'passthru');
+                $this->out('Create subdirectory ' . $dd . '...');
+                $this->Cmd->exe("mkdir " . $dd, 'passthru');
             }
         }
-        $this->settings['local']['incremdir'] = $this->settings['local']['hostdir'].'/incremental';
-        $this->settings['local']['archivedir'] = $this->settings['local']['hostdir'].'/archive';
+        $this->settings['local']['incremdir'] = $this->settings['local']['hostdir'] . '/incremental';
+        $this->settings['local']['archivedir'] = $this->settings['local']['hostdir'] . '/archive';
         #####################################
         # ARCHIVES
         #####################################
         $this->out('Validate archive subdirectories...');
         //validate dir
-        foreach(['hourly', 'daily', 'weekly', 'monthly', 'yearly'] as $d)
+        foreach (['hourly', 'daily', 'weekly', 'monthly', 'yearly'] as $d)
         {
-            $dd = $this->settings['local']['archivedir'].'/'.$d;
+            $dd = $this->settings['local']['archivedir'] . '/' . $d;
             if (!is_dir($dd))
             {
-               $this->out('Create subdirectory '.$dd.'...'); 
-               $this->Cmd->exe("mkdir ".$dd, 'passthru');
+                $this->out('Create subdirectory ' . $dd . '...');
+                $this->Cmd->exe("mkdir " . $dd, 'passthru');
             }
         }
         #####################################
@@ -222,7 +233,7 @@ class Application
         #####################################
         $this->out('Validate logdir...');
         //to avoid confusion, an absolute path is required
-        if(!preg_match('/^\//', $this->settings['local']['logdir']))
+        if (!preg_match('/^\//', $this->settings['local']['logdir']))
         {
             $this->fail("logdir must be an absolute path!");
         }
@@ -231,14 +242,10 @@ class Application
         {
             $this->fail("logdir " . $this->settings['local']['logdir'] . " does not exist!");
         }
-        //logfile
-        $this->settings['local']['logfile'] = $this->settings['local']['logdir'].'/'.$this->settings['remote']['host'].'.'.date('Y-m-d.H-i-s', $this->start_time).'.poppins.log';
-        $this->out('Create logfile '.$this->settings['local']['logfile'].'...');
-        $this->Cmd->exe("touch ".$this->settings['local']['logfile'], 'passthru');
         #####################################
         # MYSQL
         #####################################
-        if($this->settings['mysql']['enabled'] && !$this->settings['mysql']['configdirs'])
+        if ($this->settings['mysql']['enabled'] && !$this->settings['mysql']['configdirs'])
         {
             $this->settings['mysql']['configdirs'] = '/root';
         }
@@ -248,22 +255,22 @@ class Application
         $this->out('LIST CONFIGURATION', 'header');
         $output = [];
         ksort($this->settings);
-        foreach($this->settings as $k => $v)
+        foreach ($this->settings as $k => $v)
         {
-            if(is_array($v))
+            if (is_array($v))
             {
                 ksort($v);
-                $output []= "\n[$k]";
-                foreach($v as $kk => $vv)
+                $output [] = "\n[$k]";
+                foreach ($v as $kk => $vv)
                 {
-                    $vv = ($vv)? $vv:'""';
-                    $output []= sprintf( "%s = %s" , $kk , $vv);
+                    $vv = ($vv) ? $vv : '""';
+                    $output [] = sprintf("%s = %s", $kk, $vv);
                 }
             }
             else
             {
-                $v = ($v)? $v:'""';
-                $output []= sprintf( "%s = %s" , $k , $v);
+                $v = ($v) ? $v : '""';
+                $output [] = sprintf("%s = %s", $k, $v);
             }
         }
         $this->out(trim(implode("\n", $output)));
@@ -271,49 +278,49 @@ class Application
 
     function log($message)
     {
-        $this->messages []= $message;
+        $this->messages [] = $message;
     }
-    
+
     function out($message, $type = 'default')
     {
         $content = [];
-        switch($type)
+        switch ($type)
         {
             case 'error':
                 $l = '|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||';
-                $content []= '';
-                $content []= $l;
-                $content []= $l;
-                $content []=  $message;
-                $content []= $l;
-                $content []= $l;
-                $content []= '';
+                $content [] = '';
+                $content [] = $l;
+                $content [] = $l;
+                $content [] = $message;
+                $content [] = $l;
+                $content [] = $l;
+                $content [] = '';
                 break;
             case 'header':
                 $l = "---------------------------------------------------------------------------------------";
-                $content []= $l;
-                $content []= strtoupper($message);
-                $content []= $l;
+                $content [] = $l;
+                $content [] = strtoupper($message);
+                $content [] = $l;
                 break;
             case 'indent':
-                $content []= "-----------> ".$message;
+                $content [] = "-----------> " . $message;
                 break;
             case 'title':
                 $l = "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%";
-                $content []= $l;
-                $content []= $message;
-                $content []= $l;
+                $content [] = $l;
+                $content [] = $message;
+                $content [] = $l;
                 break;
             case 'warning':
                 $l = '|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||';
-                $content []= '';
-                $content []= $l;
-                $content []=  $message;
-                $content []= $l;
-                $content []= '';
+                $content [] = '';
+                $content [] = $l;
+                $content [] = $message;
+                $content [] = $l;
+                $content [] = '';
                 break;
             case 'default':
-                $content []= $message;
+                $content [] = $message;
                 break;
         }
         $message = implode("\n", $content);
@@ -322,51 +329,56 @@ class Application
         //print to screen
         //print $message."\n";
     }
-    
-    function quit($message = '', $error = '')
+
+    function quit($message = '', $error = false)
     {
-        $this->out("$this->appname v$this->version - SCRIPT ENDED ".date('Y-m-d H:i:s', $this->start_time), 'title');
+        $this->out("$this->appname v$this->version - SCRIPT ENDED " . date('Y-m-d H:i:s', $this->start_time), 'title');
         //log message
-        if($message)
+        if ($message)
         {
             $this->log($message);
         }
         //time script
-        $lapse = date('U')-$this->start_time;
+        $lapse = date('U') - $this->start_time;
         $lapse = gmdate('H:i:s', $lapse);
         $this->log("Script time (HH:MM:SS) : $lapse");
         //remove LOCK file if exists
-        if($error != 'LOCKED' && file_exists($this->settings['local']['hostdir']."/LOCK"))
+        if ($error != 'LOCKED' && file_exists($this->settings['local']['hostdir'] . "/LOCK"))
         {
             $this->log("Remove LOCK file...");
-            $this->Cmd->exe('{RM} '.$this->settings['local']['hostdir']."/LOCK", 'passthru', true);
+            $this->Cmd->exe('{RM} ' . $this->settings['local']['hostdir'] . "/LOCK", 'passthru', true);
         }
         //format messages
         $messages = implode("\n", $this->messages);
         //content
         $content = [];
-        $content []= $messages;
+        $content [] = $messages;
         //log to file
-        if($this->settings['local']['logfile'])
+        //script returned no errors if set to false
+        $suffix = ($error) ? 'error' : 'success';
+        $logfile = $this->settings['local']['logdir'] . '/' . $this->settings['remote']['host'] . '.' . date('Y-m-d.His', $this->start_time) . '.poppins.' . $suffix . '.log';
+        $content [] = 'Create logfile ' . $logfile . '...';
+        $this->Cmd->exe("touch " . $logfile, 'passthru');
+        //write to log
+        $content [] = 'Write to log file...';
+        $success = file_put_contents($logfile, $messages);
+        if (!$success)
         {
-            $content []= 'Write to log file...';
-            $success = file_put_contents($this->settings['local']['logfile'], $messages);
-            if(!$success)
-            {
-                $content []= 'FAILED!';
-            }
+            $content [] = 'FAILED!';
         }
-        $content []= "Bye...";
+        //be polite
+        $content [] = "Bye...";
         //last newline
-        $content []= "";
+        $content [] = "";
         //output
         print implode("\n", $content);
         die();
     }
-    
+
     function succeed()
     {
         $this->log("SCRIPT RAN SUCCESFULLY!");
         $this->quit();
     }
+
 }

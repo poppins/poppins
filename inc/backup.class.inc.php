@@ -120,11 +120,11 @@ class Backup
         //check if jobs
         if ($this->settings['actions']['pre_backup_remote_job'])
         {
-            $this->App->out('Found remote job, executing... (' . date('Y-m-d.H-i-s') . ')');
+            $this->App->out('Found remote job, executing... (' . date('Y-m-d.H:i:s') . ')');
             $output = $this->App->Cmd->exe($this->ssh ." '".$this->settings['actions']['pre_backup_remote_job']."'", 'exec');
             if ($output)
             {
-                $this->App->out('OK! Job done... (' . date('Y-m-d.H-i-s') . ')');
+                $this->App->out('OK! Job done... (' . date('Y-m-d.H:i:s') . ')');
                 $this->App->out('Output:');
                 $this->App->out("\n" . $output . "\n");
             }
@@ -276,7 +276,7 @@ class Backup
                     }
                     else
                     {
-                        $this->App->fail("Backup $sourcedir failed!");
+                        $this->App->fail("Backup $sourcedir failed! Cannot rsync from remote server!");
                     }
 //                    $success = $this->App->Cmd->exe("rsync --delete-excluded --delete $rsync_options -xae ssh $excluded --link-dest=$SNAPDIR/daily.0/${localdir}/ $U@$H:$source/ $SNAPDIR/rsync.tmp/$target/", $error);
             }
