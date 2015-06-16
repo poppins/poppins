@@ -77,7 +77,7 @@ $settings['snapshots']['weekly'] = 0;
 $settings['snapshots']['monthly'] = 0;
 $settings['snapshots']['yearly'] = 0;
 
-$cdate = '2015-06-07_180200';
+$cdate = '2015-06-10_200200';
 
 //echo variable
 $newdir = 'jessie2.' . $cdate . '.poppins';
