@@ -40,40 +40,41 @@ $DIRS = ['incremental', 'hourly', 'daily', 'weekly', 'monthly', 'yearly'];
 //initiate arrays
 foreach($DIRS as $c)
 {
-    $arch[$c] = [];
-    $res[$c] = [];
+    $arch1[$c] = [];
+    $arch2[$c] = [];
 }
-//$arch ['incremental'] []= 'jessie2.2015-05-31_170100.poppins';
-//$arch ['incremental'] []= 'jessie2.2015-06-01_170100.poppins';
-//$arch ['incremental'] []= 'jessie2.2015-06-02_170100.poppins';
-//$arch ['incremental'] []= 'jessie2.2015-06-03_170100.poppins';
-//$arch ['incremental'] []= 'jessie2.2015-06-04_170100.poppins';
+$arch1 ['incremental'] []= 'jessie2.2015-05-31_170100.poppins';
+$arch1 ['incremental'] []= 'jessie2.2015-06-01_170100.poppins';
+$arch1 ['incremental'] []= 'jessie2.2015-06-02_170100.poppins';
+$arch1 ['incremental'] []= 'jessie2.2015-06-03_170100.poppins';
+$arch1 ['incremental'] []= 'jessie2.2015-06-04_170100.poppins';
 
-//$arch ['incremental'] []= 'jessie2.2015-06-05_170100.poppins';
-//$arch ['incremental'] []= 'jessie2.2015-06-06_170100.poppins';
-//$arch ['incremental'] []= 'jessie2.2015-06-07_170100.poppins';
-//$arch ['incremental'] []= 'jessie2.2015-06-08_170100.poppins';
-//$arch ['incremental'] []= 'jessie2.2015-06-09_170100.poppins';
+//$arch1 ['incremental'] []= 'jessie2.2015-06-05_170100.poppins';
+//$arch1 ['incremental'] []= 'jessie2.2015-06-06_170100.poppins';
+//$arch1 ['incremental'] []= 'jessie2.2015-06-07_170100.poppins';
+//$arch1 ['incremental'] []= 'jessie2.2015-06-08_170100.poppins';
+//$arch1 ['incremental'] []= 'jessie2.2015-06-09_170100.poppins';
 //
-//$arch ['hourly'] []= 'jessie2.2015-06-07_170100.poppins';
-//$arch ['hourly'] []= 'jessie2.2015-06-09_170100.poppins';
-//$arch ['hourly'] []= 'jessie2.2015-06-08_170100.poppins';
+//$arch1 ['hourly'] []= 'jessie2.2015-06-07_170100.poppins';
+//$arch1 ['hourly'] []= 'jessie2.2015-06-09_170100.poppins';
+//$arch1 ['hourly'] []= 'jessie2.2015-06-08_170100.poppins';
 //
-//$arch ['daily'] []= 'jessie2.2015-06-07_170100.poppins';
-//$arch ['daily'] []= 'jessie2.2015-06-08_170100.poppins';
-//$arch ['daily'] []= 'jessie2.2015-06-09_170100.poppins';
+//$arch1 ['daily'] []= 'jessie2.2015-06-07_170100.poppins';
+//$arch1 ['daily'] []= 'jessie2.2015-06-08_170100.poppins';
+//$arch1 ['daily'] []= 'jessie2.2015-06-09_170100.poppins';
 //
-//$arch ['weekly'] []= 'jessie2.2015-06-09_170100.poppins';
+//$arch1 ['weekly'] []= 'jessie2.2015-06-09_170100.poppins';
 //
-//$arch ['monthly'] []= 'jessie2.2015-05-31_170100.poppins';
-//$arch ['monthly'] []= 'jessie2.2015-06-01_170100.poppins';
+//$arch1 ['monthly'] []= 'jessie2.2015-05-31_170100.poppins';
+//$arch1 ['monthly'] []= 'jessie2.2015-06-01_170100.poppins';
 
-//$arch ['yearly'] = [];
-//$arch ['yearly'] []= 'jessie2.2015-06-09_170100.poppins';
+//$arch1 ['yearly'] = [];
+//$arch1 ['yearly'] []= 'jessie2.2015-06-09_170100.poppins';
 
-$res = $arch;
+//copy archive 1
+$arch2 = $arch1;
 
-$settings['snapshots']['incremental'] = 1;
+$settings['snapshots']['incremental'] = 3;
 $settings['snapshots']['hourly'] = 0;
 $settings['snapshots']['daily'] = 0;
 $settings['snapshots']['weekly'] = 0;
@@ -89,14 +90,14 @@ echo "CURRENT DATE IS $cdate\n";
 #####################################
 //sort alphabtically
 echo "\n-----------ORIGINAL----------------\n";
-foreach ($res as $k => $v)
+foreach ($arch2 as $k => $v)
 {
     echo "\n[$k]\n";
-    if(count($res[$k]))
+    if(count($arch2[$k]))
     {
-        asort($res[$k]);
-        $base[$k] = $res[$k][0];
-        $end[$k] = (end($res[$k]));
+        asort($arch2[$k]);
+        $base[$k] = $arch2[$k][0];
+        $end[$k] = (end($arch2[$k]));
     }
     else
     {
@@ -104,7 +105,7 @@ foreach ($res as $k => $v)
         $end[$k] = '';
     }
     //
-    foreach ($res[$k] as $vv)
+    foreach ($arch2[$k] as $vv)
     {
         echo "$vv, ";
     }    
@@ -112,11 +113,11 @@ foreach ($res as $k => $v)
 #####################################
 # AFLOPEN
 #####################################
-foreach ($res as $k => $v)
+foreach ($arch2 as $k => $v)
 {
     if ($k == 'incremental')
     {
-        $res[$k] [] = $newdir . '.NEW';
+        $arch2[$k] [] = $newdir . '.NEW';
         if($settings['snapshots'][$k]) $move[$k] = true;
     }
     else
@@ -133,14 +134,14 @@ foreach ($res as $k => $v)
                 $diff = to_time($cdate) - to_time($folderstamp);
                 if (time_exceed($diff, $k))
                 {
-                    $res[$k] [] = $newdir . '.NEW';
+                    $arch2[$k] [] = $newdir . '.NEW';
                     if($settings['snapshots'][$k])  $move[$k] = true;
                 }
             }
         }
         else
         {
-            $res[$k] [] = $newdir . '.NEW';
+            $arch2[$k] [] = $newdir . '.NEW';
             if($settings['snapshots'][$k]) $move[$k] = true;
         }
     }
@@ -150,12 +151,12 @@ foreach ($res as $k => $v)
 # SLICE
 #####################################
 echo "-----------RESULT----------------\n";
-foreach($res as $k => $v)
+foreach($arch2 as $k => $v)
 {
     $n = $settings['snapshots'][$k];
-    $res[$k] = array_slice($res[$k], -$n, $n);
+    $arch2[$k] = array_slice($arch2[$k], -$n, $n);
     echo "\n[$k]\n";
-    foreach($res[$k] as $vv) echo "$vv, ";
+    foreach($arch2[$k] as $vv) echo "$vv, ";
 }
 #####################################
 # COMPARE ARCH TO RES
@@ -163,19 +164,19 @@ foreach($res as $k => $v)
 $add = [];
 $remove = [];
 
-foreach($res as $k => $v)
+foreach($arch2 as $k => $v)
 {
     if(count($v))
     {
         foreach ($v as $vv)
         {
-            $remove[$k] = array_diff($arch[$k], $res[$k]);
-            $add[$k] = array_diff($res[$k], $arch[$k]);
+            $remove[$k] = array_diff($arch1[$k], $arch2[$k]);
+            $add[$k] = array_diff($arch2[$k], $arch1[$k]);
         }
     }
     else
     {
-        $remove[$k] = $arch[$k];
+        $remove[$k] = $arch1[$k];
     }
 }
     
