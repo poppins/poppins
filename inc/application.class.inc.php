@@ -105,6 +105,16 @@ class Application
             }
         }
         #####################################
+        # LOCAL VARIABLES
+        #####################################
+        //validate filesystem
+        $this->out('Validate local variables...');
+        $supported_fs = ['default', 'ZFS', 'BTRFS'];
+        if(!in_array($this->settings['local']['filesystem'], $supported_fs))
+        {
+            $this->fail('Local filesystem not supported! Supported: '.implode(",", $supported_fs));
+        }
+        #####################################
         # REMOTE VARIABLES
         #####################################
         $this->out('Validate remote variables...');
