@@ -19,7 +19,6 @@ function to_time($stamp, $format = 'unix')
 //check if a diff exceeds a himan readable value
 function time_exceed($diff, $type)
 {
-    print 'diff='.$diff."\n";
     global $DIRS;
     if(!in_array($type, $DIRS))
     {
@@ -60,9 +59,9 @@ $arch1 ['hourly'] []= 'jessie2.2015-06-10_190100.poppins';
 //$arch1 ['daily'] []= 'jessie2.2015-06-09_170100.poppins';
 //
 //$arch1 ['weekly'] []= 'jessie2.2015-06-09_170100.poppins';
-//
-//$arch1 ['monthly'] []= 'jessie2.2015-05-31_170100.poppins';
-//$arch1 ['monthly'] []= 'jessie2.2015-06-01_170100.poppins';
+
+$arch1 ['monthly'] []= 'jessie2.2015-05-31_170100.poppins';
+$arch1 ['monthly'] []= 'jessie2.2015-06-01_170100.poppins';
 
 //$arch1 ['yearly'] = [];
 //$arch1 ['yearly'] []= 'jessie2.2015-06-09_170100.poppins';
@@ -70,14 +69,14 @@ $arch1 ['hourly'] []= 'jessie2.2015-06-10_190100.poppins';
 //copy archive 1
 $arch2 = $arch1;
 
-$settings['snapshots']['incremental'] = 3;
-$settings['snapshots']['hourly'] = 5;
-$settings['snapshots']['daily'] = 0;
-$settings['snapshots']['weekly'] = 0;
-$settings['snapshots']['monthly'] = 0;
-$settings['snapshots']['yearly'] = 0;
+$settings['snapshots']['incremental'] = 5;
+$settings['snapshots']['hourly'] = 2;
+$settings['snapshots']['daily'] = 1;
+$settings['snapshots']['weekly'] = 1;
+$settings['snapshots']['monthly'] = 2;
+$settings['snapshots']['yearly'] = 1;
 
-$cdate = '2015-06-10_200200';
+$cdate = '2017-06-10_200200';
 
 //echo variable
 $newdir = 'jessie2.' . $cdate . '.poppins';
