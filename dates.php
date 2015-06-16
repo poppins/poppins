@@ -19,6 +19,7 @@ function to_time($stamp, $format = 'unix')
 //check if a diff exceeds a himan readable value
 function time_exceed($diff, $type)
 {
+    print 'diff='.$diff."\n";
     global $DIRS;
     if(!in_array($type, $DIRS))
     {
@@ -43,22 +44,17 @@ foreach($DIRS as $c)
     $arch1[$c] = [];
     $arch2[$c] = [];
 }
-$arch1 ['incremental'] []= 'jessie2.2015-05-31_170100.poppins';
-$arch1 ['incremental'] []= 'jessie2.2015-06-01_170100.poppins';
-$arch1 ['incremental'] []= 'jessie2.2015-06-02_170100.poppins';
-$arch1 ['incremental'] []= 'jessie2.2015-06-03_170100.poppins';
-$arch1 ['incremental'] []= 'jessie2.2015-06-04_170100.poppins';
 
-//$arch1 ['incremental'] []= 'jessie2.2015-06-05_170100.poppins';
-//$arch1 ['incremental'] []= 'jessie2.2015-06-06_170100.poppins';
-//$arch1 ['incremental'] []= 'jessie2.2015-06-07_170100.poppins';
-//$arch1 ['incremental'] []= 'jessie2.2015-06-08_170100.poppins';
-//$arch1 ['incremental'] []= 'jessie2.2015-06-09_170100.poppins';
-//
-//$arch1 ['hourly'] []= 'jessie2.2015-06-07_170100.poppins';
-//$arch1 ['hourly'] []= 'jessie2.2015-06-09_170100.poppins';
-//$arch1 ['hourly'] []= 'jessie2.2015-06-08_170100.poppins';
-//
+$arch1 ['incremental'] []= 'jessie2.2015-06-05_170100.poppins';
+$arch1 ['incremental'] []= 'jessie2.2015-06-06_170100.poppins';
+$arch1 ['incremental'] []= 'jessie2.2015-06-07_170100.poppins';
+$arch1 ['incremental'] []= 'jessie2.2015-06-08_170100.poppins';
+$arch1 ['incremental'] []= 'jessie2.2015-06-09_170100.poppins';
+
+$arch1 ['hourly'] []= 'jessie2.2015-06-10_170100.poppins';
+$arch1 ['hourly'] []= 'jessie2.2015-06-10_180100.poppins';
+$arch1 ['hourly'] []= 'jessie2.2015-06-10_190100.poppins';
+
 //$arch1 ['daily'] []= 'jessie2.2015-06-07_170100.poppins';
 //$arch1 ['daily'] []= 'jessie2.2015-06-08_170100.poppins';
 //$arch1 ['daily'] []= 'jessie2.2015-06-09_170100.poppins';
@@ -75,13 +71,15 @@ $arch1 ['incremental'] []= 'jessie2.2015-06-04_170100.poppins';
 $arch2 = $arch1;
 
 $settings['snapshots']['incremental'] = 3;
-$settings['snapshots']['hourly'] = 0;
+$settings['snapshots']['hourly'] = 5;
 $settings['snapshots']['daily'] = 0;
 $settings['snapshots']['weekly'] = 0;
 $settings['snapshots']['monthly'] = 0;
 $settings['snapshots']['yearly'] = 0;
 
-$cdate = '2017-06-10_180200';
+$cdate = '2015-06-07_180200';
+
+//echo variable
 $newdir = 'jessie2.' . $cdate . '.poppins';
 echo "CURRENT DATE IS $cdate\n";
 
@@ -130,12 +128,21 @@ foreach ($arch2 as $k => $v)
             }
             else
             {
-                $folderstamp = $m[0];
-                $diff = to_time($cdate) - to_time($folderstamp);
-                if (time_exceed($diff, $k))
+                $ddate = $m[0];
+                $cdate2unix = to_time($cdate);
+                $ddate2unix = to_time($ddate);
+                if($cdate2unix < $ddate2unix)
                 {
-                    $arch2[$k] [] = $newdir . '.NEW';
-                    if($settings['snapshots'][$k])  $move[$k] = true;
+                    die('Newer dir exists: '.$ddate);
+                }
+                else
+                {
+                    $diff = $cdate2unix - $ddate2unix;
+                    if (time_exceed($diff, $k))
+                    {
+                        $arch2[$k] [] = $newdir . '.NEW';
+                        if($settings['snapshots'][$k])  $move[$k] = true;
+                    }
                 }
             }
         }
