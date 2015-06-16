@@ -133,7 +133,7 @@ foreach ($arch2 as $k => $v)
                 $ddate2unix = to_time($ddate);
                 if($cdate2unix < $ddate2unix)
                 {
-                    die('Newer dir exists: '.$ddate);
+                    die('Cannot continue. Newer dir found: '.$ddate);
                 }
                 else
                 {
