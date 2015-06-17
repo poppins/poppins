@@ -386,7 +386,19 @@ class Application
 
     function succeed()
     {
-        $this->out("SCRIPT RAN SUCCESFULLY!", 'header');
+        $this->out("Final report", 'header');
+        $this->out("SCRIPT RAN SUCCESFULLY!");
+        #####################################
+        # REPORT
+        #####################################
+        //list disk usage
+        foreach([$this->settings['local']['hostdir']] as $dir)
+        {
+            $du = $this->Cmd->exe("du -sh $dir");
+            $this->out("Disk Usage ($dir):");
+            $this->out("$du");
+        }
+        $this->out("Done!");
         $this->quit();
     }
 

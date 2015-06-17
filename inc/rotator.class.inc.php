@@ -162,6 +162,7 @@ class Rotator
                 }
             }
         }
+        $this->App->out("Done!");
     }
 
     function scandir()
