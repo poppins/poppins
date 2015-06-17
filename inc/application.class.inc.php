@@ -12,7 +12,7 @@ class Application
 
     function __construct($appname, $version)
     {
-        $this->intervals = ['hourly', 'daily', 'weekly', 'monthly', 'yearly'];
+        $this->intervals = ['incremental', 'hourly', 'daily', 'weekly', 'monthly', 'yearly'];
 
         $this->appname = $appname;
 
