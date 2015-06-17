@@ -2,64 +2,81 @@
 
 class Rotator
 {
+
     protected $App;
-      
     protected $settings;
     
-    protected $destdir;
+    protected $cdatestamp;
     
+    protected $destdir;
+    protected $sourcedir;
+
     function __construct($App)
     {
         $this->App = $App;
-        
+
         $this->settings = $App->settings;
-        
-        $this->cdatestamp = date('Y-m-d.His', $this->App->start_time);
-        $this->destdir = $this->settings['remote']['host'].'.'.$this->cdatestamp.'.poppins';
+
+        $this->cdatestamp = date('Y-m-d_His', $this->App->start_time);
+
+        //directories
+        $this->newdir = $this->settings['remote']['host'] . '.' . $this->cdatestamp . '.poppins';
+        $this->rsyncdir = $this->App->settings['rsync']['dir'];
+                
+        $this->dir_regex = '[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{6}';
     }
-    
+
     function init()
     {
-        $arch2 = $this->read_dir();
+        $this->App->out('Rotating directories', 'header');
+        //iniate comparison
+        $this->App->out('Reading archives...');
+        $arch1 = $arch2 = $this->scandir();
         #####################################
         # DATA SORTEREN
         #####################################
         foreach ($arch2 as $k => $v)
         {
+            //initiate base and end
+            $base[$k] = '';
+            $end[$k] = '';
+            //set if archives
             if (count($arch2[$k]))
             {
                 asort($arch2[$k]);
                 $base[$k] = $arch2[$k][0];
                 $end[$k] = (end($arch2[$k]));
             }
-            else
-            {
-                $base[$k] = '';
-                $end[$k] = '';
-            }
         }
         #####################################
-        # AFLOPEN
+        # COMPARE DATESTAMPS
         #####################################
         foreach ($arch2 as $k => $v)
         {
+            
+            //no datestamp comparison needed
             if ($k == 'incremental')
             {
-                $arch2[$k] [] = $this->destdir;
+                $arch2[$k] [] = $this->newdir;
             }
+            //datestamp comparison
             else
             {
                 if ($end[$k])
                 {
-                    if (!preg_match('/[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{6}/', $end[$k], $m))
+                    //validate
+                    if (!preg_match("/$this->dir_regex/", $end[$k], $m))
                     {
-                        $this->App->fail("Wrong dirstamp format found, cannot contionue!");
+                        $this->App->fail("Wrong dirstamp format found, cannot continue!");
                     }
                     else
                     {
+                        //directory timestamp
                         $ddatestamp = $m[0];
+                        //convert to seconds
                         $cdatestamp2unix = $this->to_time($this->cdatestamp);
                         $ddatestamp2unix = $this->to_time($ddatestamp);
+                        //in theory this is not possible, check it anyway - testing purposes
                         if ($cdatestamp2unix < $ddatestamp2unix)
                         {
                             $this->App->fail('Cannot continue. Newer dir found: ' . $ddatestamp);
@@ -67,78 +84,115 @@ class Rotator
                         else
                         {
                             $diff = $cdatestamp2unix - $ddatestamp2unix;
-                            if (time_exceed($diff, $k))
+                            if ($this->time_exceed($diff, $k))
                             {
-                                $arch2[$k] [] = $this->destdir;
+                                $arch2[$k] [] = $this->newdir;
                             }
                         }
                     }
                 }
                 else
                 {
-                    $arch2[$k] [] = $this->destdir;
+                    $arch2[$k] [] = $this->newdir;
                 }
             }
         }
-
         #####################################
         # SLICE
         #####################################
-        echo "-----------RESULT----------------\n";
+        //check how many dirs are desired 
         foreach ($arch2 as $k => $v)
         {
-            $n = $settings['snapshots'][$k];
+            $n = $this->settings['snapshots'][$k];
             $arch2[$k] = array_slice($arch2[$k], -$n, $n);
-            echo "\n[$k]\n";
-            foreach ($arch2[$k] as $vv)
-                echo "$vv, ";
         }
         #####################################
-        # COMPARE ARCH TO RES
+        # COMPARE ARCHIVES TO RESULT
         #####################################
-        $add = [];
-        $remove = [];
-
+        $this->App->out("Rotate...");
+        //add/remove
+        $actions = [];
+        $actions['add'] = [];
+        $actions['remove'] = [];
+        //rotation
         foreach ($arch2 as $k => $v)
         {
             if (count($v))
             {
                 foreach ($v as $vv)
                 {
-                    $remove[$k] = array_diff($arch1[$k], $arch2[$k]);
-                    $add[$k] = array_diff($arch2[$k], $arch1[$k]);
+                    $actions['remove'][$k] = array_diff($arch1[$k], $arch2[$k]);
+                    $actions['add'][$k] = array_diff($arch2[$k], $arch1[$k]);
                 }
             }
             else
             {
-                $remove[$k] = $arch1[$k];
+                $actions['remove'][$k] = $arch1[$k];
             }
         }
+        //determine actions to take 
+        foreach (array_keys($actions) as $action)
+        {
+            if (count($actions[$action]))
+            {
+                foreach ($actions[$action] as $k => $v)
+                {
+                    if (count($v))
+                    {
+                        foreach ($v as $vv)
+                        {
+                            switch ($action)
+                            {
+                                case 'add':
+                                    $message = "Add $vv to $k...";
+                                    break;
+                                case 'remove':
+                                    $message = "Remove $vv from $k...";
+                                    break;
+                            }
+                            $this->App->out($message, 'indent');
+                            $success = $this->$action($vv, $k);
+                            //check if command returned ok
+                            if(!$success)
+                            {
+                                $this->App->fail('Cannot rotate. Command failed!');
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
-        echo "\n-----------REMOVE----------------\n";
-        if (count($remove))
+    function scandir()
+    {
+        //variables
+        $tmp = [];
+        $res = [];
+        //archive dir
+        $archivedir = $this->settings['local']['archivedir'];
+        //scan thru all intervalss
+        foreach ($this->App->intervals as $k)
         {
-            foreach ($remove as $k => $v)
+            $dir = $archivedir . '/' . $k;
+            if(is_dir($dir))
             {
-                if (count($v))
+                $tmp[$k] = scandir($dir);
+            }
+        }
+        //validate array
+        foreach ($tmp as $k => $v)
+        {
+            foreach ($v as $vv)
+            {
+                //check if dir
+                if (is_dir("$archivedir/$k/$vv") && preg_match("/$this->dir_regex\.poppins$/", $vv))
                 {
-                    foreach ($v as $vv)
-                        print "remove $vv from $k\n";
+                    $res[$k] []= $vv;
                 }
             }
         }
-        echo "--------------ADD-----------------\n";
-        if (count($add))
-        {
-            foreach ($add as $k => $v)
-            {
-                if (count($v))
-                {
-                    foreach ($v as $vv)
-                        print "add $vv to $k\n";
-                }
-            }
-        }
+        return $res;
     }
 
     function to_time($stamp, $format = 'unix')
@@ -172,6 +226,7 @@ class Rotator
         {
             $this->App->fail('Cannot compare dates if no integer!');
         }
+        $seconds['minutely'] = 60;
         $seconds['hourly'] = 60 * 60;
         $seconds['daily'] = $seconds['hourly'] * 24;
         $seconds['weekly'] = $seconds['daily'] * 7;
@@ -182,8 +237,29 @@ class Rotator
 
 }
 
-class DefaultRotator extends Rotator{}
+class DefaultRotator extends Rotator
+{
+    function add($dir, $parent)
+    {
+        $cmd = "cp -la $this->rsyncdir ". $this->App->settings['local']['archivedir']."/$parent/$dir";
+        $result = $this->App->Cmd->exe($cmd, 'passthru');
+        return $result;
+    }
+    
+    function remove($dir, $parent)
+    {
+        $cmd = "rm -r ". $this->App->settings['local']['archivedir']."/$parent/$dir";
+        $result = $this->App->Cmd->exe($cmd, 'passthru');
+        return $result;
+    }
+}
 
-class BTRFSRotator extends Rotator{}
+class BTRFSRotator extends Rotator
+{
+    
+}
 
-class ZFSRotator extends Rotator{}
+class ZFSRotator extends Rotator
+{
+    
+}

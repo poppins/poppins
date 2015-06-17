@@ -52,7 +52,7 @@ class RotatorFactory extends Factory
         $settings = $App->settings;
         // build the class
         $classname = self::base;
-        $prefix = ucfirst($settings['local']['filesystem']);
-        return new $prefix.$classname($App);
+        $classname = ucfirst($settings['local']['filesystem']).$classname;
+        return new $classname($App);
     }
 }

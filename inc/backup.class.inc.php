@@ -17,7 +17,7 @@ class Backup
         
         $this->ssh = "ssh ".$this->settings['remote']['user']."@".$this->settings['remote']['host'];
         
-        $this->syncdir = $this->settings['local']['hostdir'].'/'.$this->syncdir;
+        $this->rsyncdir = $this->settings['local']['hostdir'].'/'.$this->rsyncdir;
     }
     
     function init()
@@ -83,7 +83,7 @@ class Backup
                 }
                 
                 $this->App->out("Backup databases from $dir/$configfile");
-                $instancedir = "$this->syncdir/mysql/$instance";
+                $instancedir = "$this->rsyncdir/mysql/$instance";
                 if(!is_dir($instancedir))
                 {
                     $this->App->Cmd->exe("mkdir -p $instancedir", 'passthru');
@@ -120,11 +120,11 @@ class Backup
         //check if jobs
         if ($this->settings['actions']['pre_backup_remote_job'])
         {
-            $this->App->out('Found remote job, executing... (' . date('Y-m-d.H:i:s') . ')');
+            $this->App->out('Found remote job, executing... (' . date('Y-m-d H:i:s') . ')');
             $output = $this->App->Cmd->exe($this->ssh ." '".$this->settings['actions']['pre_backup_remote_job']."'", 'exec');
             if ($output)
             {
-                $this->App->out('OK! Job done... (' . date('Y-m-d.H:i:s') . ')');
+                $this->App->out('OK! Job done... (' . date('Y-m-d H:i:s') . ')');
                 $this->App->out('Output:');
                 $this->App->out("\n" . $output . "\n");
             }
@@ -149,14 +149,14 @@ class Backup
         # remote disk layout and packages
         if ($this->settings['remote']['os'] == "Linux")
         {
-            $this->App->Cmd->exe("$this->ssh '( df -hT ; vgs ; pvs ; lvs ; blkid ; lsblk -fi ; for disk in $(ls /dev/sd[a-z]) ; do fdisk -l \$disk; done )' > $this->syncdir/meta/" . $filebase . ".disk-layout.txt 2>&1");
+            $this->App->Cmd->exe("$this->ssh '( df -hT ; vgs ; pvs ; lvs ; blkid ; lsblk -fi ; for disk in $(ls /dev/sd[a-z]) ; do fdisk -l \$disk; done )' > $this->rsyncdir/meta/" . $filebase . ".disk-layout.txt 2>&1");
         }
         $this->App->out('Gather information about packages...');
         switch ($this->App->settings['remote']['distro'])
         {
             case 'Debian':
             case 'Ubuntu':
-                $success = $this->App->Cmd->exe("$this->ssh \"aptitude search '~i !~M' -F '%p' --disable-columns | sort -u\" > $this->syncdir/meta/" . $filebase . ".packages.txt", 'passthru');
+                $success = $this->App->Cmd->exe("$this->ssh \"aptitude search '~i !~M' -F '%p' --disable-columns | sort -u\" > $this->rsyncdir/meta/" . $filebase . ".packages.txt", 'passthru');
                 if (!$success)
                 {
                     $this->App->fail('Failed to retrieve package list!');
@@ -173,10 +173,10 @@ class Backup
         #####################################
         # SYNC DIR
         #####################################
-        if (!file_exists($this->syncdir))
+        if (!file_exists($this->rsyncdir))
         {
-            $this->App->out("Create sync dir $this->syncdir...");
-            $this->App->Cmd->exe("mkdir " .  $this->syncdir, 'passthru');
+            $this->App->out("Create sync dir $this->rsyncdir...");
+            $this->App->Cmd->exe("mkdir " .  $this->rsyncdir, 'passthru');
         }
         #####################################
         # OTHER DIRS
@@ -188,10 +188,10 @@ class Backup
         }
         foreach($a as $aa)
         {
-            if (!file_exists($this->syncdir.'/'.$aa))
+            if (!file_exists($this->rsyncdir.'/'.$aa))
             {
-                $this->App->out("Create $aa dir $this->syncdir/$aa...");
-                $this->App->Cmd->exe("mkdir $this->syncdir/$aa", 'passthru');
+                $this->App->out("Create $aa dir $this->rsyncdir/$aa...");
+                $this->App->Cmd->exe("mkdir $this->rsyncdir/$aa", 'passthru');
             }
         }
     }
@@ -234,7 +234,7 @@ class Backup
         foreach ($this->settings['included'] as $source => $target)
         {
             $sourcedir = "$source/";
-            $targetdir = "$this->syncdir/files/$target/";
+            $targetdir = "$this->rsyncdir/files/$target/";
             
             //exclude dirs
             $excluded = '';
@@ -249,11 +249,12 @@ class Backup
             }
             
             $this->App->out("rsync '$source' @ ".date('Y-m-d H:i:s')."...", 'indent');
-            if(!is_dir("$this->syncdir/files/$target"))
+            if(!is_dir("$this->rsyncdir/files/$target"))
             {
-                $this->App->out("Create target dir $this->syncdir/files/$target...");
-                $this->App->Cmd->exe("mkdir $this->syncdir/files/$target", 'passthru');
+                $this->App->out("Create target dir $this->rsyncdir/files/$target...");
+                $this->App->Cmd->exe("mkdir $this->rsyncdir/files/$target", 'passthru');
             }
+            $this->App->settings['rsync']['dir'] = $this->rsyncdir;
             # the difference: on a plain old classic file system we use snapshot
             # directories and hardlinks;
             //TODO switch eruit
@@ -293,7 +294,7 @@ class Backup
         # check for lock
         if (file_exists( $this->settings['local']['hostdir'] . "/LOCK"))
         {
-            $this->App->fail("LOCK file exists!", 'LOCKED');
+            $this->App->fail("LOCK file ".$this->settings['local']['hostdir']."/LOCK exists!", 'LOCKED');
         }
         else
         {
@@ -305,7 +306,7 @@ class Backup
 
 class BTRFSBackup extends Backup
 {
-    protected $syncdir = 'rsync.btrfs.subvol';
+    protected $rsyncdir = 'rsync.btrfs.subvol';
 
     function validate()
     {
@@ -343,10 +344,10 @@ class BTRFSBackup extends Backup
 
 class DefaultBackup extends Backup
 {
-    protected $syncdir = 'rsync.dir';
+    protected $rsyncdir = 'rsync.dir';
 }
 
 class ZFSBackup extends Backup
 {
-    protected $syncdir = 'rsync.zfs.subvol';
+    protected $rsyncdir = 'rsync.zfs.subvol';
 }

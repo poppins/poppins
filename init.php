@@ -32,7 +32,7 @@ $c->init();
 # ROTATE
 #####################################
 //initiate
-$c = RotatorFactory($App);
+$c = RotatorFactory::create($App);
 $c->init();
 #####################################
 # END

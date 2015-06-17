@@ -69,7 +69,7 @@ $arch1 ['monthly'] []= 'jessie2.2015-06-01_170100.poppins';
 //copy archive 1
 $arch2 = $arch1;
 
-$settings['snapshots']['incremental'] = 5;
+$settings['snapshots']['incremental'] = 0;
 $settings['snapshots']['hourly'] = 2;
 $settings['snapshots']['daily'] = 1;
 $settings['snapshots']['weekly'] = 1;

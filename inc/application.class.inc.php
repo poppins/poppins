@@ -213,7 +213,7 @@ class Application
         #####################################
         $this->out('Validate hostdir subdirectories...');
         //validate dir
-        foreach (['incremental', 'archive'] as $d)
+        foreach (['archive'] as $d)
         {
             $dd = $this->settings['local']['hostdir'] . '/' . $d;
             if (!is_dir($dd))
@@ -222,14 +222,13 @@ class Application
                 $this->Cmd->exe("mkdir " . $dd, 'passthru');
             }
         }
-        $this->settings['local']['incremdir'] = $this->settings['local']['hostdir'] . '/incremental';
         $this->settings['local']['archivedir'] = $this->settings['local']['hostdir'] . '/archive';
         #####################################
         # ARCHIVES
         #####################################
         $this->out('Validate archive subdirectories...');
         //validate dir
-        foreach (['hourly', 'daily', 'weekly', 'monthly', 'yearly'] as $d)
+        foreach ($this->intervals as $d)
         {
             $dd = $this->settings['local']['archivedir'] . '/' . $d;
             if (!is_dir($dd))
@@ -366,7 +365,7 @@ class Application
         //log to file
         //script returned no errors if set to false
         $suffix = ($error) ? 'error' : 'success';
-        $logfile = $this->settings['local']['logdir'] . '/' . $this->settings['remote']['host'] . '.' . date('Y-m-d.His', $this->start_time) . '.poppins.' . $suffix . '.log';
+        $logfile = $this->settings['local']['logdir'] . '/' . $this->settings['remote']['host'] . '.' . date('Y-m-d_His', $this->start_time) . '.poppins.' . $suffix . '.log';
         $content [] = 'Create logfile ' . $logfile . '...';
         $this->Cmd->exe("touch " . $logfile, 'passthru');
         //write to log
@@ -387,7 +386,7 @@ class Application
 
     function succeed()
     {
-        $this->log("SCRIPT RAN SUCCESFULLY!");
+        $this->out("SCRIPT RAN SUCCESFULLY!", 'header');
         $this->quit();
     }
 
