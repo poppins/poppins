@@ -12,7 +12,7 @@ class Application
 
     function __construct($appname, $version)
     {
-        $this->intervals = ['incremental', 'hourly', 'daily', 'weekly', 'monthly', 'yearly'];
+        $this->intervals = ['incremental', 'minutely', 'hourly', 'daily', 'weekly', 'monthly', 'yearly'];
 
         $this->appname = $appname;
 
@@ -104,6 +104,22 @@ class Application
                 }
             }
         }
+        //validate snapshot config
+        $this->out("Check snapshot config...");
+        foreach($this->settings['snapshots'] as $k => $v)
+        {
+            //check syntax of key
+            if($k != 'incremental' && !preg_match('/^[0-9]+-(' .  implode("|", $this->intervals).')$/', $k))
+            {
+                $this->fail("Error in snapshot configuration, $k not supported!");
+            }
+            //check if value is an integer
+            //check syntax of value
+            if(!preg_match("/^[0-9]+$/", $v))
+            {
+                $this->fail("Error in snapshot configuration, value for $k is not an integer!");
+            }
+        }
         #####################################
         # LOCAL VARIABLES
         #####################################
@@ -182,7 +198,7 @@ class Application
         #####################################
         # SNAPSHOT DIR
         #####################################
-        $this->out('Validate snapshot dir...');
+        $this->out('Validate rootdir...');
         //validate dir. to avoid confusion, an absolute path is required
         if (!preg_match('/^\//', $this->settings['local']['rootdir']))
         {
@@ -228,7 +244,7 @@ class Application
         #####################################
         $this->out('Validate archive subdirectories...');
         //validate dir
-        foreach ($this->intervals as $d)
+        foreach (array_keys($this->settings['snapshots']) as $d)
         {
             $dd = $this->settings['local']['archivedir'] . '/' . $d;
             if (!is_dir($dd))

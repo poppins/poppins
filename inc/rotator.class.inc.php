@@ -173,8 +173,10 @@ class Rotator
         //archive dir
         $archivedir = $this->settings['local']['archivedir'];
         //scan thru all intervalss
-        foreach ($this->App->intervals as $k)
+        foreach (array_keys($this->settings['snapshots']) as $k)
         {
+            //keys must be stored in array!
+            $res[$k] = [];
             $dir = $archivedir . '/' . $k;
             if(is_dir($dir))
             {
@@ -217,8 +219,12 @@ class Rotator
     //check if a diff exceeds a himan readable value
     function time_exceed($diff, $type)
     {
-        //check types
-        if (!in_array($type, $this->App->intervals))
+        //parse type 
+        $a = explode('-', $type);
+        $offset = (integer) $a[0];
+        $interval = $a[1];
+        //validate
+        if (!in_array($interval, $this->App->intervals))
         {
             $this->App->fail('Interval not supported!');
         }
@@ -227,13 +233,15 @@ class Rotator
         {
             $this->App->fail('Cannot compare dates if no integer!');
         }
+        
+        //seconds
         $seconds['minutely'] = 60;
         $seconds['hourly'] = 60 * 60;
         $seconds['daily'] = $seconds['hourly'] * 24;
         $seconds['weekly'] = $seconds['daily'] * 7;
         $seconds['monthly'] = $seconds['daily'] * 30;
         $seconds['yearly'] = $seconds['daily'] * 365;
-        return (boolean) ($diff >= $seconds[$type]);
+        return (boolean) ($diff >= ($seconds[$interval]*$offset));
     }
 
 }
