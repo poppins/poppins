@@ -1,393 +1,189 @@
 <?php
 
 class Rotator
-{    
-    //logfile
-    protected $logfile;
-    
-    //max snapshots
-    protected $snapshots;
-    //snapshot directory
-    protected $rootdir;
-    
-    //settings, mainly from ini file
+{
+    protected $App;
+      
     protected $settings;
     
-    //type: daily, weekly, monthly
-    protected $type;
+    protected $destdir;
     
-    function __construct($settings)
+    function __construct($App)
     {
-        $this->settings = $settings;
+        $this->App = $App;
         
-        $this->logfile = $settings['logfile'];
+        $this->settings = $App->settings;
         
-        $this->rootdir = $settings['local']['rootdir'];
-        
-        $this->snapshots = $settings['snapshots'][$this->type];
-        
-        //actions
-        $this->cp = $this->settings['cmd']['cp'];
-        $this->mv = $this->settings['cmd']['mv'];
-        $this->rm = $this->settings['cmd']['rm'];
+        $this->cdatestamp = date('Y-m-d.His', $this->App->start_time);
+        $this->destdir = $this->settings['remote']['host'].'.'.$this->cdatestamp.'.poppins';
     }
     
     function init()
     {
-        print "Verifying $this->type snapshots...\n";
-        if($this->verify())
+        $arch2 = $this->read_dir();
+        #####################################
+        # DATA SORTEREN
+        #####################################
+        foreach ($arch2 as $k => $v)
         {
-            print "Renaming $this->type snapshots...\n";
-            $this->rename();
-            print "Taking new $this->type snapshots...\n";
-            $this->snapshot();
-            print "Executing remote job...\n";
-            $this->remote();
-            print "Cleaning up $this->type snapshots...\n";
-            $this->cleanup();
-        }
-        else
-        {
-            print "Could not pass verification. Aborting..\n";
-        }
-    }
-    
-    function remote()
-    {
-        $job = $this->settings['actions']["post_rotate_remote_job.$this->type"];
-        if($job)
-        {
-            passthru("echo running remote job after daily snapshot...  | tee -a $this->logfile");
-            passthru("ssh $this->settings['remote']['user']@$this->settings['remote']['host'] '$job' | tee -a $this->logfile");
-            passthru("echo ...done. | tee -a $this->logfile");
-        }
-    }
-}
-
-#####################################
-# DAILY
-#####################################	
-class IncrementalRotator extends Rotator
-{
-    protected $type = 'daily';
-    
-    function cleanup()
-    {
-        # - recycle dailies or not
-        # - move the other ones instead of deleting them 
-        if ($this->settings['actions']['recycle.dailies']) 
-        {
-            # move oldest daily snapshot to temporary directory
-            if (file_exists("$this->rootdir/rsync.tmp"))
+            if (count($arch2[$k]))
             {
-                print "not recycling: rsync.tmp already exists\n";
-                return;
-            }
-                
-            //TODO Waarom soms een echo en anders een tee naar logfile?
-            print "Recycling oldest daily snapshot: moving oldest snapshot back to rsync.tmp\n";
-            passthru("$this->mv -v $this->rootdir/daily.$MAXDAILY $this->rootdir/rsync.tmp");
-            
-            #foreach (( i = 0 ; i < ${#LOCAL_DIRECTORIES[@]} ; i++ ))
-            
-            foreach (array_values($this->settings['directories']) as $targetdir)
-            {
-                $cmd = "touch $this->rootdir/rsync.tmp/$targetdir/KOPIE_VAN_OUDE_DAILY.$this->snapshots"; 
-                echo "$cmd\n";
-                passthru($cmd);
-            }
-            print "snapshot recycled\n";
-        }
-        else
-        {
-            # delete or move the snapshot - depending on MOVEDIR
-            if ($this->settings['environment']['movedir'])
-            {    
-                    print "deleting $this->type snapshot...\n";
-                    passthru("$this->rm -Rf $this->rootdir/$this->type.$this->snapshots");
-                    print "done\n";
+                asort($arch2[$k]);
+                $base[$k] = $arch2[$k][0];
+                $end[$k] = (end($arch2[$k]));
             }
             else
-            {    
-                    print "echo moving $this->type snapshot away...\n";
-                    $timestamp = date('Y-m-d_H-i');
-                    passthru("$this->mv -v $this->rootdir/$this->type.$this->snapshots $this->settings['environment']['movedir']/$this->settings['remote']['host']/$this->type.$this->snapshots.$timestamp");
-                    print "done\n";
-            }
-        }
-    }  
-    
-    function rename()
-    {
-        for($i=($this->snapshots-1); $i>=0; $i--)
-        {
-            $ii = $i+1;
-            if (file_exists("$this->rootdir/$this->type.$i")) 
-	    {		
-                passthru("$this->mv $this->snapshotsdir/$this->type.$i $this->rootdir/$this->type.$ii  | tee -a $this->logfile");
-            }
-        }
-    }
-    
-    function snapshot()
-    {
-          if (!file_exists("$this->rootdir/$this->type.0"))
-          {
-            passthru("$this->mv -v $this->snapshotsdir/rsync.tmp $this->rootdir/daily.0  | tee -a $this->logfile");
-          }
-          else
-          {
-              passthru("echo $this->type.0 somehow still exists, abort $this->type snapshot creation | tee -a $this->logfile");
-          }
-    }
-    
-    function verify()
-    {
-        if (file_exists("$this->rootdir/$this->type.$this->snapshots")) 
-	{
-	    passthru("echo error: $this->type.$this->snapshots already exists, no rotation of daily snapshot! | tee -a $this->logfile");
-            return false;
-        }
-        else
-        {
-            return true;
-        }
-    }
-}
-
-class BTRFSIncrementalRotator extends IncrementalRotator
-{
-    
-    function cleanup()
-    {
-        if(file_exists("$this->rootdir/$this->type.$this->snapshots"))
-        {
-            passthru("echo destroy $this->type... && btrfs subvolume delete $this->rootdir/$this->type.$this->snapshots");
-            print "done destroying outdated snapshots\n";
-        }
-    }
-    
-    function snapshot()
-    {
-        if (!file_exists("$this->rootdir/$this->type.0"))
-        {
-            passthru("btrfs subvolume snapshot -r $this->snapshotsdir/rsync.tmp $this->rootdir/daily.0  | tee -a $this->logfile");
-        }
-        else
-        {
-            passthru("echo $this->type.0 somehow still exists, abort $this->type snapshot creation | tee -a $this->logfile");
-        }
-    }
-}
-
-class ZFSIncrementalRotator extends IncrementalRotator
-{
-    function __construct($settings)
-    {
-        parent::__construct($settings);
-
-        #this will give you the file system mounted at $this->rootdir
-        $this->zfs_fs = exe("zfs list $this->rootdir | sed -e 's/ .*//' | tail -n 1"); # tail cuts the columns headers
-        # Real rootdir
-        $this->zfs_dir = ".zfs/snapshot/"; 
-    }
-
-    function cleanup()
-    {
-        if (file_exists("$this->rootdir/$this->zfs_dir$this->type.$this->snapshots"))
-        {
-            passthru("echo destroy $this->type... && btrfs subvolume delete $this->rootdir/$this->type.$this->snapshots");
-            print "done destroying outdated snapshots\n";
-        }
-    }
-
-    function rename()
-    {
-        for($i=($this->snapshots-1); $i>=0; $i--)
-        {
-            $ii = $i+1;
-            if (file_exists("$this->rootdir/.zfs/snapshot/$this->type.$i")) 
-	    {	
-		passthru("rename $this->zfs_fs@$this->type.$i $this->zfs_fs@$this->type.$ii | tee -a $this->logfile");
-            }
-        }
-    }
-    
-    function snapshot()
-    {
-        #this will give you the file system mounted at $this->rootdir
-        passthru("zfs snapshot $this->zfs_fs@$this->type.0 | tee -a $this->logfile");
-    }
-    
-    function verify()
-    {
-        if (file_exists("$this->rootdir/.zfs/snapshot/$this->type.$this->snapshots")) 
-	{
-	    passthru("echo error: /.zfs/snapshot/$this->type.$this->snapshots already exists, no rotation of daily snapshot! | tee -a $this->logfile");
-            return false;
-        }
-        else
-        {
-            return true;
-        }
-    }
-}
-#####################################
-# WEEKLY
-#####################################	
-class PeriodicRotator extends Rotator
-{
-    function __construct($settings, $period)
-    {
-        parent::__construct($settings);
-
-        $this->period = $period;
-    }
-    
-    function cleanup()
-    {
-        //move directory
-        if ($this->settings['environment']['movedir'])
-        {
-            $timestamp = date('Y-m-d_H-i');
-            print "moving old $this->type snapshot to configured directory...";
-            passthru("$this->mv -v $this->rootdir/$this->type.$this->snapshots $this->settings['environment']['movedir']/$this->settings['remote']['host']/$this->type.$this->snapshots.$timestamp");
-            print "done\n";
-        }
-        else
-        {
-            print "deleting old $this->type snapshots...\n";
-            passthru("$this->rm -Rf $this->rootdir/$this->type.$this->snapshots");
-            print "done\n";
-        }
-    }
-    
-    function rename()
-    {
-        $found = exe("find $this->rootdir/ -maxdepth 1 -type d -name $this->type.0 -mtime -7"); 
-        if(!$found)    
-        {    
-            passthru("echo no recent weekly snapshot found, creating one... | tee -a $this->logfile");
-            # rotate previous weekly snapshots
-            for($i=($this->snapshots - 1); $i>=0; $i--)
             {
-                $y = $i + 1;
-                passthru("echo DEBUG: checking presence of $this->rootdir/$this->$type.$y  | tee -a $this->logfile");
-                if (file_exists("$this->rootdir/$this->type.$y")) # if not using zfs, ZFS_RSSD will be empty
-                {
-                    passthru("echo error: snapshot $this->type.$y already exists, cannot rename to it! | tee -a $this->logfile");
-                    return;
-                }
-
-                if (file_exists("$this->rootdir/$this->type.$i"))
-                {        
-                    # on btrfs, this actually renames the subvolume, so no need for a separate command
-                    passthru("$this->mv $this->rootdir/$this->type.$i $this->rootdir/$this->type.$y | tee -a $this->logfile");
-                }
-            }    
+                $base[$k] = '';
+                $end[$k] = '';
+            }
         }
-    }
-    
-    function snapshot()
-    {
-          if (!file_exists("$this->rootdir/$this->type.0"))
-          {
-            # link-copy latest weekly snapshot 
-            passthru("$this->cp -al $this->snapshotsdir/daily.0 $this->snapshotsdir/weekly.0 | tee -a $this->logfile");
-            passthru("touch $this->snapshotsdir/weekly.0 | tee -a $this->logfile");
-        }
-          else
-          {
-              passthru("echo $this->type.0 somehow still exists, abort $this->type snapshot creation | tee -a $this->logfile");
-          }
-    }
-    
-    function verify()
-    {
-        $dir = (isset($this->zfs_dir))? $this->zfs_dir:'';
-        $found = exe("find $this->snapshotsdir/$dir -maxdepth 1 -type d -name weekly.0 -mtime -7");
-        if ($found)
-	{
-	    passthru("found weekly snapshot younger than a week, not creating weekly snapshot | tee -a $this->logfile");
-            return false;
-        }
-        else
+        #####################################
+        # AFLOPEN
+        #####################################
+        foreach ($arch2 as $k => $v)
         {
-            return true;
-        }
-    }
-}
-
-class BTRFSPeriodicRotator extends PeriodicRotator
-{
-    function cleanup()
-    {
-        if(file_exists("$this->rootdir/$this->type.$this->snapshots"))
-        {
-            passthru("echo destroy $this->type... && btrfs subvolume delete $this->rootdir/$this->type.$this->snapshots");
-            print "done destroying outdated snapshots\n";
-        }
-    }
-    
-    function snapshot()
-    {
-        if (!file_exists("$this->rootdir/$this->type.0"))
-        {
-            passthru("btrfs subvolume snapshot -r $this->snapshotsdir/daily.0 $this->rootdir/weekly.0  | tee -a $this->logfile");
-        }
-        else
-        {
-            passthru("echo $this->type.0 somehow still exists, abort $this->type snapshot creation | tee -a $this->logfile");
-        }
-    }
-}
-
-class ZFSPeriodicRotator extends PeriodicRotator
-{
-    function __construct($settings)
-    {
-        parent::__construct($settings);
-
-        #this will give you the file system mounted at $this->rootdir
-        $this->zfs_fs = exe("zfs list $this->rootdir | sed -e 's/ .*//' | tail -n 1"); # tail cuts the columns headers
-        # Real rootdir
-        $this->zfs_dir = ".zfs/snapshot/"; 
-    }
-
-    function cleanup()
-    {
-        if (file_exists("$this->rootdir/$this->zfs_dir$this->type.$this->snapshots"))
-        {
-            passthru("echo destroy $this->type... && btrfs subvolume delete $this->rootdir/$this->type.$this->snapshots");
-            print "done destroying outdated snapshots\n";
-        }
-    }
-    
-    function rename()
-    {
-        $dir = $this->zfs_dir;
-        $found = exe("find $this->rootdir/$dir -maxdepth 1 -type d -name $this->type.0 -mtime -7"); 
-        if(!$found)    
-        {    
-            passthru("echo no recent weekly snapshot found, creating one... | tee -a $this->logfile");
-            # rotate previous weekly snapshots
-            for($i=($this->snapshots - 1); $i>=0; $i--)
+            if ($k == 'incremental')
             {
-                $y = $i + 1;
-                passthru("echo DEBUG: checking presence of $this->rootdir/$dir$this->$type.$y  | tee -a $this->logfile");
-                if ( file_exists("$this->rootdir/$dir$this->type.$y")) # if not using zfs, ZFS_RSSD will be empty
+                $arch2[$k] [] = $this->destdir;
+            }
+            else
+            {
+                if ($end[$k])
                 {
-                    passthru("echo error: snapshot $this->type.$y already exists, cannot rename to it! | tee -a $this->logfile");
-                    return;
+                    if (!preg_match('/[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{6}/', $end[$k], $m))
+                    {
+                        $this->App->fail("Wrong dirstamp format found, cannot contionue!");
+                    }
+                    else
+                    {
+                        $ddatestamp = $m[0];
+                        $cdatestamp2unix = $this->to_time($this->cdatestamp);
+                        $ddatestamp2unix = $this->to_time($ddatestamp);
+                        if ($cdatestamp2unix < $ddatestamp2unix)
+                        {
+                            $this->App->fail('Cannot continue. Newer dir found: ' . $ddatestamp);
+                        }
+                        else
+                        {
+                            $diff = $cdatestamp2unix - $ddatestamp2unix;
+                            if (time_exceed($diff, $k))
+                            {
+                                $arch2[$k] [] = $this->destdir;
+                            }
+                        }
+                    }
                 }
-                passthru("zfs rename $this->zfs_fs@$this->typey.$i $this_zfs_fs@$this->type.$y | tee -a $this->logfile");
-            }    
+                else
+                {
+                    $arch2[$k] [] = $this->destdir;
+                }
+            }
+        }
+
+        #####################################
+        # SLICE
+        #####################################
+        echo "-----------RESULT----------------\n";
+        foreach ($arch2 as $k => $v)
+        {
+            $n = $settings['snapshots'][$k];
+            $arch2[$k] = array_slice($arch2[$k], -$n, $n);
+            echo "\n[$k]\n";
+            foreach ($arch2[$k] as $vv)
+                echo "$vv, ";
+        }
+        #####################################
+        # COMPARE ARCH TO RES
+        #####################################
+        $add = [];
+        $remove = [];
+
+        foreach ($arch2 as $k => $v)
+        {
+            if (count($v))
+            {
+                foreach ($v as $vv)
+                {
+                    $remove[$k] = array_diff($arch1[$k], $arch2[$k]);
+                    $add[$k] = array_diff($arch2[$k], $arch1[$k]);
+                }
+            }
+            else
+            {
+                $remove[$k] = $arch1[$k];
+            }
+        }
+
+        echo "\n-----------REMOVE----------------\n";
+        if (count($remove))
+        {
+            foreach ($remove as $k => $v)
+            {
+                if (count($v))
+                {
+                    foreach ($v as $vv)
+                        print "remove $vv from $k\n";
+                }
+            }
+        }
+        echo "--------------ADD-----------------\n";
+        if (count($add))
+        {
+            foreach ($add as $k => $v)
+            {
+                if (count($v))
+                {
+                    foreach ($v as $vv)
+                        print "add $vv to $k\n";
+                }
+            }
         }
     }
-    
-    function snapshot()
+
+    function to_time($stamp, $format = 'unix')
     {
-        #this will give you the file system mounted at $this->rootdir
-        passthru("zfs snapshot $this->zfs_fs@$this->type.0 | tee -a $this->logfile");
+        $t = explode('_', $stamp);
+        $date = $t[0];
+        $time = implode(':', str_split($t[1], 2));
+        $datetime = $date . ' ' . $time;
+        switch ($format)
+        {
+            case 'unix':
+                $result = strtotime($datetime);
+                break;
+            case 'string':
+                $result = date($datetime);
+                break;
+        }
+        return $result;
     }
+
+    //check if a diff exceeds a himan readable value
+    function time_exceed($diff, $type)
+    {
+        //check types
+        if (!in_array($type, $this->App->intervals))
+        {
+            $this->App->fail('Interval not supported!');
+        }
+        //check if integer, else fail!
+        if (!is_integer($diff))
+        {
+            $this->App->fail('Cannot compare dates if no integer!');
+        }
+        $seconds['hourly'] = 60 * 60;
+        $seconds['daily'] = $seconds['hourly'] * 24;
+        $seconds['weekly'] = $seconds['daily'] * 7;
+        $seconds['monthly'] = $seconds['daily'] * 30;
+        $seconds['yearly'] = $seconds['daily'] * 365;
+        return (boolean) ($diff >= $seconds[$type]);
+    }
+
 }
+
+class DefaultRotator extends Rotator{}
+
+class BTRFSRotator extends Rotator{}
+
+class ZFSRotator extends Rotator{}

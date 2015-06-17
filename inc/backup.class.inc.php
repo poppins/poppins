@@ -256,6 +256,7 @@ class Backup
             }
             # the difference: on a plain old classic file system we use snapshot
             # directories and hardlinks;
+            //TODO switch eruit
             switch ($this->settings['local']['filesystem'])
             {
 //                case 'ZFS':

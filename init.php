@@ -28,16 +28,12 @@ $App->out('Initiate backups', 'header');
 //initiate
 $c = BackupFactory::create($App);
 $c->init();
-$App->quit();
 #####################################
 # ROTATE
 #####################################
-foreach ([$App->intervals] as $interval)
-{
-    //initiate
-    $c = RotatorFactory($App, $interval);
-    $c->init();
-}
+//initiate
+$c = RotatorFactory($App);
+$c->init();
 #####################################
 # END
 #####################################

@@ -46,16 +46,13 @@ class RotatorFactory extends Factory
 {
     const base = 'Rotator';
     
-    function create($App, $interval)
+    function create($App)
     {
         //settings
         $settings = $App->settings;
         // build the class
-        $classname = ucfirst($interval).self::base;
-        if (in_array($settings['local']['filesystem'], ['ZFS', 'BTRFS']))
-        {
-            $classname = $settings['local']['filesystem'].$classname;
-        }
-        return new $classname($App);
+        $classname = self::base;
+        $prefix = ucfirst($settings['local']['filesystem']);
+        return new $prefix.$classname($App);
     }
 }
