@@ -371,6 +371,7 @@ class Application
         if ($error != 'LOCKED' && file_exists($this->settings['local']['hostdir'] . "/LOCK"))
         {
             $this->log("Remove LOCK file...");
+            $this->log("");
             $this->Cmd->exe('{RM} ' . $this->settings['local']['hostdir'] . "/LOCK", 'passthru', true);
         }
         //format messages
