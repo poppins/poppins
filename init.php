@@ -8,7 +8,8 @@
 $APPNAME = 'Poppins';
 // Based on rotating rsync script by frvdamme
 // Rewritten and maintained by brdooms and frvdamme
-$VERSION = '1.0';
+$mercurial_version = shell_exec('cd '.dirname(__FILE__).';hg log -r tip --template "{latesttagdistance}" 2>/dev/null');
+$VERSION = ($mercurial_version)? '1.'.$mercurial_version:'1';
 ###############################################################################################################
 # LIBRARY
 ###############################################################################################################

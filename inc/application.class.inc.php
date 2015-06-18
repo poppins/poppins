@@ -368,7 +368,7 @@ class Application
         $lapse = gmdate('H:i:s', $lapse);
         $this->log("Script time (HH:MM:SS) : $lapse");
         //remove LOCK file if exists
-        if ($error != 'LOCKED' && file_exists($this->settings['local']['hostdir'] . "/LOCK"))
+        if ($error != 'LOCKED' && file_exists(@$this->settings['local']['hostdir'] . "/LOCK"))
         {
             $this->log("Remove LOCK file...");
             $this->log("");
