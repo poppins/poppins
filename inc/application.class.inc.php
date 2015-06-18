@@ -357,7 +357,7 @@ class Application
 
     function quit($message = '', $error = false)
     {
-        $this->out("$this->appname v$this->version - SCRIPT ENDED " . date('Y-m-d H:i:s', $this->start_time), 'title');
+        $this->out("$this->appname v$this->version - SCRIPT ENDED " . date('Y-m-d H:i:s'), 'title');
         //log message
         if ($message)
         {
