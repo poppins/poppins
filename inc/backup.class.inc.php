@@ -176,7 +176,7 @@ class Backup
         if (!file_exists($this->rsyncdir))
         {
             $this->App->out("Create sync dir $this->rsyncdir...");
-            $this->App->Cmd->exe("mkdir " .  $this->rsyncdir, 'passthru');
+            $this->App->Cmd->exe("mkdir -p " .  $this->rsyncdir, 'passthru');
         }
         #####################################
         # OTHER DIRS
@@ -191,7 +191,7 @@ class Backup
             if (!file_exists($this->rsyncdir.'/'.$aa))
             {
                 $this->App->out("Create $aa dir $this->rsyncdir/$aa...");
-                $this->App->Cmd->exe("mkdir $this->rsyncdir/$aa", 'passthru');
+                $this->App->Cmd->exe("mkdir -p $this->rsyncdir/$aa", 'passthru');
             }
         }
     }
@@ -252,7 +252,7 @@ class Backup
             if(!is_dir("$this->rsyncdir/files/$target"))
             {
                 $this->App->out("Create target dir $this->rsyncdir/files/$target...");
-                $this->App->Cmd->exe("mkdir $this->rsyncdir/files/$target", 'passthru');
+                $this->App->Cmd->exe("mkdir -p $this->rsyncdir/files/$target", 'passthru');
             }
             $this->App->settings['rsync']['dir'] = $this->rsyncdir;
             # the difference: on a plain old classic file system we use snapshot

@@ -215,9 +215,11 @@ class Application
             if ($this->settings['local']['hostdir.create'] == 'yes')
             {
                 $this->out("Directory " . $this->settings['local']['hostdir'] . " does not exist, creating it..");
-                $success = $this->Cmd->exe("mkdir " . $this->settings['local']['hostdir'], 'passthru');
+                $success = $this->Cmd->exe("mkdir -p " . $this->settings['local']['hostdir'], 'passthru');
                 if (!$success)
-                    $this->fail("Could not create directory:  " . $this->settings['local']['hostdir'] . "!");;
+                {
+                    $this->fail("Could not create directory:  " . $this->settings['local']['hostdir'] . "!");
+                }
             }
             else
             {
@@ -235,7 +237,7 @@ class Application
             if (!is_dir($dd))
             {
                 $this->out('Create subdirectory ' . $dd . '...');
-                $this->Cmd->exe("mkdir " . $dd, 'passthru');
+                $this->Cmd->exe("mkdir -p " . $dd, 'passthru');
             }
         }
         $this->settings['local']['archivedir'] = $this->settings['local']['hostdir'] . '/archive';
@@ -250,7 +252,7 @@ class Application
             if (!is_dir($dd))
             {
                 $this->out('Create subdirectory ' . $dd . '...');
-                $this->Cmd->exe("mkdir " . $dd, 'passthru');
+                $this->Cmd->exe("mkdir -p " . $dd, 'passthru');
             }
         }
         #####################################
