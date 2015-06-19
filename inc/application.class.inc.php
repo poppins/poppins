@@ -264,10 +264,11 @@ class Application
         {
             $this->fail("logdir must be an absolute path!");
         }
-        //validate dir
+        //validate dir, create if required
         if (!file_exists($this->settings['local']['logdir']))
         {
-            $this->fail("logdir " . $this->settings['local']['logdir'] . " does not exist!");
+            $this->out('Create logdir  ' . $this->settings['local']['logdir'] . '...');
+            $this->Cmd->exe("mkdir -p " . $this->settings['local']['logdir'], 'passthru');
         }
         #####################################
         # MYSQL
