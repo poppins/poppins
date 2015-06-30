@@ -239,16 +239,18 @@ class Backup
             $targetdir = "$this->rsyncdir/files/$target/";
             
             //exclude dirs
-            $excluded = '';
+            $excluded = [];
             if(isset($this->settings['excluded'][$source]))
             {
                 $exludedirs = explode(',', $this->settings['excluded'][$source]);
                     
                 foreach ($exludedirs as $d)
                 {
-                    $excluded .= " --exclude=$d";
+                    $excluded []= "--exclude=$d";
                 }
             }
+            
+            $excluded = implode(' ', $excluded);
             
             $this->App->out("rsync '$source' @ ".date('Y-m-d H:i:s')."...", 'indent');
             if(!is_dir("$this->rsyncdir/files/$target"))
@@ -258,7 +260,7 @@ class Backup
             }
             //sync
             $this->App->settings['rsync']['dir'] = $this->rsyncdir;
-            $cmd = "rsync $rsync_options -xae ssh $excluded " . $this->settings['remote']['user'] . "@" . $this->settings['remote']['host'] . ":$sourcedir $targetdir";
+            $cmd = "rsync $rsync_options -xa $excluded " . $this->settings['remote']['user'] . "@" . $this->settings['remote']['host'] . ":$sourcedir $targetdir";
             $this->App->out($cmd);
             $output = $this->App->Cmd->exe("$cmd && echo OK");
             $this->App->out($output);
