@@ -2,13 +2,17 @@
 
 class Application
 {
-
-    public $Cmd;
-    public $intervals;
-    private $messages;
-    public $settings;
-    public $start_time;
     private $version;
+    
+    public $intervals;
+
+    public $settings;
+    
+    public $Cmd;
+    
+    private $messages;
+
+    public $start_time;
 
     function __construct($appname, $version)
     {
@@ -121,16 +125,6 @@ class Application
             }
         }
         #####################################
-        # LOCAL VARIABLES
-        #####################################
-        //validate filesystem
-        $this->out('Validate local variables...');
-        $supported_fs = ['default', 'ZFS', 'BTRFS'];
-        if(!in_array($this->settings['local']['filesystem'], $supported_fs))
-        {
-            $this->fail('Local filesystem not supported! Supported: '.implode(",", $supported_fs));
-        }
-        #####################################
         # REMOTE VARIABLES
         #####################################
         $this->out('Validate remote variables...');
@@ -190,19 +184,52 @@ class Application
             $c['remote'] = "ssh $_u@$_h '". $c['local']."'";
             //check if rsync is installed on remote machine
             $rsync_installed = $this->Cmd->exe($c[$host]);
-            if (substr($rsync_installed, -2, 2) != 'OK')
+            if ($this->Cmd->is_error())
             {
                 $this->fail("Rsync not installed on remote machine!");
             }
         }
         #####################################
-        # SNAPSHOT DIR
+        # ROOT DIR
         #####################################
         $this->out('Validate rootdir...');
         //validate dir. to avoid confusion, an absolute path is required
         if (!preg_match('/^\//', $this->settings['local']['rootdir']))
         {
             $this->fail("rootdir must be an absolute path!");
+        }
+        elseif (!file_exists($this->settings['local']['rootdir']))
+        {
+            $success = $this->Cmd->exe("mkdir -p " . $this->settings['local']['rootdir'], 'passthru');
+            if (!$success)
+            {
+                $this->fail("Could not create directory:  " . $this->settings['local']['rootdir'] . "!");
+            }
+        }
+        #####################################
+        # FILESYSTEM
+        #####################################
+        //validate filesystem
+        $this->out('Validate local variables...');
+        $supported_fs = ['default', 'ZFS', 'BTRFS'];
+        if(!in_array($this->settings['local']['filesystem'], $supported_fs))
+        {
+            $this->fail('Local filesystem not supported! Supported: '.implode(",", $supported_fs));
+        }
+        //validate filesystem
+        switch($this->settings['local']['filesystem'])
+        {
+            case 'ZFS':
+                
+                break;
+            case 'BTRFS':
+                $fs = $this->Cmd->exe("df -P -T ".$this->settings['local']['rootdir']." | tail -n +2 | awk '{print $2}'");
+                if($fs != 'btrfs')
+                {
+                    $this->App->fail('BTRFS is not supported!');
+                }
+                break;
+            default:
         }
         #####################################
         # HOSTDIR DIR

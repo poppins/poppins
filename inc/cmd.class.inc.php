@@ -2,7 +2,10 @@
 
 class Cmd
 {
-
+    
+    private $error = false;
+    
+    
     function __construct()
     {
         $this->map = $this->map();
@@ -19,16 +22,26 @@ class Cmd
         {
             //return string
             case 'exec':
-                return trim(shell_exec($cmd));
+                $res = trim(shell_exec("$cmd"));
+                // only works if "&& echo OK" is added to command
+                //TODO do this differently
+                $this->error = (substr($res, -2, 2) == 'OK')? false:true;
+                return $res;
                 break;
             //return false if error
             case 'passthru':
                 passthru($cmd, $return);
-                return !(boolean)$return;
+                $this->error = (boolean)$return;
+                return !$this->error;
                 break;
         }
         
         return trim(exec($cmd));
+    }
+    
+    function is_error()
+    {
+        return $this->error;
     }
     
     function passthru($cmd)

@@ -176,7 +176,7 @@ class Backup
         if (!file_exists($this->rsyncdir))
         {
             $this->App->out("Create sync dir $this->rsyncdir...");
-            $this->App->Cmd->exe("mkdir -p " .  $this->rsyncdir, 'passthru');
+            $this->create_syncdir();
         }
         #####################################
         # OTHER DIRS
@@ -220,6 +220,7 @@ class Backup
         {
             $o [] = "-z --compress-level=" . $this->settings['rsync']['compresslevel'];
         }
+        //TODO if eruit
         # "ZFS" means using the features of the ZFS file system, which allows to take 
         # snapshots of the file system instead of creating new trees of hardlinks.
         # In this case it is interesting to rewrite as little blocks as possible.
@@ -254,33 +255,19 @@ class Backup
                 $this->App->out("Create target dir $this->rsyncdir/files/$target...");
                 $this->App->Cmd->exe("mkdir -p $this->rsyncdir/files/$target", 'passthru');
             }
+            //sync
             $this->App->settings['rsync']['dir'] = $this->rsyncdir;
-            # the difference: on a plain old classic file system we use snapshot
-            # directories and hardlinks;
-            //TODO switch eruit
-            switch ($this->settings['local']['filesystem'])
+            $cmd = "rsync $rsync_options -xae ssh $excluded " . $this->settings['remote']['user'] . "@" . $this->settings['remote']['host'] . ":$sourcedir $targetdir";
+            $this->App->out($cmd);
+            $output = $this->App->Cmd->exe("$cmd && echo OK");
+            $this->App->out($output);
+            if ($this->App->Cmd->is_error())
             {
-//                case 'ZFS':
-//                    $Cmd->exe("mkdir -p $SNAPDIR/$target");
-//                    $Cmd->exe("rsync --delete-excluded --delete $rsync_options -xae ssh $excluded $U@$H:$source/ $SNAPDIR/$target/", $error);
-//                    break;
-//                case 'BTRFS':
-//                    $Cmd->exe("rsync --delete-excluded --delete $rsync_options -xae ssh $excluded $U@$H:$source/ $SNAPDIR/rsync.tmp/$target/", $error);
-//                    break;
-                default:
-                    $cmd =  "rsync $rsync_options -xae ssh $excluded ".$this->settings['remote']['user']."@".$this->settings['remote']['host'].":$sourcedir $targetdir";
-                    $this->App->out($cmd);
-                    $output = $this->App->Cmd->exe("$cmd && echo OK");
-                    $this->App->out($output);
-                    if(substr($output, -2, 2) == 'OK')
-                    {
-                        $this->App->out("");
-                    }
-                    else
-                    {
-                        $this->App->fail("Backup $sourcedir failed! Cannot rsync from remote server!");
-                    }
-//                    $success = $this->App->Cmd->exe("rsync --delete-excluded --delete $rsync_options -xae ssh $excluded --link-dest=$SNAPDIR/daily.0/${localdir}/ $U@$H:$source/ $SNAPDIR/rsync.tmp/$target/", $error);
+                $this->App->fail("Backup $sourcedir failed! Cannot rsync from remote server!");
+            }
+            else
+            {
+                $this->App->out("");
             }
         }
         $this->App->out("Done!");
@@ -307,37 +294,10 @@ class Backup
 class BTRFSBackup extends Backup
 {
     protected $rsyncdir = 'rsync.btrfs.subvol';
-
-    function validate()
+    
+    function create_syncdir()
     {
-        parent::validate();
-        #####################################
-        # BTRFS SNAPSHOTS
-        #####################################
-        # not a btrfs subvolume? try to create it.
-        if (is_btrfs_snapshot("$SNAPDIR/rsync.tmp"))
-        {
-            if (!is_btrfs_snapshot("$SNAPDIR/daily.0"))
-            {
-                # OK, no rsync.tmp but we can create a snapshot from the latest daily.  
-                $Cmd->exe("btrfs subvolume snapshot $SNAPDIR/daily.0 $SNAPDIR/rsync.tmp", 'passthru');
-            }
-            else
-            {
-                $Cmd->exe("echo No decent snapshottable btrfs subvolume found! | tee -a $LOGFILE");
-                $Cmd->exe($this->settings['cmd']['rm'] . " --verbose --force $SNAPDIR/LOCK | tee -a $LOGFILE");
-                $Cmd->exe("date | tee -a $LOGFILE");
-                die();
-            }
-        }
-
-        # We should have a new clean snapshot now
-        if (!is_btrfs_snapshot("$SNAPDIR/rsync.tmp"))
-        {
-            # still fails? Something else went wrong, give up.
-            echo "Something went wrong preparing the rsync.tmp subvolume";
-            die();
-        }
+        $this->App->Cmd->exe("btrfs subvolume create " .  $this->rsyncdir);
     }
 
 }
@@ -345,6 +305,11 @@ class BTRFSBackup extends Backup
 class DefaultBackup extends Backup
 {
     protected $rsyncdir = 'rsync.dir';
+    
+    function create_syncdir()
+    {
+        $this->App->Cmd->exe("mkdir -p " .  $this->rsyncdir);
+    }
 }
 
 class ZFSBackup extends Backup

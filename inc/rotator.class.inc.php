@@ -21,6 +21,7 @@ class Rotator
 
         //directories
         $this->newdir = $this->settings['remote']['host'] . '.' . $this->cdatestamp . '.poppins';
+
         $this->rsyncdir = $this->App->settings['rsync']['dir'];
                 
         $this->dir_regex = '[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{6}';
@@ -151,9 +152,9 @@ class Rotator
                                     break;
                             }
                             $this->App->out($message, 'indent');
-                            $success = $this->$action($vv, $k);
+                            $this->$action($vv, $k);
                             //check if command returned ok
-                            if(!$success)
+                            if($this->App->Cmd->is_error())
                             {
                                 $this->App->fail('Cannot rotate. Command failed!');
                             }
@@ -251,21 +252,33 @@ class DefaultRotator extends Rotator
     function add($dir, $parent)
     {
         $cmd = "cp -la $this->rsyncdir ". $this->App->settings['local']['archivedir']."/$parent/$dir";
-        $result = $this->App->Cmd->exe($cmd, 'passthru');
-        return $result;
+        $this->App->out("Create hardlink copy: $cmd");
+        return $this->App->Cmd->exe("$cmd && echo OK");
     }
     
     function remove($dir, $parent)
     {
         $cmd = "rm -r ". $this->App->settings['local']['archivedir']."/$parent/$dir";
-        $result = $this->App->Cmd->exe($cmd, 'passthru');
-        return $result;
+        $this->App->out("Remove direcory: $cmd");
+        return $this->App->Cmd->exe("$cmd && echo OK");
     }
 }
 
 class BTRFSRotator extends Rotator
 {
+    function add($dir, $parent)
+    {
+        $cmd = "btrfs subvolume snapshot -r $this->rsyncdir ". $this->App->settings['local']['archivedir']."/$parent/$dir";
+        $this->App->out("Create BTRFS snapshot: $cmd");
+        return $this->App->Cmd->exe("$cmd && echo OK");
+    }
     
+    function remove($dir, $parent)
+    {
+        $cmd = "btrfs subvolume delete ". $this->App->settings['local']['archivedir']."/$parent/$dir";
+        $this->App->out("Remove BTRFS snapshot: $cmd");
+        return $this->App->Cmd->exe("$cmd && echo OK");
+    }
 }
 
 class ZFSRotator extends Rotator
