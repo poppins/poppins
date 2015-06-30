@@ -226,7 +226,7 @@ class Application
                 $fs = $this->Cmd->exe("df -P -T ".$this->settings['local']['rootdir']." | tail -n +2 | awk '{print $2}'");
                 if($fs != 'btrfs')
                 {
-                    $this->App->fail('BTRFS is not supported!');
+                    $this->fail('Rootdir is not BTRFS!');
                 }
                 break;
             default:
