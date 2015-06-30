@@ -207,6 +207,10 @@ class Backup
         $o = [];
         $o [] = "--delete-excluded --delete --numeric-ids";
 
+        //ssh
+        $ssh = $this->App->Cmd->parse('{SSH}');
+        $o []= '-e "'.$ssh.' -o TCPKeepAlive=yes -o ServerAliveInterval=30"';
+        
         # general options
         if ($this->settings['rsync']['verbose'])
         {
@@ -220,10 +224,7 @@ class Backup
         {
             $o [] = "-z --compress-level=" . $this->settings['rsync']['compresslevel'];
         }
-        //TODO if eruit
-        # "ZFS" means using the features of the ZFS file system, which allows to take 
-        # snapshots of the file system instead of creating new trees of hardlinks.
-        # In this case it is interesting to rewrite as little blocks as possible.
+        // rewrite as little blocks as possible. do not set this for default!
         if (in_array($this->settings['local']['filesystem'], ['ZFS', 'BTRFS']))
         {
             $o [] = "--inplace";
