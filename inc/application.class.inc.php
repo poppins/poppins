@@ -39,6 +39,21 @@ class Application
         $this->out("$this->appname v$this->version - SCRIPT STARTED " . date('Y-m-d H:i:s', $this->start_time), 'title');
         $this->out('local environment', 'header');
         #####################################
+        # LOG DIR
+        #####################################
+        $this->out('Validate logdir...');
+        //to avoid confusion, an absolute path is required
+        if (!preg_match('/^\//', $this->settings['local']['logdir']))
+        {
+            $this->fail("logdir must be an absolute path!");
+        }
+        //validate dir, create if required
+        if (!file_exists($this->settings['local']['logdir']))
+        {
+            $this->out('Create logdir  ' . $this->settings['local']['logdir'] . '...');
+            $this->Cmd->exe("mkdir -p " . $this->settings['local']['logdir'], 'passthru');
+        }
+        #####################################
         # CHECK OS
         #####################################
         $this->out('Validate local operating system...');
