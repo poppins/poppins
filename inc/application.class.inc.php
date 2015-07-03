@@ -177,7 +177,7 @@ class Application
         ######################################
         # REMOTE HOST
         #####################################
-        if (!$this->settings['remote']['host'])
+        if (empty($this->settings['remote']['host']))
         {
             $this->fail("Remote host is not configured!! Specify it in the ini file or on the command line!");
         }
