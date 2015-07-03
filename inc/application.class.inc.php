@@ -133,7 +133,7 @@ class Application
             }
         }
         //check if there is backup is configured
-        if(!count($this->settings['included']) && !$this->settings['mysql']['enabled'])
+        if(!count($this->settings['included']) && $this->settings['mysql']['enabled'] != 'yes')
         {
             $this->fail("No directories configured or MySQL to backup...");
         }
@@ -342,7 +342,7 @@ class Application
         #####################################
         # MYSQL
         #####################################
-        if ($this->settings['mysql']['enabled'] && !$this->settings['mysql']['configdirs'])
+        if ($this->settings['mysql']['enabled'] == 'yes' && !$this->settings['mysql']['configdirs'])
         {
             $this->settings['mysql']['configdirs'] = '/root';
         }
