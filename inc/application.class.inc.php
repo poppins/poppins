@@ -62,13 +62,13 @@ class Application
         //load commands
         $this->Cmd = $Cmd;
         #####################################
-        # USER
+        # ROOT USER REQUIRED
         #####################################
         $this->out('Validate local user...');
         $whoami = $this->Cmd->exe('whoami');
         if ($whoami != "root")
         {
-            $this->fail("You must run this script as root.");
+            die("You must run this script as root!\n");
         }
         #####################################
         # VALIDATE CONFIG FILE
@@ -95,7 +95,7 @@ class Application
             $this->fail("Option -c {configfile} is required!");
         }
         //trim spaces
-        $this->out("Check configuration syntax...");
+        $this->out("Check configuration syntax (spaces and trailing slashes not allowed)...");
         foreach ($this->settings as $k => $v)
         {
             foreach ($v as $kk => $vv)
