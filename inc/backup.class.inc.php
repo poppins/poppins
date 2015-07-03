@@ -103,7 +103,7 @@ class Backup
                     }
                     else
                     {
-                        $this->App-fail("MySQL backup failed!");
+                        $this->App->fail("MySQL backup failed!");
                     }
                 }
             }
