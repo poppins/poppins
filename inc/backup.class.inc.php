@@ -52,7 +52,7 @@ class Backup
         //iterate dirs    
         foreach ($dirs as $dir)
         {
-            $configfiles = $this->App->Cmd->exe("$this->ssh 'cd \"$dir\";ls .my.cnf* 2>/dev/null'");
+            $configfiles = $this->App->Cmd->exe("$this->ssh 'cd $dir;ls .my.cnf* 2>/dev/null'");
             if ($configfiles)
             {
                 $configfiles = explode("\n", $configfiles);
@@ -71,7 +71,7 @@ class Backup
                 $instance = ($instance)? $instance:'default';
                 
                 //ignore if file is the same
-                $contents = $this->App->Cmd->exe("$this->ssh 'cd \"$dir\";cat .my.cnf*'");
+                $contents = $this->App->Cmd->exe("$this->ssh 'cd $dir;cat .my.cnf*'");
                 if(in_array($contents, $cached))
                 {
                     $this->App->out("WARNING! Found duplicate mysql config file $dir/$configfile...", 'warning');
@@ -86,7 +86,8 @@ class Backup
                 $instancedir = "$this->rsyncdir/mysql/$instance";
                 if(!is_dir($instancedir))
                 {
-                    $this->App->Cmd->exe('mkdir -p "$instancedir"', 'passthru');
+                    $this->App->out("Create directory $instancedir...");
+                    $this->App->Cmd->exe("mkdir -p $instancedir", 'passthru');
                 }    
                 //get all dbs
                 $dbs = $this->App->Cmd->exe("$this->ssh 'mysql --defaults-file=\"$dir/$configfile\" --skip-column-names -e \"show databases\" | grep -v \"^information_schema$\"'");
