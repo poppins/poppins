@@ -34,25 +34,18 @@ class Application
     function init()
     {
         #####################################
+        # HELP
+        #####################################
+        $options = getopt("c:h:");
+        if (!count($options) || @$argv[1] == '--help')
+        {
+            die("Usage: " . $_SERVER['PHP_SELF'] . " -c {configfile} [-h {host}]\n");
+        }
+        #####################################
         # SIGNATURE
         #####################################
         $this->out("$this->appname v$this->version - SCRIPT STARTED " . date('Y-m-d H:i:s', $this->start_time), 'title');
         $this->out('local environment', 'header');
-        #####################################
-        # LOG DIR
-        #####################################
-        $this->out('Validate logdir...');
-        //to avoid confusion, an absolute path is required
-        if (!preg_match('/^\//', $this->settings['local']['logdir']))
-        {
-            $this->fail("logdir must be an absolute path!");
-        }
-        //validate dir, create if required
-        if (!file_exists($this->settings['local']['logdir']))
-        {
-            $this->out('Create logdir  ' . $this->settings['local']['logdir'] . '...');
-            $this->Cmd->exe("mkdir -p " . $this->settings['local']['logdir'], 'passthru');
-        }
         #####################################
         # CHECK OS
         #####################################
@@ -60,7 +53,7 @@ class Application
         $OS = trim(shell_exec('uname'));
         if (!in_array($OS, ['Linux', 'SunOS']))
         {
-            $this->fail('Local OS ' . $OS . ' currently not supported!');
+            die("Local OS currently not supported!\n");
         }
         #####################################
         # COMMANDS
@@ -76,14 +69,6 @@ class Application
         if ($whoami != "root")
         {
             $this->fail("You must run this script as root.");
-        }
-        #####################################
-        # HELP
-        #####################################
-        $options = getopt("c:h:");
-        if (!count($options) || @$argv[1] == '--help')
-        {
-            die("Usage: " . $_SERVER['PHP_SELF'] . " -c {configfile} [-h {host}]\n");
         }
         #####################################
         # VALIDATE CONFIG FILE
@@ -138,6 +123,21 @@ class Application
             {
                 $this->fail("Error in snapshot configuration, value for $k is not an integer!");
             }
+        }
+        #####################################
+        # LOG DIR
+        #####################################
+        $this->out('Validate logdir...');
+        //to avoid confusion, an absolute path is required
+        if (!preg_match('/^\//', $this->settings['local']['logdir']))
+        {
+            $this->fail("logdir must be an absolute path!");
+        }
+        //validate dir, create if required
+        if (!file_exists($this->settings['local']['logdir']))
+        {
+            $this->out('Create logdir  ' . $this->settings['local']['logdir'] . '...');
+            $this->Cmd->exe("mkdir -p " . $this->settings['local']['logdir'], 'passthru');
         }
         #####################################
         # REMOTE VARIABLES
