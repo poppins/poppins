@@ -35,14 +35,16 @@ class Application
     {
         #####################################
         # HELP
-        #####################################
-        $options = getopt("c:h:");
+        #####################################\
+        $CLI_SHORT_OPTS = ["c:"];
+        $options = getopt(implode('', $CLI_SHORT_OPTS));
         if (!count($options) || @$argv[1] == '--help')
         {
-            die("Usage: " . $_SERVER['PHP_SELF'] . " -c {configfile} [-h {host}]\n");
+            print "Usage: " . $_SERVER['PHP_SELF'] . " -c {configfile}\n";
+            die();
         }
         #####################################
-        # SIGNATURE
+        # APP NAME
         #####################################
         $this->out("$this->appname v$this->version - SCRIPT STARTED " . date('Y-m-d H:i:s', $this->start_time), 'title');
         $this->out('local environment', 'header');
@@ -85,9 +87,31 @@ class Application
             else
             {
                 $this->settings = parse_ini_file($configfile, 1);
+                $ini_options= [];
+                foreach($this->settings as $k => $v)
+                {
+                    foreach($v as $kk => $vv)
+                    {
+                        $option = "$k-$kk::";
+                        $ini_options[]= $option;
+                    }
+                }
+                $options = getopt(implode('', $CLI_SHORT_OPTS), $ini_options);
+                //override ini with cli options
+                foreach($options as $k => $v)
+                {
+                    if(in_array("$k::", $ini_options))
+                    {
+                        $p = explode('-', $k);
+                        $k1 = $p[0];
+                        unset ($p[0]);
+                        $k2 = implode('', $p);
+                        $this->settings[$k1][$k2] = $v;
+                    }
+                }
                 //add data
                 $this->settings['local']['os'] = $OS;
-                $this->settings['signature']['application'] = $this->appname;
+                $this->settings['application']['name'] = $this->appname;
             }
         }
         else
@@ -145,27 +169,17 @@ class Application
             $this->Cmd->exe("mkdir -p " . $this->settings['local']['logdir'], 'passthru');
         }
         #####################################
-        # REMOTE VARIABLES
+        # REMOTE USER
         #####################################
         $this->out('Validate remote variables...');
         //validate user
         $this->settings['remote']['user'] = ( empty($this->settings['remote']['user'])) ? 'root' : $this->settings['remote']['user'];
-        //validate host
-        if (isset($options['h']))
-        {
-            if ($this->settings['remote']['host'])
-            {
-                $this->fail("Option -h is set while host is not empty in ini file!");
-            }
-            else
-            {
-                $this->settings['remote']['host'] = $options['h'];
-            }
-        }
-        //check if remote host is set
+        ######################################
+        # REMOTE HOST
+        #####################################
         if (!$this->settings['remote']['host'])
         {
-            $this->fail("Remote host is empty! Update the ini file or use -h parameter!");
+            $this->fail("Remote host is not configured!! Specify it in the ini file or on the command line!");
         }
         else
         {
@@ -230,17 +244,17 @@ class Application
         # HOST NAMES AND DIRS
         #####################################
         $this->out('Validate host...');
-        $hostname = ($this->settings['local']['hostname'])? $this->settings['local']['hostname']:$this->settings['remote']['host'];
+        $hostdirname = ($this->settings['local']['hostdir-name'])? $this->settings['local']['hostdir-name']:$this->settings['remote']['host'];
         //check if absolute path
-        if (preg_match('/^\//', $hostname))
+        if (preg_match('/^\//', $hostdirname))
         {
             $this->fail("hostname may not contain slashes!");
         }
-        $this->settings['local']['hostdir'] =  $this->settings['local']['rootdir'] . '/' . $hostname;
+        $this->settings['local']['hostdir'] =  $this->settings['local']['rootdir'] . '/' . $hostdirname;
         //check if dir exists
         if (!file_exists($this->settings['local']['hostdir']))
         {
-            if ($this->settings['local']['hostdir.create'] == 'yes')
+            if ($this->settings['local']['hostdir-create'] == 'yes')
             {
                 $this->out("Directory " . $this->settings['local']['hostdir'] . " does not exist, creating it..");
                 $success = $this->Cmd->exe("mkdir -p " . $this->settings['local']['hostdir'], 'passthru');

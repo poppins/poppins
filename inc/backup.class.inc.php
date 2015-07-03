@@ -143,7 +143,7 @@ class Backup
     function meta()
     {
         //variables
-        $filebase = strtolower($this->settings['remote']['host'] . '.'.$this->App->settings['signature']['application']);
+        $filebase = strtolower($this->settings['remote']['host'] . '.'.$this->App->settings['application']['name']);
         
         $this->App->out('Remote meta data', 'header');
         $this->App->out('Gather information about disk layout...');
