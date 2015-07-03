@@ -17,7 +17,7 @@ class Backup
         
         $this->ssh = "ssh ".$this->settings['remote']['user']."@".$this->settings['remote']['host'];
         
-        $this->rsyncdir = $this->settings['local']['hostdir'].'/'.$this->rsyncdir;
+        $this->rsyncdir = $this->settings['local']['rsyncdir'];
     }
     
     function init()
@@ -259,8 +259,6 @@ class Backup
                 $this->App->out("Create target dir $this->rsyncdir/files/$target...");
                 $this->App->Cmd->exe("mkdir -p $this->rsyncdir/files/$target", 'passthru');
             }
-            //sync
-            $this->App->settings['rsync']['dir'] = $this->rsyncdir;
             $cmd = "rsync $rsync_options -xa $excluded " . $this->settings['remote']['user'] . "@" . $this->settings['remote']['host'] . ":$sourcedir $targetdir";
             $this->App->out($cmd);
             $output = $this->App->Cmd->exe("$cmd && echo OK");
@@ -297,8 +295,6 @@ class Backup
 
 class BTRFSBackup extends Backup
 {
-    protected $rsyncdir = 'rsync.btrfs.subvol';
-    
     function create_syncdir()
     {
         $this->App->Cmd->exe("btrfs subvolume create " .  $this->rsyncdir);
@@ -308,8 +304,6 @@ class BTRFSBackup extends Backup
 
 class DefaultBackup extends Backup
 {
-    protected $rsyncdir = 'rsync.dir';
-    
     function create_syncdir()
     {
         $this->App->Cmd->exe("mkdir -p " .  $this->rsyncdir);
@@ -318,5 +312,4 @@ class DefaultBackup extends Backup
 
 class ZFSBackup extends Backup
 {
-    protected $rsyncdir = 'rsync.zfs.subvol';
 }

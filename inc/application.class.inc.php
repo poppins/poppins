@@ -108,6 +108,11 @@ class Application
                 }
             }
         }
+        //check if there is backup is configured
+        if(!count($this->settings['included']) && !$this->settings['mysql']['enabled'])
+        {
+            $this->fail("No directories configured or MySQL to backup...");
+        }
         //validate snapshot config
         $this->out("Check snapshot config...");
         foreach($this->settings['snapshots'] as $k => $v)
@@ -222,35 +227,16 @@ class Application
             }
         }
         #####################################
-        # FILESYSTEM
+        # HOST NAMES AND DIRS
         #####################################
-        //validate filesystem
-        $this->out('Validate local variables...');
-        $supported_fs = ['default', 'ZFS', 'BTRFS'];
-        if(!in_array($this->settings['local']['filesystem'], $supported_fs))
+        $this->out('Validate host...');
+        $hostname = ($this->settings['local']['hostname'])? $this->settings['local']['hostname']:$this->settings['remote']['host'];
+        //check if absolute path
+        if (preg_match('/^\//', $hostname))
         {
-            $this->fail('Local filesystem not supported! Supported: '.implode(",", $supported_fs));
+            $this->fail("hostname may not contain slashes!");
         }
-        //validate filesystem
-        switch($this->settings['local']['filesystem'])
-        {
-            case 'ZFS':
-                
-                break;
-            case 'BTRFS':
-                $fs = $this->Cmd->exe("df -P -T ".$this->settings['local']['rootdir']." | tail -n +2 | awk '{print $2}'");
-                if($fs != 'btrfs')
-                {
-                    $this->fail('Rootdir is not BTRFS!');
-                }
-                break;
-            default:
-        }
-        #####################################
-        # HOSTDIR DIR
-        #####################################
-        $this->out('Validate hostdir...');
-        $this->settings['local']['hostdir'] = $this->settings['local']['rootdir'] . '/' . $this->settings['remote']['host'];
+        $this->settings['local']['hostdir'] =  $this->settings['local']['rootdir'] . '/' . $hostname;
         //check if dir exists
         if (!file_exists($this->settings['local']['hostdir']))
         {
@@ -267,6 +253,33 @@ class Application
             {
                 $this->fail("Directory " . $this->settings['local']['hostdir'] . " does not exist! Not allowed to create it..");
             }
+        }
+        #####################################
+        # FILESYSTEM
+        #####################################
+        //validate filesystem
+        $this->out('Validate local variables...');
+        $supported_fs = ['default', 'ZFS', 'BTRFS'];
+        if(!in_array($this->settings['local']['filesystem'], $supported_fs))
+        {
+            $this->fail('Local filesystem not supported! Supported: '.implode(",", $supported_fs));
+        }
+        //validate filesystem
+        switch($this->settings['local']['filesystem'])
+        {
+            case 'ZFS':
+                $this->settings['local']['rsyncdir'] = $this->settings['local']['hostdir'].'/rsync.zfs.subvol';
+                break;
+            case 'BTRFS':
+                $fs = $this->Cmd->exe("df -P -T ".$this->settings['local']['rootdir']." | tail -n +2 | awk '{print $2}'");
+                if($fs != 'btrfs')
+                {
+                    $this->fail('Rootdir is not BTRFS!');
+                }
+                $this->settings['local']['rsyncdir'] = $this->settings['local']['hostdir'].'/rsync.btrfs.subvol';
+                break;
+            default:
+                $this->settings['local']['rsyncdir'] = $this->settings['local']['hostdir'].'/rsync.dir';
         }
         #####################################
         # INCREM AND ARCHIVE DIR

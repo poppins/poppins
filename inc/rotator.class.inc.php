@@ -22,7 +22,7 @@ class Rotator
         //directories
         $this->newdir = $this->settings['remote']['host'] . '.' . $this->cdatestamp . '.poppins';
 
-        $this->rsyncdir = $this->App->settings['rsync']['dir'];
+        $this->rsyncdir = $this->App->settings['local']['rsyncdir'];
                 
         $this->dir_regex = '[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{6}';
     }
