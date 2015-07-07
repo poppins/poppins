@@ -11,7 +11,7 @@ class BackupFactory extends Factory
 {
     const base = 'Backup';
     
-    function create($App)
+    public static function create($App)
     {
         //settings
         $settings = $App->settings;
@@ -33,7 +33,7 @@ class CmdFactory extends Factory
 {
     const base = 'Cmd';
     
-    function create($OS = 'Linux')
+    public static function create($OS = 'Linux')
     {
         // build the class
         $classname = self::base;
@@ -46,7 +46,7 @@ class RotatorFactory extends Factory
 {
     const base = 'Rotator';
     
-    function create($App)
+    public static function create($App)
     {
         //settings
         $settings = $App->settings;
