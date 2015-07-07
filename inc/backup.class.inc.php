@@ -236,7 +236,8 @@ class Backup
         #####################################
         foreach ($this->settings['included'] as $source => $target)
         {
-            $sourcedir = "$source/";
+            //check trailing slash
+            $sourcedir = (preg_match('/\/$/', $source))? $source:"$source/";
             $targetdir = "$this->rsyncdir/files/$target/";
             
             //exclude dirs
