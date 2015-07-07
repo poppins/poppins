@@ -1,0 +1,20 @@
+Poppins
+
+NAME
+    poppins - backup script with incremental snapshots
+
+SYNOPSIS
+    poppins -c {configfile} [-d] [--long-options]
+
+DESCRIPTION
+    Poppins has one required option, "-c", the configfile. Good practice is to name it {filename}.poppins.ini. Options in the ini file may be overridden by cli options. A useful overriden
+parameter is the [remote] host. it may be overridden like so: --remote-host={hostname} 
+
+EXAMPLES
+    poppins -c example.poppins.ini --remote-host=webserver1
+
+OPTIONS
+    -c {configfile}
+        configfile. Required. 
+    -d 
+        debugmode. Will output all commands ran by poppins
