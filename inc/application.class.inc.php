@@ -56,7 +56,9 @@ class Application
         $this->options = getopt(implode('', $CLI_SHORT_OPTS));
         if (!count($this->options) || @$argv[1] == '--help')
         {
-            print "Usage: " . $_SERVER['PHP_SELF'] . " -c {configfile} [-d] [--longoptions..]\n";
+            //print "Usage: " . $_SERVER['PHP_SELF'] . " -c {configfile} [-d] [--longoptions]\n";
+            $doc = file_get_contents(dirname(__FILE__).'/../documentation.txt');
+            echo "$doc\n";
             die();
         }
         #####################################
