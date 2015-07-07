@@ -3,51 +3,44 @@
 class Cmd
 {
 
+    public $commands = [];
+    
     private $error = false;
+    
+    public $output = '';
 
     function __construct()
     {
         $this->map = $this->map();
     }
 
-    function exe($cmd, $type = 'exec', $parse = false)
+    function exe($cmd)
     {
-        if ($parse)
+        //check if parsing is needed
+        foreach (array_keys($this->map) as $c)
         {
-            $cmd = $this->parse($cmd);
-        }
-        //return a sring or a boolean
-        switch ($type)
-        {
-            //return string
-            case 'exec':
-                $res = trim(shell_exec("$cmd"));
-                // only works if "&& echo OK" is added to command
-                //TODO do this differently
-                $this->error = (substr($res, -2, 2) == 'OK') ? false : true;
-                return $res;
-                break;
-            //return false if error
-            case 'passthru':
-                passthru($cmd, $return);
-                $this->error = (boolean) $return;
-                return !$this->error;
-                break;
+            if (preg_match('/' . $c . '/', $c))
+            {
+               $cmd = $this->parse($cmd);
+            }
         }
 
-        return trim(exec($cmd));
+        //store command
+        $this->commands []= $cmd;
+        
+        //redirect error to standard
+        $o = trim(exec("$cmd  2>&1", $output, $return));
+        
+        $this->output = $o;
+        //if all is well, 0 is returned, else e.g. 127
+        $this->error = $return; 
+               
+        return $this->output;
     }
 
-    function is_error()
+    public function is_error()
     {
-        return $this->error;
-    }
-
-    function passthru($cmd)
-    {
-        $cmd = $this->parse($cmd);
-        passthru($cmd, $return);
-        return $return;
+        return (boolean) $this->error;
     }
 
     function parse($cmd)

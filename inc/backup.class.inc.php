@@ -87,7 +87,7 @@ class Backup
                 if(!is_dir($instancedir))
                 {
                     $this->App->out("Create directory $instancedir...");
-                    $this->App->Cmd->exe("mkdir -p $instancedir", 'passthru');
+                    $this->App->Cmd->exe("mkdir -p $instancedir");
                 }    
                 //get all dbs
                 $dbs = $this->App->Cmd->exe("$this->ssh 'mysql --defaults-file=\"$dir/$configfile\" --skip-column-names -e \"show databases\" | grep -v \"^information_schema$\"'");
@@ -97,8 +97,8 @@ class Backup
                     {
                         continue;
                     }
-                    $success = $this->App->Cmd->exe("$this->ssh mysqldump --defaults-file=$configfile --ignore-table=mysql.event --routines --single-transaction --quick --databases $db | gzip > $instancedir/$db.sql.gz", 'passthru');
-                    if ($success)
+                    $this->App->Cmd->exe("$this->ssh mysqldump --defaults-file=$configfile --ignore-table=mysql.event --routines --single-transaction --quick --databases $db | gzip > $instancedir/$db.sql.gz");
+                    if (!$this->App->Cmd->is_error())
                     {
                         $this->App->out("$db... OK.", 'indent');
                     }
@@ -122,7 +122,7 @@ class Backup
         if ($this->settings['actions']['pre_backup_remote_job'])
         {
             $this->App->out('Found remote job, executing... (' . date('Y-m-d H:i:s') . ')');
-            $output = $this->App->Cmd->exe($this->ssh ." '".$this->settings['actions']['pre_backup_remote_job']."'", 'exec');
+            $output = $this->App->Cmd->exe($this->ssh ." '".$this->settings['actions']['pre_backup_remote_job']."'");
             if ($output)
             {
                 $this->App->out('OK! Job done... (' . date('Y-m-d H:i:s') . ')');
@@ -150,15 +150,15 @@ class Backup
         # remote disk layout and packages
         if ($this->settings['remote']['os'] == "Linux")
         {
-            $this->App->Cmd->exe("$this->ssh '( df -hT ; vgs ; pvs ; lvs ; blkid ; lsblk -fi ; for disk in $(ls /dev/sd[a-z]) ; do fdisk -l \$disk; done )' > $this->rsyncdir/meta/" . $filebase . ".disk-layout.txt 2>&1");
+            $this->App->Cmd->exe("$this->ssh '( df -hT ; vgs ; pvs ; lvs ; blkid ; lsblk -fi ; for disk in $(ls /dev/sd[a-z]) ; do fdisk -l \$disk; done )' > $this->rsyncdir/meta/" . $filebase . ".disk-layout.txt");
         }
         $this->App->out('Gather information about packages...');
         switch ($this->App->settings['remote']['distro'])
         {
             case 'Debian':
             case 'Ubuntu':
-                $success = $this->App->Cmd->exe("$this->ssh \"aptitude search '~i !~M' -F '%p' --disable-columns | sort -u\" > $this->rsyncdir/meta/" . $filebase . ".packages.txt", 'passthru');
-                if (!$success)
+                $this->App->Cmd->exe("$this->ssh \"aptitude search '~i !~M' -F '%p' --disable-columns | sort -u\" > $this->rsyncdir/meta/" . $filebase . ".packages.txt");
+                if ($this->App->Cmd->is_error())
                 {
                     $this->App->fail('Failed to retrieve package list!');
                 }
@@ -192,7 +192,7 @@ class Backup
             if (!file_exists($this->rsyncdir.'/'.$aa))
             {
                 $this->App->out("Create $aa dir $this->rsyncdir/$aa...");
-                $this->App->Cmd->exe("mkdir -p $this->rsyncdir/$aa", 'passthru');
+                $this->App->Cmd->exe("mkdir -p $this->rsyncdir/$aa");
             }
         }
     }
@@ -258,11 +258,11 @@ class Backup
             if(!is_dir("$this->rsyncdir/files/$target"))
             {
                 $this->App->out("Create target dir $this->rsyncdir/files/$target...");
-                $this->App->Cmd->exe("mkdir -p $this->rsyncdir/files/$target", 'passthru');
+                $this->App->Cmd->exe("mkdir -p $this->rsyncdir/files/$target");
             }
             $cmd = "rsync $rsync_options -xa $excluded " . $this->settings['remote']['user'] . "@" . $this->settings['remote']['host'] . ":$sourcedir $targetdir";
             $this->App->out($cmd);
-            $output = $this->App->Cmd->exe("$cmd && echo OK");
+            $output = $this->App->Cmd->exe("$cmd");
             $this->App->out($output);
             if ($this->App->Cmd->is_error())
             {
@@ -289,7 +289,7 @@ class Backup
         else
         {
             $this->App->out('Create LOCK file...');
-            $this->App->Cmd->exe("touch " .  $this->settings['local']['hostdir'] . "/LOCK", 'passthru');
+            $this->App->Cmd->exe("touch " .  $this->settings['local']['hostdir'] . "/LOCK");
         }
     }
 }

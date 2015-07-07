@@ -253,14 +253,14 @@ class DefaultRotator extends Rotator
     {
         $cmd = "cp -la $this->rsyncdir ". $this->App->settings['local']['archivedir']."/$parent/$dir";
         $this->App->out("Create hardlink copy: $cmd");
-        return $this->App->Cmd->exe("$cmd && echo OK");
+        return $this->App->Cmd->exe("$cmd");
     }
     
     function remove($dir, $parent)
     {
         $cmd = "rm -r ". $this->App->settings['local']['archivedir']."/$parent/$dir";
         $this->App->out("Remove direcory: $cmd");
-        return $this->App->Cmd->exe("$cmd && echo OK");
+        return $this->App->Cmd->exe("$cmd");
     }
 }
 
@@ -270,14 +270,14 @@ class BTRFSRotator extends Rotator
     {
         $cmd = "btrfs subvolume snapshot -r $this->rsyncdir ". $this->App->settings['local']['archivedir']."/$parent/$dir";
         $this->App->out("Create BTRFS snapshot: $cmd");
-        return $this->App->Cmd->exe("$cmd && echo OK");
+        return $this->App->Cmd->exe("$cmd");
     }
     
     function remove($dir, $parent)
     {
         $cmd = "btrfs subvolume delete ". $this->App->settings['local']['archivedir']."/$parent/$dir";
         $this->App->out("Remove BTRFS snapshot: $cmd");
-        return $this->App->Cmd->exe("$cmd && echo OK");
+        return $this->App->Cmd->exe("$cmd");
     }
 }
 

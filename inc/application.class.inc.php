@@ -11,6 +11,8 @@ class Application
     public $Cmd;
     
     private $messages;
+    
+    private $options;
 
     public $start_time;
 
@@ -27,7 +29,21 @@ class Application
 
     function fail($message, $error = 'generic')
     {
-        $this->out("FATAL ERROR: Application failed! \nMESSAGE: $message", 'error');
+        //compose message
+        $output = [];
+        $output []= "FATAL ERROR: Application failed!";
+        $output []= "MESSAGE: $message";
+        if(isset($this->options['d']))
+        {
+            $output []= "COMMAND STACK:";
+            foreach($this->Cmd->commands as $c)
+            {
+                $output []= $c;
+            }
+        }
+        
+        $this->out(implode("\n", $output), 'error');
+        //quit
         $this->quit("SCRIPT FAILED!", $error);
     }
 
@@ -36,11 +52,11 @@ class Application
         #####################################
         # HELP
         #####################################\
-        $CLI_SHORT_OPTS = ["c:"];
-        $options = getopt(implode('', $CLI_SHORT_OPTS));
-        if (!count($options) || @$argv[1] == '--help')
+        $CLI_SHORT_OPTS = ["c:d"];
+        $this->options = getopt(implode('', $CLI_SHORT_OPTS));
+        if (!count($this->options) || @$argv[1] == '--help')
         {
-            print "Usage: " . $_SERVER['PHP_SELF'] . " -c {configfile}\n";
+            print "Usage: " . $_SERVER['PHP_SELF'] . " -c {configfile} [-d] [--longoptions..]\n";
             die();
         }
         #####################################
@@ -77,9 +93,9 @@ class Application
         #####################################
         $this->out("configuration file", 'header');
         //validate config file
-        if (isset($options['c']))
+        if (isset($this->options['c']))
         {
-            $configfile = $options['c'];
+            $configfile = $this->options['c'];
             if (!file_exists($configfile))
             {
                 $this->fail("Config file not found!");
@@ -96,9 +112,9 @@ class Application
                         $ini_options[]= $option;
                     }
                 }
-                $options = getopt(implode('', $CLI_SHORT_OPTS), $ini_options);
+                $this->options = getopt(implode('', $CLI_SHORT_OPTS), $ini_options);
                 //override ini with cli options
-                foreach($options as $k => $v)
+                foreach($this->options as $k => $v)
                 {
                     if(in_array("$k::", $ini_options))
                     {
@@ -137,6 +153,16 @@ class Application
         {
             $this->fail("No directories configured or MySQL to backup...");
         }
+        //validate included/excluded syntax
+        $included = array_keys($this->settings['included']);
+        $excluded = array_keys($this->settings['excluded']);
+        foreach($excluded as $e)
+        {
+            if(!in_array($e, $included))
+            {
+                $this->fail("Excluded directory $e not indexed in included directories!");
+            }
+        }
         //validate snapshot config
         $this->out("Check snapshot config...");
         foreach($this->settings['snapshots'] as $k => $v)
@@ -166,7 +192,7 @@ class Application
         if (!file_exists($this->settings['local']['logdir']))
         {
             $this->out('Create logdir  ' . $this->settings['local']['logdir'] . '...');
-            $this->Cmd->exe("mkdir -p " . $this->settings['local']['logdir'], 'passthru');
+            $this->Cmd->exe("mkdir -p " . $this->settings['local']['logdir']);
         }
         #####################################
         # REMOTE USER
@@ -220,7 +246,7 @@ class Application
             $rsync_installed = $this->Cmd->exe($c[$host]);
             if ($this->Cmd->is_error())
             {
-                $this->fail("Rsync not installed on remote machine!");
+                $this->fail("Rsync not installed on remote machine?");
             }
         }
         #####################################
@@ -234,8 +260,8 @@ class Application
         }
         elseif (!file_exists($this->settings['local']['rootdir']))
         {
-            $success = $this->Cmd->exe("mkdir -p " . $this->settings['local']['rootdir'], 'passthru');
-            if (!$success)
+            $this->Cmd->exe("mkdir -p " . $this->settings['local']['rootdir']);
+            if ($this->Cmd->is_error())
             {
                 $this->fail("Could not create directory:  " . $this->settings['local']['rootdir'] . "!");
             }
@@ -257,8 +283,8 @@ class Application
             if ($this->settings['local']['hostdir-create'] == 'yes')
             {
                 $this->out("Directory " . $this->settings['local']['hostdir'] . " does not exist, creating it..");
-                $success = $this->Cmd->exe("mkdir -p " . $this->settings['local']['hostdir'], 'passthru');
-                if (!$success)
+                $this->Cmd->exe("mkdir -p " . $this->settings['local']['hostdir']);
+                if ($this->Cmd->is_error())
                 {
                     $this->fail("Could not create directory:  " . $this->settings['local']['hostdir'] . "!");
                 }
@@ -306,7 +332,7 @@ class Application
             if (!is_dir($dd))
             {
                 $this->out('Create subdirectory ' . $dd . '...');
-                $this->Cmd->exe("mkdir -p " . $dd, 'passthru');
+                $this->Cmd->exe("mkdir -p " . $dd);
             }
         }
         $this->settings['local']['archivedir'] = $this->settings['local']['hostdir'] . '/archive';
@@ -321,7 +347,7 @@ class Application
             if (!is_dir($dd))
             {
                 $this->out('Create subdirectory ' . $dd . '...');
-                $this->Cmd->exe("mkdir -p " . $dd, 'passthru');
+                $this->Cmd->exe("mkdir -p " . $dd);
             }
         }
         #####################################
@@ -337,7 +363,7 @@ class Application
         if (!file_exists($this->settings['local']['logdir']))
         {
             $this->out('Create logdir  ' . $this->settings['local']['logdir'] . '...');
-            $this->Cmd->exe("mkdir -p " . $this->settings['local']['logdir'], 'passthru');
+            $this->Cmd->exe("mkdir -p " . $this->settings['local']['logdir']);
         }
         #####################################
         # MYSQL
@@ -372,7 +398,7 @@ class Application
         }
         $this->out(trim(implode("\n", $output)));
     }
-
+    
     function log($message)
     {
         $this->messages [] = $message;
@@ -444,7 +470,7 @@ class Application
         {
             $this->log("Remove LOCK file...");
             $this->log("");
-            $this->Cmd->exe('{RM} ' . $this->settings['local']['hostdir'] . "/LOCK", 'passthru', true);
+            $this->Cmd->exe('{RM} ' . $this->settings['local']['hostdir'] . "/LOCK");
         }
         //format messages
         $messages = implode("\n", $this->messages);
@@ -456,7 +482,11 @@ class Application
         $suffix = ($error) ? 'error' : 'success';
         $logfile = $this->settings['local']['logdir'] . '/' . $this->settings['remote']['host'] . '.' . date('Y-m-d_His', $this->start_time) . '.poppins.' . $suffix . '.log';
         $content [] = 'Create logfile ' . $logfile . '...';
-        $this->Cmd->exe("touch " . $logfile, 'passthru');
+        $this->Cmd->exe("touch " . $logfile);
+        if ($this->Cmd->is_error())
+        {
+            $this->fail("Cannot create log file!");
+        }
         //write to log
         $content [] = 'Write to log file...';
         $success = file_put_contents($logfile, $messages);
