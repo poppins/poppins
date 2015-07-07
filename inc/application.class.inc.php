@@ -235,18 +235,41 @@ class Application
             }
         }
         #####################################
-        # RSYNC INSTALLATION
+        # VALIDATE PACKAGES 
         #####################################
-        foreach (['local', 'remote'] as $host)
+        $dependencies = [];
+        //remote
+        if(in_array($this->settings['remote']['distro'], ['Debian', 'Ubuntu'])) $dependencies['remote']['aptitude'] = 'aptitude --version'; 
+        $dependencies['remote']['rsync'] = 'rsync --version'; 
+        //local
+        $dependencies['local']['rsync'] = 'rsync --version'; 
+        //iterate packages
+        foreach ($dependencies as $host => $packages)
         {
-            $c = [];
-            $c['local'] = 'rsync --version && echo OK';
-            $c['remote'] = "ssh $_u@$_h '". $c['local']."'";
-            //check if rsync is installed on remote machine
-            $rsync_installed = $this->Cmd->exe($c[$host]);
+            foreach ($packages as $package => $command)
+            {
+                //check if installed
+                $command = ($host == 'remote')? "ssh $_u@$_h '" . $command."'":$command;
+                $this->Cmd->exe($command);
+                if ($this->Cmd->is_error())
+                {
+                    $this->fail("Package $package installed on $host machine?");
+                }
+            }
+        }
+        #####################################
+        # VALIDATE LOCAL PACKAGES 
+        #####################################
+        $packages = [];
+
+        //iterate packages
+        foreach($packages as $package => $command)
+        {
+            //check if installed
+            $this->Cmd->exe($command);
             if ($this->Cmd->is_error())
             {
-                $this->fail("Rsync not installed on remote machine?");
+                $this->fail("Package $package installed on local machine?");
             }
         }
         #####################################
