@@ -228,7 +228,7 @@ class Application
         //get remote os
         $this->settings['remote']['os'] = $this->Cmd->exe("ssh $_u@$_h uname");
         //get distro
-        foreach (['Debian', 'Ubuntu', 'SunOS', 'OpenIndiana', 'Red Hat', 'CentOS', 'Fedora'] as $d)
+        foreach (['Ubuntu', 'Debian', 'SunOS', 'OpenIndiana', 'Red Hat', 'CentOS', 'Fedora'] as $d)
         {
             $output = $this->Cmd->exe("ssh $_u@$_h 'cat /etc/*release'");
             if (preg_match("/$d/i", $output))
