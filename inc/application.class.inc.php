@@ -278,7 +278,8 @@ class Application
         # ROOT DIR
         #####################################
         $this->out('Validate rootdir...');
-        //validate dir. to avoid confusion, an absolute path is required
+        //to avoid confusion, an absolute path is required
+        //if using ZFS, the root zfs filesystem must be used
         if (!preg_match('/^\//', $this->settings['local']['rootdir']))
         {
             $this->fail("rootdir must be an absolute path!");

@@ -300,7 +300,6 @@ class BTRFSBackup extends Backup
     {
         $this->App->Cmd->exe("btrfs subvolume create " .  $this->rsyncdir);
     }
-
 }
 
 class DefaultBackup extends Backup
@@ -313,5 +312,9 @@ class DefaultBackup extends Backup
 
 class ZFSBackup extends Backup
 {
-    
+    function create_syncdir()
+    {
+        dd($this->rsyncdir);
+        $this->App->Cmd->exe("zfs create " .  $this->rsyncdir);
+    }
 }

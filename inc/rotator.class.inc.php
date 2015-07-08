@@ -283,5 +283,17 @@ class BTRFSRotator extends Rotator
 
 class ZFSRotator extends Rotator
 {
+        function add($dir, $parent)
+    {
+        $cmd = "zfs snapshot $this->rsyncdir ". $this->App->settings['local']['archivedir']."/$parent/$dir";
+        $this->App->out("Create BTRFS snapshot: $cmd");
+        return $this->App->Cmd->exe("$cmd");
+    }
     
+    function remove($dir, $parent)
+    {
+        $cmd = "btrfs subvolume delete ". $this->App->settings['local']['archivedir']."/$parent/$dir";
+        $this->App->out("Remove BTRFS snapshot: $cmd");
+        return $this->App->Cmd->exe("$cmd");
+    }
 }
