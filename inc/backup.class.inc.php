@@ -314,7 +314,7 @@ class ZFSBackup extends Backup
 {
     function create_syncdir()
     {
-        dd($this->rsyncdir);
-        $this->App->Cmd->exe("zfs create " .  $this->rsyncdir);
+        $rsyncdir = preg_replace('/^\//', '', $this->rsyncdir);
+        $this->App->Cmd->exe("zfs create " .  $rsyncdir);
     }
 }

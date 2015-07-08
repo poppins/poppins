@@ -20,6 +20,8 @@ class Rotator
         $this->cdatestamp = date('Y-m-d_His', $this->App->start_time);
 
         //directories
+        $this->archivedir = $this->settings['local']['hostdir'] . '/archive';
+        
         $this->newdir = $this->settings['remote']['host'] . '.' . $this->cdatestamp . '.poppins';
 
         $this->rsyncdir = $this->App->settings['local']['rsyncdir'];
@@ -29,7 +31,9 @@ class Rotator
 
     function init()
     {
-        $this->App->out('Rotating directories', 'header');
+        $this->App->out('Rotating snapshots', 'header');
+        //prepare
+        $this->prepare();
         //iniate comparison
         $this->App->out('Reading archives...');
         $arch1 = $arch2 = $this->scandir();
@@ -166,14 +170,46 @@ class Rotator
         $this->App->out("Done!");
     }
 
+    function prepare()
+    {
+        #####################################
+        # CHECK ARCHIVE DIR
+        #####################################
+        $this->App->out('Check hostdir subdirectories...');
+        //validate dir
+        foreach (['archive'] as $d)
+        {
+            $dd = $this->settings['local']['hostdir'] . '/' . $d;
+            if (!is_dir($dd))
+            {
+                $this->App->out('Create subdirectory ' . $dd . '...');
+                $this->App->Cmd->exe("mkdir -p " . $dd);
+            }
+        }
+        #####################################
+        # ARCHIVES
+        #####################################
+        $this->App->out('Check archive subdirectories...');
+        //validate dir
+        foreach (array_keys($this->settings['snapshots']) as $d)
+        {
+            $dd = $this->archivedir . '/' . $d;
+            if (!is_dir($dd))
+            {
+                $this->App->out('Create subdirectory ' . $dd . '...');
+                $this->App->Cmd->exe("mkdir -p " . $dd);
+            }
+        }
+    }
+    
     function scandir()
     {
         //variables
         $tmp = [];
         $res = [];
         //archive dir
-        $archivedir = $this->settings['local']['archivedir'];
-        //scan thru all intervalss
+        $archivedir = $this->archivedir;
+        //scan thru all intervals
         foreach (array_keys($this->settings['snapshots']) as $k)
         {
             //keys must be stored in array!
@@ -251,14 +287,14 @@ class DefaultRotator extends Rotator
 {
     function add($dir, $parent)
     {
-        $cmd = "cp -la $this->rsyncdir ". $this->App->settings['local']['archivedir']."/$parent/$dir";
+        $cmd = "cp -la $this->rsyncdir ". $this->archivedir."/$parent/$dir";
         $this->App->out("Create hardlink copy: $cmd");
         return $this->App->Cmd->exe("$cmd");
     }
     
     function remove($dir, $parent)
     {
-        $cmd = "rm -r ". $this->App->settings['local']['archivedir']."/$parent/$dir";
+        $cmd = "rm -r ". $this->archivedir."/$parent/$dir";
         $this->App->out("Remove direcory: $cmd");
         return $this->App->Cmd->exe("$cmd");
     }
@@ -268,14 +304,14 @@ class BTRFSRotator extends Rotator
 {
     function add($dir, $parent)
     {
-        $cmd = "btrfs subvolume snapshot -r $this->rsyncdir ". $this->App->settings['local']['archivedir']."/$parent/$dir";
+        $cmd = "btrfs subvolume snapshot -r $this->rsyncdir ". $this->archivedir."/$parent/$dir";
         $this->App->out("Create BTRFS snapshot: $cmd");
         return $this->App->Cmd->exe("$cmd");
     }
     
     function remove($dir, $parent)
     {
-        $cmd = "btrfs subvolume delete ". $this->App->settings['local']['archivedir']."/$parent/$dir";
+        $cmd = "btrfs subvolume delete ". $this->archivedir."/$parent/$dir";
         $this->App->out("Remove BTRFS snapshot: $cmd");
         return $this->App->Cmd->exe("$cmd");
     }
@@ -283,17 +319,54 @@ class BTRFSRotator extends Rotator
 
 class ZFSRotator extends Rotator
 {
-        function add($dir, $parent)
+    function add($dir, $parent)
     {
-        $cmd = "zfs snapshot $this->rsyncdir ". $this->App->settings['local']['archivedir']."/$parent/$dir";
-        $this->App->out("Create BTRFS snapshot: $cmd");
+        $rsyncdir = preg_replace('/^\//', '', $this->rsyncdir);
+        $cmd = "zfs snapshot $rsyncdir@$parent-$dir";
+        $this->App->out("Create ZFS snapshot: $cmd");
         return $this->App->Cmd->exe("$cmd");
     }
     
     function remove($dir, $parent)
     {
-        $cmd = "btrfs subvolume delete ". $this->App->settings['local']['archivedir']."/$parent/$dir";
-        $this->App->out("Remove BTRFS snapshot: $cmd");
+        $rsyncdir = preg_replace('/^\//', '', $this->rsyncdir);
+        $cmd = "zfs destroy $rsyncdir@$parent-$dir";
+        $this->App->out("Remove ZFS snapshot: $cmd");
         return $this->App->Cmd->exe("$cmd");
+    }
+    
+    function prepare()
+    {
+        $this->App->out('No archive directories to create..');
+    }
+    
+    function scandir()
+    {
+        //variables
+        $res = [];
+        //archive dir
+        $archivedir = $this->rsyncdir.'/.zfs/snapshot';
+        $snapshots = scandir($archivedir);
+        //scan thru all intervals
+        foreach (array_keys($this->settings['snapshots']) as $k)
+        {
+            //keys must be stored in array!
+            $res[$k] = [];
+            if(is_array($snapshots))
+            {
+                foreach($snapshots as $s)
+                {
+                    if(preg_match('/^'.$k.'/', $s))
+                    {
+                        $snap = str_replace($k.'-', '', $s);
+                        if(preg_match("/$this->dir_regex\.poppins$/", $snap))
+                        {
+                            $res[$k][]= $snap;
+                        }
+                    }
+                }
+            }
+        }
+        return $res;
     }
 }

@@ -57,41 +57,42 @@ class Application
         if (!count($this->options) || @$argv[1] == '--help')
         {
             //print "Usage: " . $_SERVER['PHP_SELF'] . " -c {configfile} [-d] [--longoptions]\n";
-            $doc = file_get_contents(dirname(__FILE__).'/../documentation.txt');
-            echo "$doc\n";
+            $documentation = file_get_contents(dirname(__FILE__).'/../documentation.txt');
+            print $this->appname.' '.$this->version."\n\n";
+            print "$documentation\n";
             die();
         }
         #####################################
-        # APP NAME
+        # START
         #####################################
         $this->out("$this->appname v$this->version - SCRIPT STARTED " . date('Y-m-d H:i:s', $this->start_time), 'title');
         $this->out('local environment', 'header');
         #####################################
         # CHECK OS
         #####################################
-        $this->out('Validate local operating system...');
+        $this->out('Check local operating system...');
         $OS = trim(shell_exec('uname'));
         if (!in_array($OS, ['Linux', 'SunOS']))
         {
             die("Local OS currently not supported!\n");
         }
         #####################################
-        # COMMANDS
+        # SETUP COMMANDS
         #####################################
         $Cmd = CmdFactory::create($OS);
         //load commands
         $this->Cmd = $Cmd;
         #####################################
-        # ROOT USER REQUIRED
+        # CHECK ROOT USER 
         #####################################
-        $this->out('Validate local user...');
+        $this->out('Check local user...');
         $whoami = $this->Cmd->exe('whoami');
         if ($whoami != "root")
         {
             die("You must run this script as root!\n");
         }
         #####################################
-        # VALIDATE CONFIG FILE
+        # PARSE CONFIG FILE
         #####################################
         $this->out("configuration file", 'header');
         //validate config file
@@ -182,9 +183,10 @@ class Application
             }
         }
         #####################################
-        # LOG DIR
+        # CHECK LOG DIR
         #####################################
-        $this->out('Validate logdir...');
+        //check log dir early so we can log stuff
+        $this->out('Check logdir...');
         //to avoid confusion, an absolute path is required
         if (!preg_match('/^\//', $this->settings['local']['logdir']))
         {
@@ -197,14 +199,12 @@ class Application
             $this->Cmd->exe("mkdir -p " . $this->settings['local']['logdir']);
         }
         #####################################
-        # REMOTE USER
+        # CHECK REMOTE PARAMS
         #####################################
-        $this->out('Validate remote variables...');
+        $this->out('Check remote parameters...');
         //validate user
         $this->settings['remote']['user'] = ( empty($this->settings['remote']['user'])) ? 'root' : $this->settings['remote']['user'];
-        ######################################
-        # REMOTE HOST
-        #####################################
+        //check remote host
         if (empty($this->settings['remote']['host']))
         {
             $this->fail("Remote host is not configured!! Specify it in the ini file or on the command line!");
@@ -219,7 +219,7 @@ class Application
                 $this->fail("Cannot reach remote host $_u@$_h!");
             }
         }
-        $this->out('Validate ssh connection...');
+        $this->out('Check ssh connection...');
         $sshtest = $this->Cmd->exe("ssh -o BatchMode=yes $_u@$_h echo OK");
         if (!$sshtest)
         {
@@ -237,14 +237,16 @@ class Application
             }
         }
         #####################################
-        # VALIDATE PACKAGES 
+        # CHECK DEPENDENCIES
         #####################################
+        $this->out('Check dependencies...');
         $dependencies = [];
         //remote
         if(in_array($this->settings['remote']['distro'], ['Debian', 'Ubuntu'])) $dependencies['remote']['aptitude'] = 'aptitude --version'; 
         $dependencies['remote']['rsync'] = 'rsync --version'; 
         //local
         $dependencies['local']['rsync'] = 'rsync --version'; 
+        $dependencies['local']['grep'] = 'grep --version'; 
         //iterate packages
         foreach ($dependencies as $host => $packages)
         {
@@ -260,71 +262,21 @@ class Application
             }
         }
         #####################################
-        # VALIDATE LOCAL PACKAGES 
+        # CHECK ROOT DIR & FILE SYSTEM
         #####################################
-        $packages = [];
-
-        //iterate packages
-        foreach($packages as $package => $command)
-        {
-            //check if installed
-            $this->Cmd->exe($command);
-            if ($this->Cmd->is_error())
-            {
-                $this->fail("Package $package installed on local machine?");
-            }
-        }
-        #####################################
-        # ROOT DIR
-        #####################################
-        $this->out('Validate rootdir...');
+        $this->out('Check rootdir...');
         //to avoid confusion, an absolute path is required
-        //if using ZFS, the root zfs filesystem must be used
         if (!preg_match('/^\//', $this->settings['local']['rootdir']))
         {
             $this->fail("rootdir must be an absolute path!");
         }
-        elseif (!file_exists($this->settings['local']['rootdir']))
+        //root dir must exist!
+        if (!file_exists($this->settings['local']['rootdir']))
         {
-            $this->Cmd->exe("mkdir -p " . $this->settings['local']['rootdir']);
-            if ($this->Cmd->is_error())
-            {
-                $this->fail("Could not create directory:  " . $this->settings['local']['rootdir'] . "!");
-            }
+            $this->fail("Root dir '" . $this->settings['local']['rootdir'] . "' does not exist!");
         }
-        #####################################
-        # HOST NAMES AND DIRS
-        #####################################
-        $this->out('Validate host...');
-        $hostdirname = ($this->settings['local']['hostdir-name'])? $this->settings['local']['hostdir-name']:$this->settings['remote']['host'];
-        //check if absolute path
-        if (preg_match('/^\//', $hostdirname))
-        {
-            $this->fail("hostname may not contain slashes!");
-        }
-        $this->settings['local']['hostdir'] =  $this->settings['local']['rootdir'] . '/' . $hostdirname;
-        //check if dir exists
-        if (!file_exists($this->settings['local']['hostdir']))
-        {
-            if ($this->settings['local']['hostdir-create'] == 'yes')
-            {
-                $this->out("Directory " . $this->settings['local']['hostdir'] . " does not exist, creating it..");
-                $this->Cmd->exe("mkdir -p " . $this->settings['local']['hostdir']);
-                if ($this->Cmd->is_error())
-                {
-                    $this->fail("Could not create directory:  " . $this->settings['local']['hostdir'] . "!");
-                }
-            }
-            else
-            {
-                $this->fail("Directory " . $this->settings['local']['hostdir'] . " does not exist! Not allowed to create it..");
-            }
-        }
-        #####################################
-        # FILESYSTEM
-        #####################################
-        //validate filesystem
-        $this->out('Validate local variables...');
+        //check filesystem config
+        $this->out('Check filesystem config...');
         $supported_fs = ['default', 'ZFS', 'BTRFS'];
         if(!in_array($this->settings['local']['filesystem'], $supported_fs))
         {
@@ -334,63 +286,120 @@ class Application
         switch($this->settings['local']['filesystem'])
         {
             case 'ZFS':
-                $this->settings['local']['rsyncdir'] = $this->settings['local']['hostdir'].'/rsync.zfs.subvol';
-                break;
             case 'BTRFS':
                 $fs = $this->Cmd->exe("df -P -T ".$this->settings['local']['rootdir']." | tail -n +2 | awk '{print $2}'");
-                if($fs != 'btrfs')
+                if($fs != strtolower($this->settings['local']['filesystem']))
                 {
-                    $this->fail('Rootdir is not BTRFS!');
+                    $this->fail('Rootdir is not a '.$this->settings['local']['filesystem'].' filesystem!');
                 }
-                $this->settings['local']['rsyncdir'] = $this->settings['local']['hostdir'].'/rsync.btrfs.subvol';
                 break;
             default:
-                $this->settings['local']['rsyncdir'] = $this->settings['local']['hostdir'].'/rsync.dir';
         }
-        #####################################
-        # INCREM AND ARCHIVE DIR
-        #####################################
-        $this->out('Validate hostdir subdirectories...');
-        //validate dir
-        foreach (['archive'] as $d)
+        //validate root dir and create if required
+        switch ($this->settings['local']['filesystem'])
         {
-            $dd = $this->settings['local']['hostdir'] . '/' . $d;
-            if (!is_dir($dd))
-            {
-                $this->out('Create subdirectory ' . $dd . '...');
-                $this->Cmd->exe("mkdir -p " . $dd);
-            }
+            //if using ZFS, we want a mount point
+            case 'ZFS':
+                //check if mount point
+                $rootdir_check = $this->Cmd->exe("zfs get -H -o value mountpoint ".$this->settings['local']['rootdir']);
+                if($rootdir_check != $this->settings['local']['rootdir'])
+                {
+                    $this->fail("No ZFS mount point " . $this->settings['local']['rootdir'] . " found!");
+                }
+                //validate if dataset name and mountpoint are the same
+                $zfs_info = $this->Cmd->exe("zfs list | grep '".$this->settings['local']['rootdir']."$'");
+                $a = explode(' ', $zfs_info);
+                if('/'.reset($a) != end($a))
+                {
+                    $this->fail('ZFS name and mountpoint do not match!');
+                }
+                break;
+            default:
+                if (!file_exists($this->settings['local']['rootdir']))
+                {
+                    $this->Cmd->exe("mkdir -p " . $this->settings['local']['rootdir']);
+                    if ($this->Cmd->is_error())
+                    {
+                        $this->fail("Could not create directory:  " . $this->settings['local']['rootdir'] . "!");
+                    }
+                }
         }
-        $this->settings['local']['archivedir'] = $this->settings['local']['hostdir'] . '/archive';
         #####################################
-        # ARCHIVES
+        # CHECK HOST DIR
         #####################################
-        $this->out('Validate archive subdirectories...');
-        //validate dir
-        foreach (array_keys($this->settings['snapshots']) as $d)
+        $this->out('Check host...');
+        $hostdirname = ($this->settings['local']['hostdir-name'])? $this->settings['local']['hostdir-name']:$this->settings['remote']['host'];
+        //check if absolute path
+        if (preg_match('/^\//', $hostdirname))
         {
-            $dd = $this->settings['local']['archivedir'] . '/' . $d;
-            if (!is_dir($dd))
-            {
-                $this->out('Create subdirectory ' . $dd . '...');
-                $this->Cmd->exe("mkdir -p " . $dd);
-            }
+            $this->fail("hostname may not contain slashes!");
+        }
+        $this->settings['local']['hostdir'] = $this->settings['local']['rootdir'] . '/' . $hostdirname;
+        //validate host dir and create if required
+        switch ($this->settings['local']['filesystem'])
+        {
+            //if using ZFS, we want to check if a filesystem is in place, otherwise, create it
+            case 'ZFS':
+                $hostdir_check = $this->Cmd->exe("zfs get -H -o value mountpoint " . $this->settings['local']['hostdir']);
+                if ($hostdir_check != $this->settings['local']['hostdir'])
+                {
+                    if ($this->settings['local']['hostdir-create'] == 'yes')
+                    {
+                        $zfs_fs = preg_replace('/^\//', '', $this->settings['local']['hostdir']);
+                        $this->out("ZFS filesystem " . $zfs_fs . " does not exist, creating zfs filesystem..");
+                        $this->Cmd->exe("zfs create " . $zfs_fs);
+                        if ($this->Cmd->is_error())
+                        {
+                            $this->fail("Could not create zfs filesystem:  " . $zfs_fs . "!");
+                        }
+                    }
+                    else
+                    {
+                        $this->fail("Directory " . $this->settings['local']['hostdir'] . " does not exist! Not allowed to create it..");
+                    }
+                }
+                //validate if dataset name and mountpoint are the same
+                $zfs_info = $this->Cmd->exe("zfs list | grep '".$this->settings['local']['hostdir']."$'");
+                $a = explode(' ', $zfs_info);
+                if ('/' . reset($a) != end($a))
+                {
+                    $this->fail('ZFS name and mountpoint do not match!');
+                }
+                break;
+            default:
+                //check if dir exists
+                if (!file_exists($this->settings['local']['hostdir']))
+                {
+                    if ($this->settings['local']['hostdir-create'] == 'yes')
+                    {
+                        $this->out("Directory " . $this->settings['local']['hostdir'] . " does not exist, creating it..");
+                        $this->Cmd->exe("mkdir -p " . $this->settings['local']['hostdir']);
+                        if ($this->Cmd->is_error())
+                        {
+                            $this->fail("Could not create directory:  " . $this->settings['local']['hostdir'] . "!");
+                        }
+                    }
+                    else
+                    {
+                        $this->fail("Directory " . $this->settings['local']['hostdir'] . " does not exist! Not allowed to create it..");
+                    }
+                }
+                break;
         }
         #####################################
-        # LOG DIR
+        # CHECK RSYNC DIR
         #####################################
-        $this->out('Validate logdir...');
-        //to avoid confusion, an absolute path is required
-        if (!preg_match('/^\//', $this->settings['local']['logdir']))
+        //set syncdir
+        switch($this->settings['local']['filesystem'])
         {
-            $this->fail("logdir must be an absolute path!");
+            case 'ZFS':
+            case 'BTRFS':
+                $rsyncdir = 'rsync.'.strtolower($this->settings['local']['filesystem']);
+                break;
+            default:
+                $rsyncdir = 'rsync.dir';
         }
-        //validate dir, create if required
-        if (!file_exists($this->settings['local']['logdir']))
-        {
-            $this->out('Create logdir  ' . $this->settings['local']['logdir'] . '...');
-            $this->Cmd->exe("mkdir -p " . $this->settings['local']['logdir']);
-        }
+        $this->settings['local']['rsyncdir'] = $this->settings['local']['hostdir'].'/'.$rsyncdir;
         #####################################
         # MYSQL
         #####################################
