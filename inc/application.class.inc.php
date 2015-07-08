@@ -230,7 +230,8 @@ class Application
         //get distro
         foreach (['Debian', 'Ubuntu', 'SunOS', 'OpenIndiana', 'Red Hat', 'CentOS', 'Fedora'] as $d)
         {
-            if (preg_match("/$d/i", $this->Cmd->exe("ssh $_u@$_h 'cat /etc/*release'")))
+            $output = $this->Cmd->exe("ssh $_u@$_h 'cat /etc/*release'");
+            if (preg_match("/$d/i", $output))
             {
                 $this->settings['remote']['distro'] = $d;
                 break;

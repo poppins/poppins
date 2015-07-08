@@ -31,7 +31,8 @@ class Cmd
         //redirect error to standard
         $o = trim(exec("$cmd  2>&1", $output, $return));
         
-        $this->output = $o;
+        //output is an array, we want a string
+        $this->output = implode("\n", $output);
         //if all is well, 0 is returned, else e.g. 127
         $this->error = $return; 
                
