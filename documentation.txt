@@ -20,4 +20,7 @@ OPTIONS
         debugmode. Will output all commands ran by poppins
 
 INSTALLATION
-    Make sure following packages are installed: php5-cli, rsync, ssh, grep, aptitude
+    Make sure following packages are installed: php5-cli, rsync, ssh, grep, aptitude. 
+
+    Make a link to init.php in /usr/local/bin, e.g.:
+        ln -s /home/brdooms/poppins/ini.php /usr/local/bin/poppins
