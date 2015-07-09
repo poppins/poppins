@@ -246,8 +246,16 @@ class Application
         #####################################
         $this->out('Check dependencies...');
         $dependencies = [];
-        //remote
-        if(in_array($this->settings['remote']['distro'], ['Debian', 'Ubuntu'])) $dependencies['remote']['aptitude'] = 'aptitude --version'; 
+        //Debian - Ubuntu
+        if(in_array($this->settings['remote']['distro'], ['Debian', 'Ubuntu']))
+        {
+            $dependencies['remote']['aptitude'] = 'aptitude --version'; 
+        }
+        //Red Hat - Fedora
+        if(in_array($this->settings['remote']['distro'], ['Red Hat', 'CentOS', 'Fedora']))
+        {
+            $dependencies['remote']['yum-utils'] = 'yumdb --version'; 
+        }
         $dependencies['remote']['rsync'] = 'rsync --version'; 
         //local
         $dependencies['local']['rsync'] = 'rsync --version'; 

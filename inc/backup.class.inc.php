@@ -163,6 +163,15 @@ class Backup
                     $this->App->fail('Failed to retrieve package list!');
                 }
                 break;
+            case 'Red Hat':
+            case 'CentOS':
+            case 'Fedora':
+                $this->App->Cmd->exe("$this->ssh \"yumdb search reason user | sort | grep -v 'reason = user' | sed '/^$/d' \" > $this->rsyncdir/meta/" . $filebase . ".packages.txt");
+                if ($this->App->Cmd->is_error())
+                {
+                    $this->App->fail('Failed to retrieve package list!');
+                }
+                break;    
             default:
                 $this->App->out('Remote OS not supported.');
                 break;
