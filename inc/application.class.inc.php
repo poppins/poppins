@@ -103,6 +103,10 @@ class Application
             {
                 $this->fail("Config file not found!");
             }
+            elseif (!preg_match('/^.+\.poppins\.ini$/', $configfile))
+            {
+                $this->fail("Wrong ini file format: {hostname}.poppins.ini!");
+            }
             else
             {
                 $this->settings = parse_ini_file($configfile, 1);
