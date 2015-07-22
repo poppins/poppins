@@ -259,7 +259,7 @@ class Application
         $dependencies['remote']['rsync'] = 'rsync --version'; 
         //local
         $dependencies['local']['rsync'] = 'rsync --version'; 
-        $dependencies['local']['grep'] = 'grep --version'; 
+        $dependencies['local']['grep'] = '{GREP} --version'; 
         //iterate packages
         foreach ($dependencies as $host => $packages)
         {
@@ -300,7 +300,7 @@ class Application
         {
             case 'ZFS':
             case 'BTRFS':
-                $fs = $this->Cmd->exe("df -P -T ".$this->settings['local']['rootdir']." | tail -n +2 | awk '{print $2}'");
+                $fs = $this->Cmd->exe("{DF} -P -T ".$this->settings['local']['rootdir']." | tail -n +2 | awk '{print $2}'");
                 if($fs != strtolower($this->settings['local']['filesystem']))
                 {
                     $this->fail('Rootdir is not a '.$this->settings['local']['filesystem'].' filesystem!');

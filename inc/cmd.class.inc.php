@@ -65,6 +65,8 @@ class LinuxCmd extends Cmd
         $cmd['{MV}'] = '/bin/mv';
         $cmd['{RM}'] = '/bin/rm';
         $cmd['{SSH}'] = '/usr/bin/ssh';
+        $cmd['{GREP}'] = '/usr/bin/grep';
+        $cmd['{DF}'] = '/usr/bin/df';
         return $cmd;
     }
 
@@ -80,6 +82,8 @@ class SunOSCmd extends Cmd
         $cmd['{MV}'] = '/usr/bin/mv';
         $cmd['{RM}'] = '/usr/gnu/bin/rm';
         $cmd['{SSH}'] = '/opt/csw/bin/ssh';
+        $cmd['{GREP}'] = '/usr/bin/ggrep';
+        $cmd['{DF}'] = '/usr/gnu/bin/df';
         return $cmd;
     }
 
