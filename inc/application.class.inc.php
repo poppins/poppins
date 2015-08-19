@@ -198,7 +198,7 @@ class Application
         #####################################
         $this->out('Check remote parameters...');
         //validate user
-        $this->settings['remote']['user'] = ( empty($this->settings['remote']['user'])) ? 'root' : $this->settings['remote']['user'];
+        $this->settings['remote']['user'] = ( empty($this->settings['remote']['user'])) ? $this->Cmd->exe('whoami') : $this->settings['remote']['user'];
         //check remote host
         if (empty($this->settings['remote']['host']))
         {
