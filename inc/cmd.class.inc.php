@@ -29,7 +29,7 @@ class Cmd
         $this->commands []= $cmd;
         
         //redirect error to standard
-        $o = trim(exec("$cmd  2>&1", $output, $return));
+        $o = trim(exec("$cmd 2>&1", $output, $return));
         
         //output is an array, we want a string
         $this->output = implode("\n", $output);
