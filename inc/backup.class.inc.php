@@ -52,7 +52,16 @@ class Backup
         //iterate dirs    
         foreach ($dirs as $dir)
         {
-            $configfiles = $this->App->Cmd->exe("$this->ssh 'cd $dir;ls .my.cnf* 2>/dev/null'");
+            //check if allowed
+            $this->App->Cmd->exe("$this->ssh 'cd $dir';");
+            if($this->App->Cmd->is_error())
+            {
+                $this->App->fail('Cannot access remote directory '.$dir);
+            }
+            else
+            {
+                $configfiles = $this->App->Cmd->exe("$this->ssh 'cd $dir;ls .my.cnf* 2>/dev/null'");
+            }
             if ($configfiles)
             {
                 $configfiles = explode("\n", $configfiles);

@@ -83,15 +83,6 @@ class Application
         //load commands
         $this->Cmd = $Cmd;
         #####################################
-        # CHECK ROOT USER 
-        #####################################
-        $this->out('Check local user...');
-        $whoami = $this->Cmd->exe('whoami');
-        if ($whoami != "root")
-        {
-            die("You must run this script as root!\n");
-        }
-        #####################################
         # PARSE CONFIG FILE
         #####################################
         $this->out("configuration file", 'header');

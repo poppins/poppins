@@ -65,7 +65,7 @@ class LinuxCmd extends Cmd
         $cmd['{MV}'] = '/bin/mv';
         $cmd['{RM}'] = '/bin/rm';
         $cmd['{SSH}'] = '/usr/bin/ssh';
-        $cmd['{GREP}'] = '/usr/bin/grep';
+        $cmd['{GREP}'] = '/bin/grep';
         $cmd['{DF}'] = '/usr/bin/df';
         return $cmd;
     }
