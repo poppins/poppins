@@ -4,7 +4,7 @@ NAME
     poppins - backup script with incremental snapshots
 
 SYNOPSIS
-    poppins -c {configfile} [-d] [--long-options]
+    poppins -c {configfile} [-d] [-d] [-h] [-v] [--long-options]
 
 DESCRIPTION
     Poppins has one required option, "-c", the configfile. Good practice is to name it {filename}.poppins.ini. Options in the ini file may be overridden by cli options. A useful overriden
@@ -20,7 +20,7 @@ OPTIONS
         debugmode. Will output all commands ran by poppins
     -h, --help
         prints this help page
-    -v, --version
+    -v
         prints poppins version
 
 INSTALLATION

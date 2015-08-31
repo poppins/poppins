@@ -57,7 +57,9 @@ class Application
         $this->options = getopt(implode('', $CLI_SHORT_OPTS), $CLI_LONG_OPTS);
         if (!count($this->options))
         {
-            print "Usage: " . $_SERVER['PHP_SELF'] . " -c {configfile} [-d] [-h] [-v] [--longoptions]\n";
+            $content = file_get_contents(dirname(__FILE__).'/../documentation.txt');
+            preg_match('/SYNOPSIS\n(.*?)\n/s', $content, $match);
+            print "Usage: " . trim($match[1]) . "\n";
             die();
         }
         elseif(isset($this->options['h']) || isset($this->options['help']))
