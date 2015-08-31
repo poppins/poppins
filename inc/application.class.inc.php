@@ -52,14 +52,26 @@ class Application
         #####################################
         # HELP
         #####################################\
-        $CLI_SHORT_OPTS = ["c:d"];
-        $this->options = getopt(implode('', $CLI_SHORT_OPTS));
-        if (!count($this->options) || @$argv[1] == '--help')
+        $CLI_SHORT_OPTS = ["c:dhv"];
+        $CLI_LONG_OPTS = ["version", "help"];
+        $this->options = getopt(implode('', $CLI_SHORT_OPTS), $CLI_LONG_OPTS);
+        if (!count($this->options))
         {
-            //print "Usage: " . $_SERVER['PHP_SELF'] . " -c {configfile} [-d] [--longoptions]\n";
-            $documentation = file_get_contents(dirname(__FILE__).'/../documentation.txt');
+            print "Usage: " . $_SERVER['PHP_SELF'] . " -c {configfile} [-d] [--longoptions]\n";
+            die();
+        }
+        elseif(isset($this->options['h']) || isset($this->options['help']))
+        {
             print $this->appname.' '.$this->version."\n\n";
-            print "$documentation\n";
+            $content = file_get_contents(dirname(__FILE__).'/../documentation.txt');
+            print "$content\n";
+            die();
+        }
+        elseif(isset($this->options['v']) || isset($this->options['version']))
+        {
+            print $this->appname.' '.$this->version."\n";
+            $content = file_get_contents(dirname(__FILE__).'/../license.txt');
+            print "$content\n";
             die();
         }
         #####################################
