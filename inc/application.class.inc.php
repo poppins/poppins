@@ -27,7 +27,7 @@ class Application
         $this->start_time = date('U');
     }
 
-    function fail($message, $error = 'generic')
+    function fail($message = '', $error = 'generic')
     {
         //compose message
         $output = [];
@@ -60,21 +60,21 @@ class Application
             $content = file_get_contents(dirname(__FILE__).'/../documentation.txt');
             preg_match('/SYNOPSIS\n(.*?)\n/s', $content, $match);
             print "Usage: " . trim($match[1]) . "\n";
-            die();
+            $this->abort();
         }
         elseif(isset($this->options['h']) || isset($this->options['help']))
         {
             print $this->appname.' '.$this->version."\n\n";
             $content = file_get_contents(dirname(__FILE__).'/../documentation.txt');
             print "$content\n";
-            die();
+            $this->abort();
         }
         elseif(isset($this->options['v']) || isset($this->options['version']))
         {
             print $this->appname.' '.$this->version."\n";
             $content = file_get_contents(dirname(__FILE__).'/../license.txt');
             print "$content\n";
-            die();
+            $this->abort();
         }
         #####################################
         # START
@@ -88,7 +88,7 @@ class Application
         $OS = trim(shell_exec('uname'));
         if (!in_array($OS, ['Linux', 'SunOS']))
         {
-            die("Local OS currently not supported!\n");
+            $this->abort("Local OS currently not supported!");
         }
         #####################################
         # SETUP COMMANDS
@@ -97,7 +97,7 @@ class Application
         //load commands
         $this->Cmd = $Cmd;
         #####################################
-        # PARSE CONFIG FILE
+        # LOAD OPTIONS FROM CONFIG FILE
         #####################################
         $this->out("configuration file", 'header');
         //validate config file
@@ -106,11 +106,11 @@ class Application
             $configfile = $this->options['c'];
             if (!file_exists($configfile))
             {
-                $this->fail("Config file not found!");
+                $this->abort("Config file not found!");
             }
             elseif (!preg_match('/^.+\.poppins\.ini$/', $configfile))
             {
-                $this->fail("Wrong ini file format: {hostname}.poppins.ini!");
+                $this->abort("Wrong ini file format: {hostname}.poppins.ini!");
             }
             else
             {
@@ -144,8 +144,11 @@ class Application
         }
         else
         {
-            $this->fail("Option -c {configfile} is required!");
+            $this->abort("Option -c {configfile} is required!");
         }
+        #####################################
+        # PARSE CONFIG FILE
+        #####################################
         //trim spaces
         $this->out("Check configuration syntax (spaces and trailing slashes not allowed)...");
         foreach ($this->settings as $k => $v)
@@ -506,6 +509,15 @@ class Application
         //print $message."\n";
     }
 
+    function abort($message = '')
+    {
+        if($message)
+        {
+            $message .= "\n";
+        }
+        die($message);
+    }
+    
     function quit($message = '', $error = false)
     {
         $this->out("$this->appname v$this->version - SCRIPT ENDED " . date('Y-m-d H:i:s'), 'title');
@@ -530,22 +542,43 @@ class Application
         //content
         $content = [];
         $content [] = $messages;
-        //log to file
-        //script returned no errors if set to false
-        $suffix = ($error) ? 'error' : 'success';
-        $logfile = $this->settings['local']['logdir'] . '/' . $this->settings['remote']['host'] . '.' . date('Y-m-d_His', $this->start_time) . '.poppins.' . $suffix . '.log';
-        $content [] = 'Create logfile ' . $logfile . '...';
-        $this->Cmd->exe("touch " . $logfile);
-        if ($this->Cmd->is_error())
-        {
-            $this->fail("Cannot create log file!");
-        }
+        #####################################
+        # LOG TO FILE
+        #####################################
         //write to log
         $content [] = 'Write to log file...';
-        $success = file_put_contents($logfile, $messages);
-        if (!$success)
+        if (is_dir($this->settings['local']['logdir']))
         {
-            $content [] = 'FAILED!';
+            if (!empty($this->settings['remote']['host']))
+            {
+                //script returned no errors if set to false
+                $suffix = ($error) ? 'error' : 'success';
+                $logfile = $this->settings['local']['logdir'] . '/' . $this->settings['remote']['host'] . '.' . date('Y-m-d_His', $this->start_time) . '.poppins.' . $suffix . '.log';
+                $content [] = 'Create logfile ' . $logfile . '...';
+                //create file
+                $this->Cmd->exe("touch " . $logfile);
+                
+                if ($this->Cmd->is_error())
+                {
+                    $content []= 'WARNING! Cannot write to logfile. Cannot create log file!';
+                }
+                else
+                {
+                    $success = file_put_contents($logfile, $messages);
+                    if (!$success)
+                    {
+                        $content []= 'WARNING! Cannot write to logfile. Write protected?';
+                    }
+                }
+            }
+            else
+            {
+                $content []= 'WARNING! Cannot write to logfile. Remote host not specified!';
+            }
+        }
+        else
+        {
+            $content []= 'WARNING! Cannot write to logfile. Log directory not created!';
         }
         //be polite
         $content [] = "Bye...";
@@ -553,7 +586,7 @@ class Application
         $content [] = "";
         //output
         print implode("\n", $content);
-        die();
+        $this->abort();
     }
 
     function succeed()
