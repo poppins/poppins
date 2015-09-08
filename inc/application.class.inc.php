@@ -71,7 +71,7 @@ class Application
         }
         elseif(isset($this->options['v']) || isset($this->options['version']))
         {
-            print $this->appname.' '.$this->version."\n";
+            print $this->appname.' version '.$this->version."\n";
             $content = file_get_contents(dirname(__FILE__).'/../license.txt');
             print "$content\n";
             $this->abort();
@@ -431,7 +431,7 @@ class Application
         ######################################
         # DUMP ALL SETTINGS
         #####################################
-        $this->out('LIST CONFIGURATION', 'header');
+        $this->out('LIST CONFIGURATION @'.$this->settings['remote']['host'], 'header');
         $output = [];
         ksort($this->settings);
         foreach ($this->settings as $k => $v)
