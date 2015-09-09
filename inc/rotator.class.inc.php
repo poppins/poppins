@@ -167,7 +167,15 @@ class Rotator
                 }
             }
         }
+        //final housekeeping if needed
+        $this->finalize();
+        //done
         $this->App->out("Done!");
+    }
+    
+    function finalize()
+    {
+	return;
     }
 
     function prepare()
@@ -325,6 +333,18 @@ class ZFSRotator extends Rotator
         $cmd = "zfs snapshot $rsyncdir@$parent-$dir";
         $this->App->out("Create ZFS snapshot: $cmd");
         return $this->App->Cmd->exe("$cmd");
+    }
+    
+    function finalize()
+    {
+        //create a symlink to .zfs
+        if(file_exists($this->rsyncdir.'/.zfs/snapshot') && !file_exists($this->settings['local']['hostdir'].'/archive'))
+        {
+            $this->App->out("Create an archive dir symlink to ZFS snapshots...");
+            $cmd = 'ln -s '.$this->rsyncdir.'/.zfs/snapshot '.$this->settings['local']['hostdir'].'/archive';
+            $this->App->Cmd->exe("$cmd");
+
+        }
     }
     
     function remove($dir, $parent)
