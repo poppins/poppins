@@ -25,7 +25,7 @@ class Backup
         //validate (check if LOCK file exists)
         $this->validate();
         //pre backup
-        $this->jobs();
+        ////$this->jobs();
         //create dirs
         $this->prepare();
         //remote system info

@@ -61,12 +61,12 @@ class LinuxCmd extends Cmd
     function map()
     {
         $cmd = [];
-        $cmd['{CP}'] = '/usr/bin/cp';
-        $cmd['{MV}'] = '/bin/mv';
-        $cmd['{RM}'] = '/bin/rm';
-        $cmd['{SSH}'] = '/usr/bin/ssh';
-        $cmd['{GREP}'] = '/bin/grep';
-        $cmd['{DF}'] = '/bin/df';
+        $cmd['{CP}'] = 'cp';
+        $cmd['{MV}'] = 'mv';
+        $cmd['{RM}'] = 'rm';
+        $cmd['{SSH}'] = 'ssh';
+        $cmd['{GREP}'] = 'grep';
+        $cmd['{DF}'] = 'df';
         return $cmd;
     }
 
