@@ -26,14 +26,16 @@ class Cmd
         }
 
         //store command
+        $this->cmd = $cmd;
         $this->commands []= $cmd;
         
         //redirect error to standard
-        $o = trim(exec("$cmd 2>&1", $output, $return));
+        $o = trim(exec("$cmd", $output, $return));
         
         //output is an array, we want a string
         $this->output = implode("\n", $output);
         //if all is well, 0 is returned, else e.g. 127
+        
         $this->error = $return; 
                
         return $this->output;
@@ -41,7 +43,7 @@ class Cmd
 
     public function is_error()
     {
-        return (boolean) $this->error;
+        return ($this->error === 0)? false:true;
     }
 
     function parse($cmd)

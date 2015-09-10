@@ -31,8 +31,6 @@ class Application
     {
         //compose message
         $output = [];
-        $output []= "FATAL ERROR: Application failed!";
-        $output []= "MESSAGE: $message";
         if(isset($this->options['d']))
         {
             $output []= "COMMAND STACK:";
@@ -40,8 +38,10 @@ class Application
             {
                 $output []= $c;
             }
+            $output []= "";
         }
-        
+        $output []= "FATAL ERROR: Application failed!";
+        $output []= "MESSAGE: $message";
         $this->out(implode("\n", $output), 'error');
         //quit
         $this->quit("SCRIPT FAILED!", $error);
@@ -209,6 +209,10 @@ class Application
         {
             $this->out('Create logdir  ' . $this->settings['local']['logdir'] . '...');
             $this->Cmd->exe("mkdir -p " . $this->settings['local']['logdir']);
+            if($this->Cmd->is_error())
+            {
+                $this->fail('Cannot create log dir '.$this->settings['local']['logdir']);
+            }
         }
         #####################################
         # CHECK REMOTE PARAMS
@@ -466,17 +470,16 @@ class Application
         switch ($type)
         {
             case 'error':
-                $l = '|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||';
+                $l1 = '$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ERROR $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$';
+                $l2 = '$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$';
                 $content [] = '';
-                $content [] = $l;
-                $content [] = $l;
+                $content [] = $l1;
                 $content [] = $message;
-                $content [] = $l;
-                $content [] = $l;
+                $content [] = $l2;
                 $content [] = '';
                 break;
             case 'header':
-                $l = "---------------------------------------------------------------------------------------";
+                $l = "-----------------------------------------------------------------------------------------";
                 $content [] = $l;
                 $content [] = strtoupper($message);
                 $content [] = $l;
@@ -485,17 +488,18 @@ class Application
                 $content [] = "-----------> " . $message;
                 break;
             case 'title':
-                $l = "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%";
+                $l = "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%";
                 $content [] = $l;
                 $content [] = $message;
                 $content [] = $l;
                 break;
             case 'warning':
-                $l = '|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||';
+                $l1 = '||||||||||||||||||||||||||||||||||| WARNING ||||||||||||||||||||||||||||||||||||||||||||';
+                $l2 = '||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||';
                 $content [] = '';
-                $content [] = $l;
+                $content [] = $l1;
                 $content [] = $message;
-                $content [] = $l;
+                $content [] = $l2;
                 $content [] = '';
                 break;
             case 'default':

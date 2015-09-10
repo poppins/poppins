@@ -159,7 +159,7 @@ class Backup
         # remote disk layout and packages
         if ($this->settings['remote']['os'] == "Linux")
         {
-            $this->App->Cmd->exe("$this->ssh '( df -hT ; vgs ; pvs ; lvs ; blkid ; lsblk -fi ; for disk in $(ls /dev/sd[a-z]) ; do fdisk -l \$disk; done )' > $this->rsyncdir/meta/" . $filebase . ".disk-layout.txt");
+            $this->App->Cmd->exe("$this->ssh '( df -hT 2>&1; vgs 2>&1; pvs 2>&1; lvs 2>&1; blkid 2>&1; lsblk -fi 2>&1; for disk in $(ls /dev/sd[a-z]) ; do fdisk -l \$disk 2>&1; done )' > $this->rsyncdir/meta/" . $filebase . ".disk-layout.txt");
         }
         $this->App->out('Gather information about packages...');
         switch ($this->App->settings['remote']['distro'])
