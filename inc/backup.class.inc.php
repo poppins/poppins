@@ -52,19 +52,21 @@ class Backup
         //iterate dirs    
         foreach ($dirs as $dir)
         {
+            $output = false;
             //check if allowed
             $this->App->Cmd->exe("$this->ssh 'cd $dir';");
             if($this->App->Cmd->is_error())
             {
-                $this->App->fail('Cannot access remote directory '.$dir);
+                $this->App->out('WARNING! Cannot access remote dir ' . $dir.'...', 'warning');
             }
             else
             {
-                $configfiles = $this->App->Cmd->exe("$this->ssh 'cd $dir;ls .my.cnf* 2>/dev/null'");
+                $output = $this->App->Cmd->exe("$this->ssh 'cd $dir;ls .my.cnf* 2>/dev/null'");
             }
-            if ($configfiles)
+            //check output
+            if ($output)
             {
-                $configfiles = explode("\n", $configfiles);
+                $configfiles = explode("\n", $output);
             }
             else
             {
@@ -72,48 +74,51 @@ class Backup
                 $this->App->out('WARNING! No mysql config files found in remote dir ' . $dir.'...', 'warning');
                 continue;
             }
-            //iterate config files
-            foreach ($configfiles as $configfile)
+            if (count($configfiles))
             {
-                //instance
-                $instance = preg_replace('/^.+my\.cnf(\.)?/', '', $configfile);
-                $instance = ($instance)? $instance:'default';
-                
-                //ignore if file is the same
-                $contents = $this->App->Cmd->exe("$this->ssh 'cd $dir;cat .my.cnf*'");
-                if(in_array($contents, $cached))
+                //iterate config files
+                foreach ($configfiles as $configfile)
                 {
-                    $this->App->out("WARNING! Found duplicate mysql config file $dir/$configfile...", 'warning');
-                    continue;
-                }
-                else
-                {
-                    $cached []= $contents;
-                }
-                
-                $this->App->out("Backup databases from $dir/$configfile");
-                $instancedir = "$this->rsyncdir/mysql/$instance";
-                if(!is_dir($instancedir))
-                {
-                    $this->App->out("Create directory $instancedir...");
-                    $this->App->Cmd->exe("mkdir -p $instancedir");
-                }    
-                //get all dbs
-                $dbs = $this->App->Cmd->exe("$this->ssh 'mysql --defaults-file=\"$dir/$configfile\" --skip-column-names -e \"show databases\" | grep -v \"^information_schema$\"'");
-                foreach (explode("\n", $dbs) as $db)
-                {
-                    if (empty($db))
+                    //instance
+                    $instance = preg_replace('/^.+my\.cnf(\.)?/', '', $configfile);
+                    $instance = ($instance) ? $instance : 'default';
+
+                    //ignore if file is the same
+                    $contents = $this->App->Cmd->exe("$this->ssh 'cd $dir;cat .my.cnf*'");
+                    if (in_array($contents, $cached))
                     {
+                        $this->App->out("WARNING! Found duplicate mysql config file $dir/$configfile...", 'warning');
                         continue;
-                    }
-                    $this->App->Cmd->exe("$this->ssh mysqldump --defaults-file=$configfile --ignore-table=mysql.event --routines --single-transaction --quick --databases $db | gzip > $instancedir/$db.sql.gz");
-                    if (!$this->App->Cmd->is_error())
-                    {
-                        $this->App->out("$db... OK.", 'indent');
                     }
                     else
                     {
-                        $this->App->fail("MySQL backup failed!");
+                        $cached [] = $contents;
+                    }
+
+                    $this->App->out("Backup databases from $dir/$configfile");
+                    $instancedir = "$this->rsyncdir/mysql/$instance";
+                    if (!is_dir($instancedir))
+                    {
+                        $this->App->out("Create directory $instancedir...");
+                        $this->App->Cmd->exe("mkdir -p $instancedir");
+                    }
+                    //get all dbs
+                    $dbs = $this->App->Cmd->exe("$this->ssh 'mysql --defaults-file=\"$dir/$configfile\" --skip-column-names -e \"show databases\" | grep -v \"^information_schema$\"'");
+                    foreach (explode("\n", $dbs) as $db)
+                    {
+                        if (empty($db))
+                        {
+                            continue;
+                        }
+                        $this->App->Cmd->exe("$this->ssh mysqldump --defaults-file=$configfile --ignore-table=mysql.event --routines --single-transaction --quick --databases $db | gzip > $instancedir/$db.sql.gz");
+                        if (!$this->App->Cmd->is_error())
+                        {
+                            $this->App->out("$db... OK.", 'indent');
+                        }
+                        else
+                        {
+                            $this->App->fail("MySQL backup failed!");
+                        }
                     }
                 }
             }
