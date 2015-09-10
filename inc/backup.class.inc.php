@@ -128,7 +128,7 @@ class Backup
         # do our thing on the remote end. Best to put this in a separate script.
         $this->App->out('PRE BACKUP REMOTE JOB', 'header');
         //check if jobs
-        if ($this->settings['actions']['pre_backup_remote_job'])
+        if (isset($this->settings['actions']) && $this->settings['actions']['pre_backup_remote_job'])
         {
             $this->App->out('Found remote job, executing... (' . date('Y-m-d H:i:s') . ')');
             $output = $this->App->Cmd->exe($this->ssh ." '".$this->settings['actions']['pre_backup_remote_job']."'");

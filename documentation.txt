@@ -28,4 +28,4 @@ INSTALLATION
     Make sure following packages are installed on remote machine: rsync, ssh, grep, aptitude (Debian) or yum-utils (Red Hat). 
 
     Make a link to init.php in /usr/local/bin, e.g.:
-        ln -s /home/brdooms/poppins/ini.php /usr/local/bin/poppins
+        ln -s /home/brdooms/poppins/init.php /usr/local/bin/poppins
