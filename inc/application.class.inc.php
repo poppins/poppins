@@ -166,7 +166,7 @@ class Application
         //check if there is backup is configured
         if(!count($this->settings['included']) && $this->settings['mysql']['enabled'] != 'yes')
         {
-            $this->fail("No directories configured or MySQL to backup...");
+            $this->fail("No directories configured for backup nor MySQL configured. Nothing to do...");
         }
         //validate included/excluded syntax
         $included = array_keys($this->settings['included']);
