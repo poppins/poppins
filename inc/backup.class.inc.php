@@ -172,6 +172,7 @@ class Backup
             case 'Debian':
             case 'Ubuntu':
                 $this->App->Cmd->exe("$this->ssh \"aptitude search '~i !~M' -F '%p' --disable-columns | sort -u\" > $this->rsyncdir/meta/" . $filebase . ".packages.txt");
+                $this->App->Cmd->exe("$this->ssh \"aptitude search '~i !~M' -F '%p' --disable-columns | sort -u\" > $this->rsyncdir/meta/" . $filebase . ".packages.txt");
                 if ($this->App->Cmd->is_error())
                 {
                     $this->App->fail('Failed to retrieve package list!');
@@ -180,11 +181,22 @@ class Backup
             case 'Red Hat':
             case 'CentOS':
             case 'Fedora':
-                $this->App->Cmd->exe("$this->ssh \"yumdb search reason user | sort | grep -v 'reason = user' | sed '/^$/d' \" > $this->rsyncdir/meta/" . $filebase . ".packages.txt");
+                //check if yumdb installed on remote machine
+                $_h = $this->App->settings['remote']['host'];
+                $_u = $this->App->settings['remote']['user'];
+                $this->App->Cmd->exe("ssh $_u@$_h 'yumdb --version'");
                 if ($this->App->Cmd->is_error())
                 {
                     $this->App->out('Failed to retrieve package list with yumdb! Is it installed on the remote machine?', 'warning');
                     $this->App->Cmd->exe("$this->ssh \"rpm -qa \" > $this->rsyncdir/meta/" . $filebase . ".packages.txt");
+                    if ($this->App->Cmd->is_error())
+                    {
+                        $this->App->fail('Failed to retrieve package list!');
+                    }
+                }
+                else
+                {
+                    $this->App->Cmd->exe("$this->ssh \"yumdb search reason user | sort | grep -v 'reason = user' | sed '/^$/d' \" > $this->rsyncdir/meta/" . $filebase . ".packages.txt");
                     if ($this->App->Cmd->is_error())
                     {
                         $this->App->fail('Failed to retrieve package list!');
