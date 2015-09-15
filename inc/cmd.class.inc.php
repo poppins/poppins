@@ -30,20 +30,18 @@ class Cmd
         $this->commands []= $cmd;
         
         //redirect error to standard
-        $o = trim(exec("$cmd", $output, $return));
+        $o = trim(exec("$cmd", $output, $this->return));
         
         //output is an array, we want a string
         $this->output = implode("\n", $output);
-        //if all is well, 0 is returned, else e.g. 127
-        
-        $this->error = $return; 
                
         return $this->output;
     }
 
     public function is_error()
     {
-        return ($this->error === 0)? false:true;
+         //if all is well, 0 is returned, else e.g. 127
+        return (boolean)($this->return !== 0);
     }
 
     function parse($cmd)
