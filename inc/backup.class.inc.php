@@ -183,7 +183,12 @@ class Backup
                 $this->App->Cmd->exe("$this->ssh \"yumdb search reason user | sort | grep -v 'reason = user' | sed '/^$/d' \" > $this->rsyncdir/meta/" . $filebase . ".packages.txt");
                 if ($this->App->Cmd->is_error())
                 {
-                    $this->App->fail('Failed to retrieve package list!');
+                    $this->App->out('Failed to retrieve package list with yumdb! Is it installed on the remote machine?', 'warning');
+                    $this->App->Cmd->exe("$this->ssh \"rpm -qa \" > $this->rsyncdir/meta/" . $filebase . ".packages.txt");
+                    if ($this->App->Cmd->is_error())
+                    {
+                        $this->App->fail('Failed to retrieve package list!');
+                    }
                 }
                 break;    
             default:

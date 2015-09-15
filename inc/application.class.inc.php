@@ -266,7 +266,8 @@ class Application
         //Red Hat - Fedora
         if(in_array($this->settings['remote']['distro'], ['Red Hat', 'CentOS', 'Fedora']))
         {
-            $dependencies['remote']['yum-utils'] = 'yumdb --version'; 
+            //yum is nice though rpm will suffice, no hard dependency needed
+            //$dependencies['remote']['yum-utils'] = 'yumdb --version'; 
         }
         $dependencies['remote']['rsync'] = 'rsync --version'; 
         //local
