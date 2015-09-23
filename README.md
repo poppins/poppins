@@ -55,6 +55,7 @@ OPTIONS
         prints poppins version
 
 INSTALLATION
+
 *Make sure following packages are installed on local machine: hg, php5-cli (Debian) or php-cli (RedHat), rsync, ssh, grep. 
 *Make sure following packages are installed on remote machine: rsync, ssh, grep, aptitude (Debian) or yum-utils/rpm (Red Hat). 
 *Make a link to init.php in /usr/local/bin, e.g.:
