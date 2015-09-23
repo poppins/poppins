@@ -1,5 +1,5 @@
 # README #
-### Copyrightv###
+### Copyright ###
 Poppins 
 
 Copyright (C) 2015 Free Software Foundation, Inc.
