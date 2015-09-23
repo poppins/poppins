@@ -1,5 +1,5 @@
 # README #
-* Copyright
+### Copyrightv###
 Poppins 
 
 Copyright (C) 2015 Free Software Foundation, Inc.
@@ -41,6 +41,7 @@ EXAMPLES
     poppins -c example.poppins.ini --remote-host=webserver1
 
 OPTIONS
+
     -c {configfile}
         configfile. Required. 
 
