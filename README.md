@@ -17,12 +17,11 @@ Poppins - backup script with incremental snapshots.
 PUppet version 1.91
 
 ### How do I get set up? ###
-* Summary of set up
-Step 1
+* Step 1
   Make sure following packages are installed on local machine: hg, php5-cli (Debian) or php-cli (RedHat), rsync, ssh, grep. 
-Step 2
+* Step 2
   Make sure following packages are installed on remote machine: rsync, ssh, grep, aptitude (Debian) or yum-utils/rpm (Red Hat). 
-Step 3
+* Step 3
   Make a link to init.php in /usr/local/bin, e.g.:
         ln -s ~/poppins/init.php /usr/local/bin/poppins
 
@@ -38,6 +37,7 @@ DESCRIPTION
     Poppins has one required option, "-c", the configfile. Good practice is to name it {filename}.poppins.ini. Options in the ini file may be overridden by cli options. A useful overriden parameter is the [remote] host. it may be overridden like so: --remote-host={hostname} 
 
 EXAMPLES
+
     poppins -c example.poppins.ini --remote-host=webserver1
 
 OPTIONS
