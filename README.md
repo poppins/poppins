@@ -15,16 +15,10 @@ Written by Bruno Dooms, Frank Van Damme
 * Version: Puppet version 1.91
 
 ### How do I get set up? ###
-* Step 1
-  Make sure following packages are installed on local machine: hg, php5-cli (Debian) or php-cli (RedHat), rsync, ssh, grep. 
-* Step 2
-  Make sure following packages are installed on remote machine: rsync, ssh, grep, aptitude (Debian) or yum-utils/rpm (Red Hat). 
-* Step 3
-  Make a link to init.php in /usr/local/bin, e.g.:
-        ln -s ~/poppins/init.php /usr/local/bin/poppins
-
-* Configuration
-All configuration in {filename}.poppins.ini. See example.poppins.ini for indtructions.
+* Step 1, Make sure following packages are installed on local machine: hg, php5-cli (Debian) or php-cli (RedHat), rsync, ssh, grep. 
+* Step 2, Make sure following packages are installed on remote machine: rsync, ssh, grep, aptitude (Debian) or yum-utils/rpm (Red Hat). 
+* Step 3, Make a link to init.php in /usr/local/bin, e.g.: ln -s ~/poppins/init.php /usr/local/bin/poppins
+* Configuration: All configuration in {filename}.poppins.ini. See example.poppins.ini for indtructions.
 
 ### Deployment instructions ###
 
