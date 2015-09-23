@@ -10,11 +10,9 @@ There is NO WARRANTY, to the extent permitted by law.
 Written by Bruno Dooms, Frank Van Damme
 
 ### What is this repository for? ###
-* Quick summary
-Poppins - backup script with incremental snapshots. 
+* Quick summary: Poppins - backup script with incremental snapshots. 
 
-* Version:
-PUppet version 1.91
+* Version: Puppet version 1.91
 
 ### How do I get set up? ###
 * Step 1
