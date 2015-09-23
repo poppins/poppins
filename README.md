@@ -28,7 +28,7 @@ PUppet version 1.91
 * Configuration
 All configuration in {filename}.poppins.ini. See example.poppins.ini for indtructions.
 
-* Deployment instructions
+### Deployment instructions ###
 
 SYNOPSIS
     poppins -c {configfile} [-d] [-h] [-v] [--long-options]
