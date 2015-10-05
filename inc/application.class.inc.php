@@ -638,11 +638,14 @@ class Application
         # REPORT
         #####################################
         //list disk usage
-        foreach([$this->settings['local']['hostdir']] as $dir)
+        if ($this->settings['log']['local-disk-usage'])
         {
-            $du = $this->Cmd->exe("du -sh $dir");
-            $this->out("Disk Usage ($dir):");
-            $this->out("$du");
+            foreach([$this->settings['local']['hostdir']] as $dir)
+            {
+                $du = $this->Cmd->exe("du -sh $dir");
+                $this->out("Disk Usage ($dir):");
+                $this->out("$du");
+            }
         }
         $this->out("Done!");
         $this->quit();
