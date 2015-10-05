@@ -29,6 +29,7 @@ SYNOPSIS
     poppins -c {configfile} [-d] [-h] [-v] [--long-options]
 
 DESCRIPTION
+
 Poppins has one required option, "-c", the configfile. Good practice is to name it {filename}.poppins.ini. Options in the ini file may be overridden by cli options. A useful overriden parameter is the [remote] host. it may be overridden like so: --remote-host={hostname} 
 
 EXAMPLES
