@@ -11,8 +11,7 @@ Written by Bruno Dooms, Frank Van Damme
 
 ### Summary ###
 * Quick summary: Poppins - backup script with incremental snapshots. 
-
-* Version: Puppet version 1.91
+* Version: Puppet version 0.1
 
 ### Install ###
 * Step 1, Make sure following packages are installed on local machine: hg, php5-cli (Debian) or php-cli (RedHat), rsync, ssh, grep. 
