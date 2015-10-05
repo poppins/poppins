@@ -153,13 +153,28 @@ class Application
         $this->out("Check configuration syntax (spaces and trailing slashes not allowed)...");
         foreach ($this->settings as $k => $v)
         {
-            foreach ($v as $kk => $vv)
+            //do not validate if included or excluded directories
+            if(in_array($k, ['included', 'excluded']))
             {
-                $this->settings[$k][$kk] = str_replace(" ", "", $vv);
-                //No trailing slashes
-                if (preg_match('/\/$/', $vv))
+                continue;
+            }
+            else
+            {
+                //loop thru key/value pairs
+                foreach ($v as $kk => $vv)
                 {
-                    $this->fail("No trailing slashes allowed in config file! $kk = $vv...");
+                    //check for white space
+                    $vv1 = str_replace(" ", "", $vv);
+                    if($vv != $vv1)
+                    {
+                        $this->out('Config values may not contain spaces. Value for key "['.$k.'] '.$kk.'" is trimmed! New value is '.$vv1, 'warning');
+                        $this->settings[$k][$kk] = $vv1;
+                    }
+                    //No trailing slashes
+                    if (preg_match('/\/$/', $vv))
+                    {
+                        $this->fail("No trailing slashes allowed in config file! $kk = $vv...");
+                    }
                 }
             }
         }
@@ -167,6 +182,27 @@ class Application
         if(!count($this->settings['included']) && $this->settings['mysql']['enabled'] != 'yes')
         {
             $this->fail("No directories configured for backup nor MySQL configured. Nothing to do...");
+        }
+        //validate spaces in keys of included section
+        foreach ($this->settings['included'] as $k => $v)
+        {
+            $k1 = str_replace(' ', '\ ', stripslashes($k));
+            if ($k != $k1)
+            {
+                $this->fail("You must escape white space in keys of included directories! Aborting...");
+            }
+        }
+        //validate spaces in values of included/excluded section
+        foreach(['included', 'excluded'] as $section)
+        {
+            foreach ($this->settings[$section] as $k => $v)
+            {
+                $v1 = str_replace(' ', '\ ', stripslashes($v));
+                if ($v != $v1)
+                {
+                    $this->fail("You must escape white space in values of $section directories! Aborting...");
+                }
+            }
         }
         //validate included/excluded syntax
         $included = array_keys($this->settings['included']);

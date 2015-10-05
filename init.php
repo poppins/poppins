@@ -3,7 +3,7 @@
 #####################################
 # VERSION
 #####################################
-// In Mary Poppins, Mary, Bert, and the children ride a merry-go-round, then leave 
+// In Mary Poppins, Mary, Bert, and the children ride a merry-go-round, then leave
 // the carousel on their horses to go off on a fox hunt and a horse race.
 $APPNAME = 'Poppins';
 // Based on rotating rsync script by frvdamme
@@ -24,7 +24,7 @@ $App->init();
 ###############################################################################################################
 $App->out('Initiate backups', 'header');
 #####################################
-# RSYNC 
+# RSYNC
 #####################################
 //initiate
 $c = BackupFactory::create($App);
