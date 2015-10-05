@@ -31,15 +31,6 @@ class Application
     {
         //compose message
         $output = [];
-        if(isset($this->options['d']))
-        {
-            $output []= "COMMAND STACK:";
-            foreach($this->Cmd->commands as $c)
-            {
-                $output []= $c;
-            }
-            $output []= "";
-        }
         $output []= "FATAL ERROR: Application failed!";
         $output []= "MESSAGE: $message";
         $this->out(implode("\n", $output), 'error');
@@ -193,7 +184,7 @@ class Application
             $k1 = str_replace(' ', '\ ', stripslashes($k));
             if ($k != $k1)
             {
-                $this->fail("You must escape white space in keys of included directories! Aborting...");
+                $this->fail("You must escape white space in [included] section! Aborting...");
             }
         }
         //validate spaces in values of included/excluded section
@@ -204,7 +195,7 @@ class Application
                 $v1 = str_replace(' ', '\ ', stripslashes($v));
                 if ($v != $v1)
                 {
-                    $this->fail("You must escape white space in values of $section directories! Aborting...");
+                    $this->fail("You must escape white space in [$section] section! Aborting...");
                 }
             }
         }
@@ -215,7 +206,7 @@ class Application
         {
             if(!in_array($e, $included))
             {
-                $this->fail("Excluded directory $e not indexed in included directories!");
+                $this->fail("Excluded directory \"$e\" not valid!");
             }
         }
         //validate snapshot config
@@ -565,6 +556,18 @@ class Application
     
     function quit($message = '', $error = false)
     {
+        //debug output
+        if(isset($this->options['d']))
+        {
+            $this->out("COMMAND STACK", 'header');
+            $output = [];
+            foreach($this->Cmd->commands as $c)
+            {
+                $output []= $c;
+            }
+            $output []= "";
+            $this->out(implode("\n", $output));
+        }
         $this->out("$this->appname v$this->version - SCRIPT ENDED " . date('Y-m-d H:i:s'), 'title');
         //log message
         if ($message)
@@ -636,8 +639,6 @@ class Application
 
     function succeed()
     {
-        $this->out("Final report", 'header');
-        $this->out("SCRIPT RAN SUCCESFULLY!");
         #####################################
         # REPORT
         #####################################
@@ -651,8 +652,7 @@ class Application
                 $this->out("$du");
             }
         }
-        $this->out("Done!");
-        $this->quit();
+        $this->quit("SCRIPT RAN SUCCESFULLY!");
     }
 
 }
