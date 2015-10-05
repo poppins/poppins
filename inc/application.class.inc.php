@@ -159,7 +159,7 @@ class Application
                 //trim commas
                 foreach ($v as $kk => $vv)
                 {
-                    $this->settings[$k][$kk] = preg_replace('/\s?,\s?/', ',', $$vv);
+                    $this->settings[$k][$kk] = preg_replace('/\s?,\s?/', ',', $vv);
                 }
             }
             else
