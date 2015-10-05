@@ -30,7 +30,7 @@ SYNOPSIS
 
 DESCRIPTION
 
-Poppins has one required option, "-c", the configfile. Good practice is to name it {filename}.poppins.ini. Options in the ini file may be overridden by cli options. A useful overriden parameter is the [remote] host. it may be overridden like so: --remote-host={hostname} 
+Poppins has one required option, "-c", the configfile. Good practice is to name it {filename}.poppins.ini. Options in the ini file may be overridden by cli options. See example.
 
 EXAMPLES
 
@@ -49,10 +49,3 @@ OPTIONS
 
     -v
         prints poppins version
-
-INSTALLATION
-
-* Make sure following packages are installed on local machine: hg, php5-cli (Debian) or php-cli (RedHat), rsync, ssh, grep. 
-* Make sure following packages are installed on remote machine: rsync, ssh, grep, aptitude (Debian) or yum-utils/rpm (Red Hat). 
-* Make a link to init.php in /usr/local/bin, e.g.:
-        ln -s ~/poppins/init.php /usr/local/bin/poppins
