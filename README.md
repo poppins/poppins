@@ -21,7 +21,7 @@ Written by Bruno Dooms, Frank Van Damme
 * Step 4, Establish a keyless ssh login to the client.
 
 ### Configuration ###
-All configuration in {filename}.poppins.ini. See example.poppins.ini for indtructions.
+All configuration in {filename}.poppins.ini. See example.poppins.ini for instructions.
 
 ### Deployment ###
 SYNOPSIS
