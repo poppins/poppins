@@ -170,7 +170,7 @@ class Backup
             }
         }
         //packages
-        if ($this->settings['meta']['remote-packages'])
+        if ($this->settings['meta']['remote-package-list'])
         {
             $this->App->out('Gather information about packages...');
             switch ($this->App->settings['remote']['distro'])
