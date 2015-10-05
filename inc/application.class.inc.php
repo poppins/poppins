@@ -156,7 +156,11 @@ class Application
             //do not validate if included or excluded directories
             if(in_array($k, ['included', 'excluded']))
             {
-                continue;
+                //trim commas
+                foreach ($v as $kk => $vv)
+                {
+                    $this->settings[$k][$kk] = preg_replace('/\s?,\s?/', ',', $vv);
+                }
             }
             else
             {
