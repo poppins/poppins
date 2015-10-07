@@ -296,14 +296,14 @@ class DefaultRotator extends Rotator
     function add($dir, $parent)
     {
         $cmd = "{CP} -la $this->rsyncdir ". $this->archivedir."/$parent/$dir";
-        $this->App->out("Create hardlink copy: $cmd");
+        $this->App->out('Create hardlink copy: '.$this->App->Cmd->parse($cmd));
         return $this->App->Cmd->exe("$cmd");
     }
     
     function remove($dir, $parent)
     {
         $cmd = "{RM} -rf ". $this->archivedir."/$parent/$dir";
-        $this->App->out("Remove direcory: $cmd");
+        $this->App->out('Remove direcory: '.$this->App->Cmd->parse($cmd));
         return $this->App->Cmd->exe("$cmd");
     }
 }

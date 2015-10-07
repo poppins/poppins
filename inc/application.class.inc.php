@@ -206,7 +206,7 @@ class Application
         {
             if(!in_array($e, $included))
             {
-                $this->fail("Excluded directory \"$e\" not valid!");
+                $this->fail("Unknown excluded directory index \"$e\"!");
             }
         }
         //validate snapshot config
