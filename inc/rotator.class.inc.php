@@ -4,6 +4,7 @@ class Rotator
 {
 
     protected $App;
+    
     protected $settings;
     
     protected $cdatestamp;
@@ -22,7 +23,7 @@ class Rotator
         //directories
         $this->archivedir = $this->settings['local']['hostdir'] . '/archive';
         
-        $this->newdir = $this->settings['remote']['host'] . '.' . $this->cdatestamp . '.poppins';
+        $this->newdir = $this->settings['local']['hostdir-name'] . '.' . $this->cdatestamp . '.poppins';
 
         $this->rsyncdir = $this->App->settings['local']['rsyncdir'];
                 
@@ -38,7 +39,7 @@ class Rotator
         $this->App->out('Reading archives...');
         $arch1 = $arch2 = $this->scandir();
         #####################################
-        # DATA SORTEREN
+        # SORT DATA 
         #####################################
         foreach ($arch2 as $k => $v)
         {

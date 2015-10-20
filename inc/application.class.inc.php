@@ -15,7 +15,7 @@ class Application
     private $options;
 
     public $start_time;
-
+    
     function __construct($appname, $version)
     {
         $this->intervals = ['incremental', 'minutely', 'hourly', 'daily', 'weekly', 'monthly', 'yearly'];
@@ -270,7 +270,7 @@ class Application
         $sshtest = $this->Cmd->exe("ssh -o BatchMode=yes $_u@$_h echo OK");
         if (!$sshtest)
         {
-            $this->fail("SSH login attempt failed at remote host $_u@$_h!");
+            $this->fail("SSH login attempt failed at remote host $_u@$_h! \nGenerate a key with ssh-keygen and ssh-copy-id to set up a passwordless ssh connection.");
         }
         //get remote os
         $this->settings['remote']['os'] = $this->Cmd->exe("ssh $_u@$_h uname");
@@ -385,13 +385,13 @@ class Application
         # CHECK HOST DIR
         #####################################
         $this->out('Check host...');
-        $hostdirname = ($this->settings['local']['hostdir-name'])? $this->settings['local']['hostdir-name']:$this->settings['remote']['host'];
+        $this->settings['local']['hostdir-name'] = ($this->settings['local']['hostdir-name'])? $this->settings['local']['hostdir-name']:$this->settings['remote']['host'];
         //check if absolute path
-        if (preg_match('/^\//', $hostdirname))
+        if (preg_match('/^\//', $this->settings['local']['hostdir-name']))
         {
             $this->fail("hostname may not contain slashes!");
         }
-        $this->settings['local']['hostdir'] = $this->settings['local']['rootdir'] . '/' . $hostdirname;
+        $this->settings['local']['hostdir'] = $this->settings['local']['rootdir'] . '/' . $this->settings['local']['hostdir-name'];
         //validate host dir and create if required
         switch ($this->settings['local']['filesystem'])
         {
@@ -601,7 +601,8 @@ class Application
             {
                 //script returned no errors if set to false
                 $suffix = ($error) ? 'error' : 'success';
-                $logfile = $this->settings['local']['logdir'] . '/' . $this->settings['remote']['host'] . '.' . date('Y-m-d_His', $this->start_time) . '.poppins.' . $suffix . '.log';
+                $hostdirname = ($this->settings['local']['hostdir-name'])? $this->settings['local']['hostdir-name']:$this->settings['remote']['host'];
+                $logfile = $this->settings['local']['logdir'] . '/' . $hostdirname . '.' . date('Y-m-d_His', $this->start_time) . '.poppins.' . $suffix . '.log';
                 $content [] = 'Create logfile ' . $logfile . '...';
                 //create file
                 $this->Cmd->exe("touch " . $logfile);

@@ -37,4 +37,4 @@ grep, aptitude (Debian) or yum-utils/rpm (Red Hat).
     Make a link to init.php in /usr/local/bin, e.g.:
         ln -s ~/poppins/init.php /usr/local/bin/poppins
 
-    Establish a keyless ssh login to the client.
+    Establish a passwordless ssh login to the client using ssh-keygen.
