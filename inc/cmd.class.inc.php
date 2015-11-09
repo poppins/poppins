@@ -41,7 +41,8 @@ class Cmd
     public function is_error()
     {
          //if all is well, 0 is returned, else e.g. 127
-        return (boolean)($this->return !== 0);
+        // allow error code 24
+        return (boolean)(!in_array($this->return, [0,24]));
     }
 
     function parse($cmd)
