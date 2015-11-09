@@ -4,6 +4,7 @@ class Cmd
 {
 
     public $commands = [];
+    public $exit_code = [];
     
     private $error = false;
     
@@ -30,7 +31,7 @@ class Cmd
         $this->commands []= $cmd;
         
         //redirect error to standard
-        $o = trim(exec("$cmd", $output, $this->return));
+        $o = trim(exec("$cmd", $output, $this->exit_status));
         
         //output is an array, we want a string
         $this->output = implode("\n", $output);
@@ -41,8 +42,7 @@ class Cmd
     public function is_error()
     {
          //if all is well, 0 is returned, else e.g. 127
-        // allow error code 24
-        return (boolean)(!in_array($this->return, [0,24]));
+        return (boolean)(!in_array($this->exit_status, [0]));
     }
 
     function parse($cmd)

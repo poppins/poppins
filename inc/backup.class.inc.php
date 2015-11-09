@@ -311,7 +311,11 @@ class Backup
             $this->App->out($cmd);
             $output = $this->App->Cmd->exe("$cmd");
             $this->App->out($output);
-            if ($this->App->Cmd->is_error())
+            if ($this->App->Cmd->exit_status == 24)
+            {
+                $this->App->out('WARNING! Rsync of '.$sourcedir.' returned exit code 24...', 'warning');
+            }
+            elseif ($this->App->Cmd->exit_status != 0)
             {
                 $this->App->fail("Backup $sourcedir failed! Cannot rsync from remote server!");
             }
