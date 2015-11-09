@@ -41,7 +41,8 @@ class Cmd
 
     public function is_error()
     {
-         //if all is well, 0 is returned, else e.g. 127
+        //if all is well, 0 is returned, else e.g. 127
+        //we may consider to put other exit codes in the array besides 0
         return (boolean)(!in_array($this->exit_status, [0]));
     }
 
