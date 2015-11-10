@@ -600,29 +600,42 @@ class Application
             if (!empty($this->settings['remote']['host']))
             {
                 //script returned no errors if set to false
-                $suffix = ($error) ? 'error' : 'success';
+                $result = ($error) ? 'error' : 'success';
                 $hostdirname = ($this->settings['local']['hostdir-name'])? $this->settings['local']['hostdir-name']:$this->settings['remote']['host'];
-                $logfile = $this->settings['local']['logdir'] . '/' . $hostdirname . '.' . date('Y-m-d_His', $this->start_time) . '.poppins.' . $suffix . '.log';
-                $content [] = 'Create logfile ' . $logfile . '...';
+                $logfile_host = $this->settings['local']['logdir'] . '/' . $hostdirname . '.' . date('Y-m-d_His', $this->start_time) . '.poppins.' . $result. '.log';
+                $logfile_app = $this->settings['local']['logdir'] . '/poppins.log';
+                $content [] = 'Create host logfile ' . $logfile_host . '...';
                 //create file
-                $this->Cmd->exe("touch " . $logfile);
+                $this->Cmd->exe("touch " . $logfile_host);
                 
                 if ($this->Cmd->is_error())
                 {
-                    $content []= 'WARNING! Cannot write to logfile. Cannot create log file!';
+                    $content []= 'WARNING! Cannot write to host logfile. Cannot create log file!';
                 }
                 else
                 {
-                    $success = file_put_contents($logfile, $messages);
+                    $success = file_put_contents($logfile_host, $messages);
                     if (!$success)
                     {
-                        $content []= 'WARNING! Cannot write to logfile. Write protected?';
+                        $content []= 'WARNING! Cannot write to host logfile. Write protected?';
+                    }
+                    //write to application log
+                    $this->Cmd->exe("touch " . $logfile_app);
+                    if ($this->Cmd->is_error())
+                    {
+                        $content [] = 'WARNING! Cannot write to application logfile. Cannot create log file!';
+                    }
+                    $message = date('Y-m-d_His', $this->start_time).' '.$hostdirname.' '.$result."\n";
+                    $success = file_put_contents($logfile_app, $message, FILE_APPEND | LOCK_EX);
+                    if (!$success)
+                    {
+                        $content []= 'WARNING! Cannot write to appliaction logfile. Write protected?';
                     }
                 }
             }
             else
             {
-                $content []= 'WARNING! Cannot write to logfile. Remote host not specified!';
+                $content []= 'WARNING! Cannot write to host logfile. Remote host not specified!';
             }
         }
         else
