@@ -625,7 +625,20 @@ class Application
                     {
                         $content [] = 'WARNING! Cannot write to application logfile. Cannot create log file!';
                     }
-                    $message = date('Y-m-d_His', $this->start_time).' '.$hostdirname.' '.$result."\n";
+                    $m = [];
+                    $m['timestamp'] = date('Y-m-d H:i:s');
+                    $m['host'] = $hostdirname;
+                    $m['result'] = strtoupper($result);
+//                    $m['id'] = date('Y-m-d_His', $this->start_time);
+                    $m['lapse'] = $lapse;
+                    $m['logfile'] = $logfile_host;
+                    $m['version'] = $this->version;
+                    //$m['error'] = $error;
+                    foreach($m as $k => $v)
+                    {
+                        $m[$k] = '"'.$v.'"';
+                    }
+                    $message = implode(' ', array_values($m))."\n";
                     $success = file_put_contents($logfile_app, $message, FILE_APPEND | LOCK_EX);
                     if (!$success)
                     {
