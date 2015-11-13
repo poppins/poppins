@@ -131,7 +131,7 @@ class Backup
         # PRE BACKUP JOBS
         #####################################
         # do our thing on the remote end. 
-        $this->App->out('PRE BACKUP SCRIPT', 'header');
+        $this->App->out('PRE BACKUP JOB', 'header');
         //check if jobs
         if ($this->settings['remote']['pre-backup-script'])
         {

@@ -295,7 +295,7 @@ class Application
             $this->warn('"pre-backup-script" is not configured!');
         }
         //it exists, check onfail action
-        else
+        elseif($this->settings['remote']['pre-backup-script'])
         {
             //check if path is set correctly
             if (!preg_match('/^\//',  $this->settings['remote']['pre-backup-script']))
