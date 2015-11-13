@@ -261,16 +261,6 @@ class Application
         {
             $this->fail("Remote host is not configured!! Specify it in the ini file or on the command line!");
         }
-        else
-        {
-            $_h = $this->settings['remote']['host'];
-            $_u = $this->settings['remote']['user'];
-            $ping = $this->Cmd->exe("ping -c 1 $_h > /dev/null 2>&1 && echo OK || false");
-            if (!$ping)
-            {
-                $this->fail("Cannot reach remote host $_u@$_h!");
-            }
-        }
         $this->out('Check ssh connection...');
         $sshtest = $this->Cmd->exe("ssh -o BatchMode=yes $_u@$_h echo OK");
         if (!$sshtest)
