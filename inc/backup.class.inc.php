@@ -25,7 +25,7 @@ class Backup
         //validate (check if LOCK file exists)
         $this->validate();
         //pre backup
-        ////$this->jobs();
+        //$this->jobs();
         //create dirs
         $this->prepare();
         //remote system info
@@ -131,11 +131,15 @@ class Backup
         # PRE BACKUP JOB
         #####################################
         # do our thing on the remote end. Best to put this in a separate script.
-        $this->App->out('PRE BACKUP REMOTE JOB', 'header');
+        $this->App->out('PRE BACKUP REMOTE SCRIPT', 'header');
         //check if jobs
-        if (isset($this->settings['actions']) && $this->settings['actions']['pre_backup_remote_job'])
+        if (isset($this->settings['remote']['pre-backup-script']))
         {
-            $this->App->out('Found remote job, executing... (' . date('Y-m-d H:i:s') . ')');
+            $script = $this->settings['remote']['pre-backup-script'];
+            $this->App->out('Script configured, validating...');
+            //test -x 
+            
+            $this->App->out('Script configured, validating... (' . date('Y-m-d H:i:s') . ')');
             $output = $this->App->Cmd->exe($this->ssh ." '".$this->settings['actions']['pre_backup_remote_job']."'");
             if ($output)
             {
@@ -150,7 +154,7 @@ class Backup
         }
         else
         {
-            $this->App->out('No remote jobs found...');
+            $this->App->out('No remote script defined...');
         }
     }
 

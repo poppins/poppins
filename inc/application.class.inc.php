@@ -16,6 +16,10 @@ class Application
 
     public $start_time;
     
+    private $errors = 0;
+
+    private $warnings = 0;
+    
     function __construct($appname, $version)
     {
         $this->intervals = ['incremental', 'minutely', 'hourly', 'daily', 'weekly', 'monthly', 'yearly'];
@@ -502,6 +506,7 @@ class Application
         switch ($type)
         {
             case 'error':
+                $this->errors ++;
                 $l1 = '$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ERROR $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$';
                 $l2 = '$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$';
                 $content [] = '';
@@ -526,6 +531,7 @@ class Application
                 $content [] = $l;
                 break;
             case 'warning':
+                $this->warnings ++;
                 $l1 = '||||||||||||||||||||||||||||||||||| WARNING ||||||||||||||||||||||||||||||||||||||||||||';
                 $l2 = '||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||';
                 $content [] = '';
@@ -569,6 +575,8 @@ class Application
             $this->out(implode("\n", $output));
         }
         $this->out("$this->appname v$this->version - SCRIPT ENDED " . date('Y-m-d H:i:s'), 'title');
+        //report warnings and errors
+        $this->out("WARNINGS:$this->warnings, ERRORS:$this->errors");     
         //log message
         if ($message)
         {
@@ -599,8 +607,15 @@ class Application
         {
             if (!empty($this->settings['remote']['host']))
             {
-                //script returned no errors if set to false
-                $result = ($error) ? 'error' : 'success';
+                //output
+                if($error)
+                {
+                    $result = 'error';
+                }    
+                else
+                {
+                    $result = ($this->warnings)? 'warning':'success';
+                }
                 $hostdirname = ($this->settings['local']['hostdir-name'])? $this->settings['local']['hostdir-name']:$this->settings['remote']['host'];
                 $logfile_host = $this->settings['local']['logdir'] . '/' . $hostdirname . '.' . date('Y-m-d_His', $this->start_time) . '.poppins.' . $result. '.log';
                 $logfile_app = $this->settings['local']['logdir'] . '/poppins.log';
@@ -629,7 +644,6 @@ class Application
                     $m['timestamp'] = date('Y-m-d H:i:s');
                     $m['host'] = $hostdirname;
                     $m['result'] = strtoupper($result);
-//                    $m['id'] = date('Y-m-d_His', $this->start_time);
                     $m['lapse'] = $lapse;
                     $m['logfile'] = $logfile_host;
                     $m['version'] = $this->version;
@@ -639,10 +653,11 @@ class Application
                         $m[$k] = '"'.$v.'"';
                     }
                     $message = implode(' ', array_values($m))."\n";
+                    $content [] = 'Add entry "'.$result.'" in application log ' . $logfile_app . '...';
                     $success = file_put_contents($logfile_app, $message, FILE_APPEND | LOCK_EX);
                     if (!$success)
                     {
-                        $content []= 'WARNING! Cannot write to appliaction logfile. Write protected?';
+                        $content []= 'WARNING! Cannot write to application logfile. Write protected?';
                     }
                 }
             }
