@@ -262,8 +262,10 @@ class Application
             $this->fail("Remote host is not configured!! Specify it in the ini file or on the command line!");
         }
         $this->out('Check ssh connection...');
-        $sshtest = $this->Cmd->exe("ssh -o BatchMode=yes $_u@$_h echo OK");
-        if (!$sshtest)
+        $_h = $this->settings['remote']['host'];
+        $_u = $this->settings['remote']['user'];
+        $this->Cmd->exe("ssh -o BatchMode=yes $_u@$_h echo OK");
+        if ($this->Cmd->is_error())
         {
             $this->fail("SSH login attempt failed at remote host $_u@$_h! \nGenerate a key with ssh-keygen and ssh-copy-id to set up a passwordless ssh connection.");
         }
