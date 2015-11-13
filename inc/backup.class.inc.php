@@ -152,6 +152,7 @@ class Backup
                 }
             }
             //run remote command
+            $this->App->out('Running remote script...');
             $output = $this->App->Cmd->exe($this->ssh ." '".$script."'");
             if($this->App->Cmd->is_error())
             {
@@ -167,7 +168,7 @@ class Backup
             }
             else
             {
-                $this->App->out('OK! Remote job done... (' . date('Y-m-d H:i:s') . ')');
+                $this->App->out('Remote job done... (' . date('Y-m-d H:i:s') . ')');
                 $this->App->out('Output:');
                 $this->App->out("\n" . $output . "\n");
             }
