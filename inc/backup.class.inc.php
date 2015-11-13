@@ -25,7 +25,7 @@ class Backup
         //validate (check if LOCK file exists)
         $this->validate();
         //pre backup
-        //$this->jobs();
+        $this->jobs();
         //create dirs
         $this->prepare();
         //remote system info
@@ -57,7 +57,7 @@ class Backup
             $this->App->Cmd->exe("$this->ssh 'cd $dir';");
             if($this->App->Cmd->is_error())
             {
-                $this->App->out('WARNING! Cannot access remote dir ' . $dir.'...', 'warning');
+                $this->App->warn('Cannot access remote dir ' . $dir.'...');
             }
             else
             {
@@ -71,7 +71,7 @@ class Backup
             else
             {
                 $configfiles = [];
-                $this->App->out('WARNING! No mysql config files found in remote dir ' . $dir.'...', 'warning');
+                $this->App->warn('No mysql config files found in remote dir ' . $dir.'...');
                 continue;
             }
             if (count($configfiles))
@@ -87,7 +87,7 @@ class Backup
                     $contents = $this->App->Cmd->exe("$this->ssh 'cd $dir;cat .my.cnf*'");
                     if (in_array($contents, $cached))
                     {
-                        $this->App->out("WARNING! Found duplicate mysql config file $dir/$configfile...", 'warning');
+                        $this->App->warn("Found duplicate mysql config file $dir/$configfile...");
                         continue;
                     }
                     else
@@ -128,33 +128,53 @@ class Backup
     function jobs()
     {
         #####################################
-        # PRE BACKUP JOB
+        # PRE BACKUP JOBS
         #####################################
-        # do our thing on the remote end. Best to put this in a separate script.
-        $this->App->out('PRE BACKUP REMOTE SCRIPT', 'header');
+        # do our thing on the remote end. 
+        $this->App->out('PRE BACKUP SCRIPT', 'header');
         //check if jobs
-        if (isset($this->settings['remote']['pre-backup-script']))
+        if ($this->settings['remote']['pre-backup-script'])
         {
+            $this->App->out('Remote script configured, validating...');
             $script = $this->settings['remote']['pre-backup-script'];
-            $this->App->out('Script configured, validating...');
-            //test -x 
-            
-            $this->App->out('Script configured, validating... (' . date('Y-m-d H:i:s') . ')');
-            $output = $this->App->Cmd->exe($this->ssh ." '".$this->settings['actions']['pre_backup_remote_job']."'");
-            if ($output)
+            //test if the script exists
+            $this->App->Cmd->exe($this->ssh ." 'test -x ".$script."'");
+            if($this->App->Cmd->is_error())
             {
-                $this->App->out('OK! Job done... (' . date('Y-m-d H:i:s') . ')');
-                $this->App->out('Output:');
-                $this->App->out("\n" . $output . "\n");
+                $message = 'Remote script is not an executable script!';
+                if($this->settings['remote']['pre-backup-onfail'] == 'abort')
+                {
+                    $this->App->fail($message);
+                }
+                else
+                {
+                    $this->App->warn($message);
+                }
+            }
+            //run remote command
+            $output = $this->App->Cmd->exe($this->ssh ." '".$script."'");
+            if($this->App->Cmd->is_error())
+            {
+                $message = 'Remote script did not run successfully!';
+                if($this->settings['remote']['pre-backup-onfail'] == 'abort')
+                {
+                    $this->App->fail($message);
+                }
+                else
+                {
+                    $this->App->warn($message);
+                }
             }
             else
             {
-                $this->App->fail("Cannot execute remote job: \"" . $this->settings['actions']['pre_backup_remote_job'] . "\"");
+                $this->App->out('OK! Remote job done... (' . date('Y-m-d H:i:s') . ')');
+                $this->App->out('Output:');
+                $this->App->out("\n" . $output . "\n");
             }
         }
         else
         {
-            $this->App->out('No remote script defined...');
+            $this->App->out('No pre backup script defined...');
         }
     }
 
@@ -197,7 +217,7 @@ class Backup
                     $this->App->Cmd->exe("ssh $_u@$_h 'yumdb --version'");
                     if ($this->App->Cmd->is_error())
                     {
-                        $this->App->out('Failed to retrieve package list with yumdb! Is it installed on the remote machine?', 'warning');
+                        $this->App->warn('Failed to retrieve package list with yumdb! Is it installed on the remote machine?');
                         $this->App->Cmd->exe("$this->ssh \"rpm -qa \" > $this->rsyncdir/meta/" . $filebase . ".packages.txt");
                         if ($this->App->Cmd->is_error())
                         {
@@ -317,7 +337,7 @@ class Backup
             $this->App->out($output);
             if ($this->App->Cmd->exit_status == 24)
             {
-                $this->App->out('WARNING! Rsync of '.$sourcedir.' returned exit code 24...', 'warning');
+                $this->App->warn('Rsync of '.$sourcedir.' returned exit code 24...');
             }
             elseif ($this->App->Cmd->exit_status != 0)
             {

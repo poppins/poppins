@@ -33,9 +33,10 @@ class Application
 
     function fail($message = '', $error = 'generic')
     {
+        $this->errors ++;
         //compose message
         $output = [];
-        $output []= "FATAL ERROR: Application failed!";
+        $output []= "Application failed!";
         $output []= "MESSAGE: $message";
         $this->out(implode("\n", $output), 'error');
         //quit
@@ -166,7 +167,7 @@ class Application
                     $vv1 = str_replace(" ", "", $vv);
                     if($vv != $vv1)
                     {
-                        $this->out('Config values may not contain spaces. Value for key "['.$k.'] '.$kk.'" is trimmed! New value is '.$vv1, 'warning');
+                        $this->warn('Config values may not contain spaces. Value for key "['.$k.'] '.$kk.'" is trimmed! New value is '.$vv1);
                         $this->settings[$k][$kk] = $vv1;
                     }
                     //No trailing slashes
@@ -286,6 +287,25 @@ class Application
             {
                 $this->settings['remote']['distro'] = $d;
                 break;
+            }
+        }
+        //check pre backup script
+        if(!array_key_exists('pre-backup-script', $this->settings['remote']))
+        {
+            $this->warn('"pre-backup-script" is not configured!');
+        }
+        //it exists, check onfail action
+        else
+        {
+            //check if path is set correctly
+            if (!preg_match('/^\//',  $this->settings['remote']['pre-backup-script']))
+            {
+                $this->fail("pre-backup-script must be an absolute path!");
+            }
+            //check if action is set correctly 
+            if(!in_array($this->settings['remote']['pre-backup-onfail'], ['abort', 'continue']))
+            {
+                $this->fail('Wrong value for "pre-backup-onfail". Use "abort" or "continue"!');
             }
         }
         #####################################
@@ -506,12 +526,11 @@ class Application
         switch ($type)
         {
             case 'error':
-                $this->errors ++;
                 $l1 = '$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ERROR $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$';
                 $l2 = '$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$';
                 $content [] = '';
                 $content [] = $l1;
-                $content [] = $message;
+                $content [] = 'ERROR! '.$message;
                 $content [] = $l2;
                 $content [] = '';
                 break;
@@ -531,12 +550,11 @@ class Application
                 $content [] = $l;
                 break;
             case 'warning':
-                $this->warnings ++;
                 $l1 = '||||||||||||||||||||||||||||||||||| WARNING ||||||||||||||||||||||||||||||||||||||||||||';
                 $l2 = '||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||';
                 $content [] = '';
                 $content [] = $l1;
-                $content [] = $message;
+                $content [] = 'WARNING! '.$message;
                 $content [] = $l2;
                 $content [] = '';
                 break;
@@ -695,6 +713,12 @@ class Application
             }
         }
         $this->quit("SCRIPT RAN SUCCESFULLY!");
+    }
+    
+    function warn($message)
+    {
+        $this->warnings ++;
+        $this->out($message, $type = 'warning');
     }
 
 }
