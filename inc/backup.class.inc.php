@@ -45,8 +45,12 @@ class Backup
         # MYSQL BACKUPS
         #####################################
         $this->App->out('Mysql backups', 'header');
-        //check users
-        $dirs = explode(',', $this->settings['mysql']['configdirs']);
+        //check config directories 
+        $dirs = [];
+        if(@$this->settings['mysql']['configdirs'])
+        {
+             $dirs = explode(',', $this->settings['mysql']['configdirs']);
+        }
         //cache config files
         $cached = [];
         //iterate dirs    
@@ -133,7 +137,7 @@ class Backup
         # do our thing on the remote end. 
         $this->App->out('PRE BACKUP JOB', 'header');
         //check if jobs
-        if ($this->settings['remote']['pre-backup-script'])
+        if (!empty($this->settings['remote']['pre-backup-script']))
         {
             $this->App->out('Remote script configured, validating...');
             $script = $this->settings['remote']['pre-backup-script'];
