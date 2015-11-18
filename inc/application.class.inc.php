@@ -3,23 +3,23 @@
 class Application
 {
     private $version;
-    
+
     public $intervals;
 
     public $settings;
-    
+
     public $Cmd;
-    
+
     private $messages;
-    
+
     private $options;
 
     public $start_time;
-    
-    private $errors = 0;
 
-    private $warnings = 0;
-    
+    private $errors = [];
+
+    private $warnings = [];
+
     function __construct($appname, $version)
     {
         $this->intervals = ['incremental', 'minutely', 'hourly', 'daily', 'weekly', 'monthly', 'yearly'];
@@ -33,7 +33,7 @@ class Application
 
     function fail($message = '', $error = 'generic')
     {
-        $this->errors ++;
+        $this->errors []= $message;
         //compose message
         $output = [];
         $output []= "Application failed!";
@@ -167,7 +167,7 @@ class Application
                     $vv1 = str_replace(" ", "", $vv);
                     if($vv != $vv1)
                     {
-                        $this->warn('Config values may not contain spaces. Value for key "['.$k.'] '.$kk.'" is trimmed! New value is '.$vv1);
+                        $this->warn('Config values may not contain spaces. Value for '.$kk.' ['.$k.'] is trimmed!');
                         $this->settings[$k][$kk] = $vv1;
                     }
                     //No trailing slashes
@@ -284,7 +284,7 @@ class Application
         //check pre backup script
         if(!array_key_exists('pre-backup-script', $this->settings['remote']))
         {
-            $this->warn('"pre-backup-script" is not configured!');
+            $this->warn('Directive pre-backup-script [remote] is not configured!');
         }
         //it exists, check onfail action
         elseif($this->settings['remote']['pre-backup-script'])
@@ -294,7 +294,7 @@ class Application
             {
                 $this->fail("pre-backup-script must be an absolute path!");
             }
-            //check if action is set correctly 
+            //check if action is set correctly
             if(!in_array($this->settings['remote']['pre-backup-onfail'], ['abort', 'continue']))
             {
                 $this->fail('Wrong value for "pre-backup-onfail". Use "abort" or "continue"!');
@@ -308,18 +308,18 @@ class Application
         //Debian - Ubuntu
         if(in_array($this->settings['remote']['distro'], ['Debian', 'Ubuntu']))
         {
-            $dependencies['remote']['aptitude'] = 'aptitude --version'; 
+            $dependencies['remote']['aptitude'] = 'aptitude --version';
         }
         //Red Hat - Fedora
         if(in_array($this->settings['remote']['distro'], ['Red Hat', 'CentOS', 'Fedora']))
         {
             //yum is nice though rpm will suffice, no hard dependency needed
-            //$dependencies['remote']['yum-utils'] = 'yumdb --version'; 
+            //$dependencies['remote']['yum-utils'] = 'yumdb --version';
         }
-        $dependencies['remote']['rsync'] = 'rsync --version'; 
+        $dependencies['remote']['rsync'] = 'rsync --version';
         //local
-        $dependencies['local']['rsync'] = 'rsync --version'; 
-        $dependencies['local']['grep'] = '{GREP} --version'; 
+        $dependencies['local']['rsync'] = 'rsync --version';
+        $dependencies['local']['grep'] = '{GREP} --version';
         //iterate packages
         foreach ($dependencies as $host => $packages)
         {
@@ -506,7 +506,7 @@ class Application
         }
         $this->out(trim(implode("\n", $output)));
     }
-    
+
     function log($message)
     {
         $this->messages [] = $message;
@@ -569,7 +569,7 @@ class Application
         }
         die($message);
     }
-    
+
     function quit($message = '', $error = false)
     {
         //debug output
@@ -584,9 +584,31 @@ class Application
             $output []= "";
             $this->out(implode("\n", $output));
         }
-        $this->out("$this->appname v$this->version - SCRIPT ENDED " . date('Y-m-d H:i:s'), 'title');
-        //report warnings and errors
-        $this->out("WARNINGS:$this->warnings, ERRORS:$this->errors");     
+        //title
+        $this->out('SUMMARY', 'header');
+        //report warnings 
+        $warnings = count($this->warnings);
+        //output all warnings
+        if($warnings)
+        {
+           $this->out("WARNINGS (".$warnings.")");
+            foreach($this->warnings as $w)
+            {
+                $this->out($w, 'indent');
+            }
+            $this->out();
+        }
+        //report errors
+        $errors = count($this->errors);
+        if($errors)
+        {
+           $this->out("ERRORS (".$errors.")");
+            foreach($this->errors as $e)
+            {
+                $this->out($e, 'indent');
+            }
+            $this->out();
+        }
         //log message
         if ($message)
         {
@@ -595,12 +617,13 @@ class Application
         //time script
         $lapse = date('U') - $this->start_time;
         $lapse = gmdate('H:i:s', $lapse);
-        $this->log("Script time (HH:MM:SS) : $lapse");
+        $this->log("Script time: $lapse (HH:MM:SS)");
+        //final header
+        $this->out("$this->appname v$this->version - SCRIPT ENDED " . date('Y-m-d H:i:s'), 'title');
         //remove LOCK file if exists
         if ($error != 'LOCKED' && file_exists(@$this->settings['local']['hostdir'] . "/LOCK"))
         {
             $this->log("Remove LOCK file...");
-            $this->log("");
             $this->Cmd->exe('{RM} ' . $this->settings['local']['hostdir'] . "/LOCK");
         }
         //format messages
@@ -612,7 +635,6 @@ class Application
         # LOG TO FILE
         #####################################
         //write to log
-        $content [] = 'Write to log file...';
         if (is_dir($this->settings['local']['logdir']))
         {
             if (!empty($this->settings['remote']['host']))
@@ -621,18 +643,18 @@ class Application
                 if($error)
                 {
                     $result = 'error';
-                }    
+                }
                 else
                 {
-                    $result = ($this->warnings)? 'warning':'success';
+                    $result = (count($this->warnings))? 'warning':'success';
                 }
                 $hostdirname = ($this->settings['local']['hostdir-name'])? $this->settings['local']['hostdir-name']:$this->settings['remote']['host'];
                 $logfile_host = $this->settings['local']['logdir'] . '/' . $hostdirname . '.' . date('Y-m-d_His', $this->start_time) . '.poppins.' . $result. '.log';
                 $logfile_app = $this->settings['local']['logdir'] . '/poppins.log';
-                $content [] = 'Create host logfile ' . $logfile_host . '...';
+                $content [] = 'Create logfile for host ' . $logfile_host . '...';
                 //create file
                 $this->Cmd->exe("touch " . $logfile_host);
-                
+
                 if ($this->Cmd->is_error())
                 {
                     $content []= 'WARNING! Cannot write to host logfile. Cannot create log file!';
@@ -663,7 +685,7 @@ class Application
                         $m[$k] = '"'.$v.'"';
                     }
                     $message = implode(' ', array_values($m))."\n";
-                    $content [] = 'Add entry "'.$result.'" in application log ' . $logfile_app . '...';
+                    $content [] = 'Add "'.$result.'" to logfile ' . $logfile_app . '...';
                     $success = file_put_contents($logfile_app, $message, FILE_APPEND | LOCK_EX);
                     if (!$success)
                     {
@@ -706,10 +728,10 @@ class Application
         }
         $this->quit("SCRIPT RAN SUCCESFULLY!");
     }
-    
+
     function warn($message)
     {
-        $this->warnings ++;
+        $this->warnings []= $message;
         $this->out($message, $type = 'warning');
     }
 
