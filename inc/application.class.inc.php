@@ -620,19 +620,25 @@ class Application
         $this->log("Script time: $lapse (HH:MM:SS)");
         //final header
         $this->out("$this->appname v$this->version - SCRIPT ENDED " . date('Y-m-d H:i:s'), 'title');
-        //remove LOCK file if exists
-        if ($error != 'LOCKED' && file_exists(@$this->settings['local']['hostdir'] . "/LOCK"))
-        {
-            $this->log("Remove LOCK file...");
-            $this->Cmd->exe('{RM} ' . $this->settings['local']['hostdir'] . "/LOCK");
-        }
+        #####################################
+        # OUTPUT
+        #####################################
         //format messages
         $messages = implode("\n", $this->messages);
         //content
         $content = [];
         $content [] = $messages;
         #####################################
-        # LOG TO FILE
+        # CLEANUP
+        #####################################
+        //remove LOCK file if exists
+        if ($error != 'LOCKED' && file_exists(@$this->settings['local']['hostdir'] . "/LOCK"))
+        {
+            $content [] = "Remove LOCK file...";
+            $this->Cmd->exe('{RM} ' . $this->settings['local']['hostdir'] . "/LOCK");
+        }
+        #####################################
+        # WRITE LOG TO FILES
         #####################################
         //write to log
         if (is_dir($this->settings['local']['logdir']))
