@@ -47,9 +47,14 @@ class Backup
         $this->App->out('Mysql backups', 'header');
         //check config directories 
         $dirs = [];
-        if(@$this->settings['mysql']['configdirs'])
+        if(!empty($this->settings['mysql']['configdirs']))
         {
              $dirs = explode(',', $this->settings['mysql']['configdirs']);
+        }
+        //assume home dir
+        else
+        {
+            $dirs []= '~';
         }
         //cache config files
         $cached = [];
@@ -75,7 +80,7 @@ class Backup
             else
             {
                 $configfiles = [];
-                $this->App->warn('No mysql config files found in remote dir ' . $dir.'...');
+                $this->App->warn('Cannot find mysql config files in remote dir ' . $dir.'...');
                 continue;
             }
             if (count($configfiles))
