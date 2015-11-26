@@ -327,30 +327,61 @@ class Backup
                     $excluded []= "--exclude=$d";
                 }
             }
-            
+            //excluded files
             $excluded = implode(' ', $excluded);
-            
+            //output command
             $this->App->out("rsync '$source' @ ".date('Y-m-d H:i:s')."...", 'indent');
             if(!is_dir("$this->rsyncdir/files/$target"))
             {
                 $this->App->out("Create target dir $this->rsyncdir/files/$target...");
                 $this->App->Cmd->exe("mkdir -p $this->rsyncdir/files/$target");
             }
+            $sourcedir = '/root';
             $cmd = "rsync $rsync_options -xa $excluded " . $this->settings['remote']['user'] . "@" . $this->settings['remote']['host'] . ":\"$sourcedir\" \"$targetdir\"";
             $this->App->out($cmd);
-            $output = $this->App->Cmd->exe("$cmd");
-            $this->App->out($output);
-            if ($this->App->Cmd->exit_status == 24)
+            //retry rsync on fail
+            $attempts = 1;
+            $timeout = 5;
+            $i = 0;
+            $success = false;
+            while ($i < $attempts)
             {
-                $this->App->warn('Rsync of '.$sourcedir.' returned exit code 24...');
+                $i++;
+                $output = $this->App->Cmd->exe("$cmd");
+                $this->App->out($output);
+                //allow 24
+                if ($this->App->Cmd->exit_status == 24)
+                {
+                    $this->App->warn('Rsync of '.$sourcedir.' returned exit code 24...');
+                    $success = true;
+                    break;
+                }
+                elseif ($this->App->Cmd->exit_status != 0)
+                {
+                    $message = [];
+                    $message []= 'Rsync failed! Exit status: '.$this->App->Cmd->exit_status.'.';
+                    if($i != $attempts)
+                    {
+                        $message []= "Retry rsync...";
+                        sleep($timeout);
+                    }
+                    else
+                    {
+                        $message []= ("Give up after $attempts times!");
+                    }
+                    $this->App->out(implode(' ', $message), 'indent');
+                }
+                else
+                {
+                    $this->App->out("");
+                    $success = true;
+                    break;
+                }
             }
-            elseif ($this->App->Cmd->exit_status != 0)
+            //check if successful
+            if (!$success)
             {
-                $this->App->fail("Backup $sourcedir failed! Cannot rsync from remote server!");
-            }
-            else
-            {
-                $this->App->out("");
+                $this->App->fail("Rsync $sourcedir failed! Exit status: ".$this->App->Cmd->exit_status.'.');
             }
         }
         $this->App->out("Done!");

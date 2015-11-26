@@ -460,7 +460,7 @@ class Application
                 break;
         }
         #####################################
-        # CHECK RSYNC DIR
+        # SET RSYNC DIR
         #####################################
         //set syncdir
         switch($this->settings['local']['filesystem'])
