@@ -342,7 +342,6 @@ class Backup
                 $this->App->out("Create target dir $this->rsyncdir/files/$target...");
                 $this->App->Cmd->exe("mkdir -p $this->rsyncdir/files/$target");
             }
-            $sourcedir = '/root';
             $cmd = "rsync $rsync_options -xa $excluded " . $this->settings['remote']['user'] . "@" . $this->settings['remote']['host'] . ":\"$sourcedir\" \"$targetdir\"";
             $this->App->out($cmd);
             //retry rsync on fail
