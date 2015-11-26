@@ -119,7 +119,7 @@ class Backup
                         {
                             continue;
                         }
-                        $this->App->Cmd->exe("$this->ssh mysqldump --defaults-file=$configfile --ignore-table=mysql.event --routines --single-transaction --quick --databases $db | gzip > $instancedir/$db.sql.gz");
+                        $this->App->Cmd->exe("$this->ssh mysqldump --defaults-file=$dir/$configfile --ignore-table=mysql.event --routines --single-transaction --quick --databases $db | gzip > $instancedir/$db.sql.gz");
                         if (!$this->App->Cmd->is_error())
                         {
                             $this->App->out("$db... OK.", 'indent');
