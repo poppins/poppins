@@ -78,7 +78,7 @@ class Application
         $this->out("$this->appname v$this->version - SCRIPT STARTED " . date('Y-m-d H:i:s', $this->start_time), 'title');
         $this->out('local environment', 'header');
         #####################################
-        # CHECK OS
+        # VALIDATE OS
         #####################################
         $this->out('Check local operating system...');
         $OS = trim(shell_exec('uname'));
@@ -231,7 +231,7 @@ class Application
             }
         }
         #####################################
-        # CHECK LOG DIR
+        # VALIDATE LOG DIR
         #####################################
         //check log dir early so we can log stuff
         $this->out('Check logdir...');
@@ -251,7 +251,7 @@ class Application
             }
         }
         #####################################
-        # CHECK REMOTE PARAMS
+        # VALIDATE REMOTE PARAMS
         #####################################
         $this->out('Check remote parameters...');
         //validate user
@@ -301,7 +301,7 @@ class Application
             }
         }
         #####################################
-        # CHECK DEPENDENCIES
+        # VALIDATE DEPENDENCIES
         #####################################
         $this->out('Check dependencies...');
         $dependencies = [];
@@ -318,6 +318,7 @@ class Application
         }
         $dependencies['remote']['rsync'] = 'rsync --version';
         //local
+        $dependencies['local']['gzip'] = 'gzip --version';
         $dependencies['local']['rsync'] = 'rsync --version';
         $dependencies['local']['grep'] = '{GREP} --version';
         //iterate packages
@@ -335,7 +336,7 @@ class Application
             }
         }
         #####################################
-        # CHECK ROOT DIR & FILE SYSTEM
+        # VALIDATE ROOT DIR & FILE SYSTEM
         #####################################
         $this->out('Check rootdir...');
         //to avoid confusion, an absolute path is required
@@ -398,7 +399,7 @@ class Application
                 }
         }
         #####################################
-        # CHECK HOST DIR
+        # VALIDATE HOST DIR
         #####################################
         $this->out('Check host...');
         $this->settings['local']['hostdir-name'] = ($this->settings['local']['hostdir-name'])? $this->settings['local']['hostdir-name']:$this->settings['remote']['host'];
@@ -460,7 +461,7 @@ class Application
                 break;
         }
         #####################################
-        # SET RSYNC DIR
+        # VALIDATE RSYNC SETTINGS
         #####################################
         //set syncdir
         switch($this->settings['local']['filesystem'])
@@ -473,17 +474,30 @@ class Application
                 $rsyncdir = 'rsync.dir';
         }
         $this->settings['local']['rsyncdir'] = $this->settings['local']['hostdir'].'/'.$rsyncdir;
+        //retry options must be integers
+        $options = ['retry-count', 'retry-timeout'];
+        foreach($options as $o)
+        {
+            if(isset($this->settings['rsync'][$o]))
+            {
+                //must be a number
+                 if(!preg_match("/^[0-9]+$/", $this->settings['rsync'][$o]))
+                 {
+                     $this->fail("Illegal value for '$o' [rsync]. Not an integer!");
+                 }
+            }
+        }
         #####################################
-        # CHECK DIRECTIVES
+        # BASIC DIRECTIVE VALIDATION
         #####################################
         $validate = [];
-        //errors
+        //required directives - give an error
         $sections = [];
         $sections ['local'] = ['rootdir', 'logdir', 'hostdir-name', 'hostdir-create', 'filesystem'];
         $sections ['remote'] = ['host', 'user'];
         $sections ['mysql'] = ['enabled', 'configdirs'];
         $validate['error'] = $sections;
-        //warnings
+        //absent directives - give a warning
         $sections = [];
         $sections ['remote'] = ['pre-backup-script', 'pre-backup-onfail'];
         $sections ['rsync'] = ['compresslevel', 'hardlinks', 'verbose', 'retry-count', 'retry-timeout'];

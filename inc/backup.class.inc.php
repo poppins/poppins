@@ -344,37 +344,43 @@ class Backup
             }
             $cmd = "rsync $rsync_options -xa $excluded " . $this->settings['remote']['user'] . "@" . $this->settings['remote']['host'] . ":\"$sourcedir\" \"$targetdir\"";
             $this->App->out($cmd);
-            //retry rsync on fail
+            //obviously try rsync at least once :)
             $attempts = 1;
-            $timeout = 5;
-            $i = 0;
-            $success = false;
-            while ($i < $attempts)
+            //retry attempts on rsync fail
+            if(isset($this->settings['rsync']['retry-count']))
             {
-                $i++;
+                $attempts += (integer)$this->settings['rsync']['retry-count'];
+            }
+            //retry timeout between attempts
+            $timeout = 0;
+            if(isset($this->settings['rsync']['retry-timeout']))
+            {
+                $timeout += (integer)$this->settings['rsync']['retry-timeout'];
+            }
+            $i = 1;
+            $success = false;
+            while ($i <= $attempts)
+            {
                 $output = $this->App->Cmd->exe("$cmd");
                 $this->App->out($output);
                 //allow 24
                 if ($this->App->Cmd->exit_status == 24)
                 {
-                    $this->App->warn('Rsync of '.$sourcedir.' returned exit code 24...');
+                    $this->App->warn('Rsync of '.$sourcedir.' directory returned exit code 24...');
                     $success = true;
                     break;
                 }
                 elseif ($this->App->Cmd->exit_status != 0)
                 {
+                    $this->App->warn("Rsync of $sourcedir directory attempt $i/$attempts failed! Exit code ".$this->App->Cmd->exit_status.'...');
                     $message = [];
-                    $message []= 'Rsync failed! Exit status: '.$this->App->Cmd->exit_status.'.';
                     if($i != $attempts)
                     {
-                        $message []= "Retry rsync...";
+                        $message [] = "Will retry rsync attempt " . ($i + 1) . " of $attempts in $timeout second(s)...\n";
                         sleep($timeout);
                     }
-                    else
-                    {
-                        $message []= ("Give up after $attempts times!");
-                    }
-                    $this->App->out(implode(' ', $message), 'indent');
+                    $this->App->out(implode(' ', $message));
+                    $i++;
                 }
                 else
                 {
