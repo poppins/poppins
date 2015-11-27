@@ -474,11 +474,41 @@ class Application
         }
         $this->settings['local']['rsyncdir'] = $this->settings['local']['hostdir'].'/'.$rsyncdir;
         #####################################
-        # MYSQL
+        # CHECK DIRECTIVES
         #####################################
-        if ($this->settings['mysql']['enabled'] == 'yes' && !$this->settings['mysql']['configdirs'])
+        $validate = [];
+        //errors
+        $sections = [];
+        $sections ['local'] = ['rootdir', 'logdir', 'hostdir-name', 'hostdir-create', 'filesystem'];
+        $sections ['remote'] = ['host', 'user'];
+        $sections ['mysql'] = ['enabled', 'configdirs'];
+        $validate['error'] = $sections;
+        //warnings
+        $sections = [];
+        $sections ['remote'] = ['pre-backup-script', 'pre-backup-onfail'];
+        $sections ['rsync'] = ['compresslevel', 'hardlinks', 'verbose', 'retry-count', 'retry-timeout'];
+        $sections ['meta'] = ['remote-disk-layout', 'remote-package-list'];
+        $sections ['log'] = ['local-disk-usage', 'compress'];
+        $validate['warning'] = $sections;
+        foreach($validate as $onfail => $sections)
         {
-            $this->settings['mysql']['configdirs'] = '/root';
+            foreach($sections as $section => $directives)
+            {
+                foreach($directives as $d)
+                {
+                    if(!array_key_exists($d, $this->settings[$section]))
+                    {
+                        if($onfail == 'error')
+                        {
+                            $this->fail('Directive '.$d.' ['.$section.'] is not configured!');
+                        }
+                        else
+                        {
+                            $this->warn('Directive '.$d.' ['.$section.'] is not configured!');
+                        }
+                    }
+                }
+            }
         }
         ######################################
         # DUMP ALL SETTINGS
@@ -512,7 +542,7 @@ class Application
         $this->messages [] = $message;
     }
 
-    function out($message, $type = 'default')
+    function out($message = '', $type = 'default')
     {
         $content = [];
         switch ($type)
@@ -684,6 +714,12 @@ class Application
                     $m['result'] = strtoupper($result);
                     $m['lapse'] = $lapse;
                     $m['logfile'] = $logfile_host;
+                    //compress host logfile?
+                    if($this->settings['log']['compress'] == 'yes')
+                    {
+                        $content [] = 'Compress log file...';
+                        $this->Cmd->exe("gzip " . $logfile_host);
+                    }
                     $m['version'] = $this->version;
                     //$m['error'] = $error;
                     foreach($m as $k => $v)
