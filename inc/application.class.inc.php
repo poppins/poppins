@@ -551,7 +551,7 @@ class Application
         $this->out(trim(implode("\n", $output)));
     }
 
-    function log($message)
+    function log($message = '')
     {
         $this->messages [] = $message;
     }
