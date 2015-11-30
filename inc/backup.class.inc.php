@@ -212,7 +212,6 @@ class Backup
                 case 'Debian':
                 case 'Ubuntu':
                     $this->App->Cmd->exe("$this->ssh \"aptitude search '~i !~M' -F '%p' --disable-columns | sort -u\" > $this->rsyncdir/meta/" . $filebase . ".packages.txt");
-                    $this->App->Cmd->exe("$this->ssh \"aptitude search '~i !~M' -F '%p' --disable-columns | sort -u\" > $this->rsyncdir/meta/" . $filebase . ".packages.txt");
                     if ($this->App->Cmd->is_error())
                     {
                         $this->App->fail('Failed to retrieve package list!');
@@ -243,7 +242,11 @@ class Backup
                             $this->App->fail('Failed to retrieve package list!');
                         }
                     }
-                    break;    
+                    break; 
+                case 'Arch':
+                case 'Manjaro':
+                    $this->App->Cmd->exe("$this->ssh \"pacman -Qet\" > $this->rsyncdir/meta/" . $filebase . ".packages.txt");
+                    break;
                 default:
                     $this->App->out('Remote OS not supported.');
                     break;

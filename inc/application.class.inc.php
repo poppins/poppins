@@ -272,9 +272,18 @@ class Application
         //get remote os
         $this->settings['remote']['os'] = $this->Cmd->exe("ssh $_u@$_h uname");
         //get distro
-        foreach (['Ubuntu', 'Debian', 'SunOS', 'OpenIndiana', 'Red Hat', 'CentOS', 'Fedora'] as $d)
+        // try /etc/*release
+        $output = $this->Cmd->exe("ssh $_u@$_h 'cat /etc/*release'");
+        if ($this->Cmd->is_error())
         {
-            $output = $this->Cmd->exe("ssh $_u@$_h 'cat /etc/*release'");
+            $output = $this->Cmd->exe("ssh $_u@$_h 'lsb_release -a'");
+            if ($this->Cmd->is_error())
+            {
+                 $this->fail('Cannot discover remote distro!');
+            }
+        }
+        foreach (['Ubuntu', 'Debian', 'SunOS', 'OpenIndiana', 'Red Hat', 'CentOS', 'Fedora', 'Manjaro', 'Arch'] as $d)
+        {
             if (preg_match("/$d/i", $output))
             {
                 $this->settings['remote']['distro'] = $d;
@@ -315,6 +324,11 @@ class Application
         {
             //yum is nice though rpm will suffice, no hard dependency needed
             //$dependencies['remote']['yum-utils'] = 'yumdb --version';
+        }
+        //Arch - Manjaro
+        if(in_array($this->settings['remote']['distro'], ['Arch', 'Manjaro']))
+        {
+            $dependencies['remote']['pacman'] = 'pacman --version';
         }
         $dependencies['remote']['rsync'] = 'rsync --version';
         //local
