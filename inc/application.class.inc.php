@@ -509,13 +509,14 @@ class Application
         $sections = [];
         $sections ['local'] = ['rootdir', 'logdir', 'hostdir-name', 'hostdir-create', 'filesystem'];
         $sections ['remote'] = ['host', 'user'];
-        $sections ['mysql'] = ['enabled', 'configdirs'];
+        $sections ['mysql'] = ['enabled'];
         $validate['error'] = $sections;
         //absent directives - give a warning
         $sections = [];
         $sections ['remote'] = ['pre-backup-script', 'pre-backup-onfail'];
         $sections ['rsync'] = ['compresslevel', 'hardlinks', 'verbose', 'retry-count', 'retry-timeout'];
         $sections ['meta'] = ['remote-disk-layout', 'remote-package-list'];
+        $sections ['mysql'] = ['configdirs'];
         $sections ['log'] = ['local-disk-usage', 'compress'];
         $validate['warning'] = $sections;
         foreach($validate as $onfail => $sections)
@@ -743,7 +744,7 @@ class Application
                     $m['lapse'] = $lapse;
                     $m['logfile'] = $logfile_host;
                     //compress host logfile?
-                    if($this->settings['log']['compress'] == 'yes')
+                    if(isset($this->settings['log']['compress']) && $this->settings['log']['compress'] == 'yes')
                     {
                         $content [] = 'Compress log file...';
                         $this->Cmd->exe("gzip " . $logfile_host);

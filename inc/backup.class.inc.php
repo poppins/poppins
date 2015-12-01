@@ -47,7 +47,7 @@ class Backup
         $this->App->out('Mysql backups', 'header');
         //check config directories 
         $dirs = [];
-        if(!empty($this->settings['mysql']['configdirs']))
+        if(isset($this->settings['mysql']['configdirs']) && !empty($this->settings['mysql']['configdirs']))
         {
              $dirs = explode(',', $this->settings['mysql']['configdirs']);
         }
