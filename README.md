@@ -14,11 +14,19 @@ Written by Bruno Dooms, Frank Van Damme
 * Version: Puppet version 0.1
 
 ### Install ###
-* Step 1. Download the source code with the hg command: hg clone https://bitbucket.org/poppins/poppins
-* Step 2. Make sure following packages are installed on local machine: hg, php5-cli (Debian) or php-cli (RedHat), rsync, ssh, grep, gzip. 
-* Step 3. Make sure following packages are installed on remote machine: rsync, ssh, grep, aptitude (Debian) or yum-utils/rpm (Red Hat). 
-* Step 4. Make a link to init.php in /usr/local/bin, e.g.: ln -s ~/poppins/init.php /usr/local/bin/poppins
-* Step 5. Establish a passwordless ssh login to the client using ssh-keygen.
+* Step 1. Download the source code with the hg command. 
+    hg clone https://bitbucket.org/poppins/poppins /opt/poppins
+* Step 2. Make a link to init.php in /usr/local/bin.
+    ln -s /opt/poppins/init.php /usr/local/bin/poppins
+* Step 3. Verify if the timezone is configured correctly in the php.ini file in the /etc directory. For example:
+    date.timezone = Europe/Brussels
+* Step 4. Make sure following packages are installed on local machine: 
+    hg, php5-cli (Debian) or php-cli (RedHat), rsync, ssh, grep, gzip. 
+* Step 5. Make sure following packages are installed on remote machine: 
+    rsync, ssh, grep, aptitude (Debian) or yum-utils/rpm (Red Hat). 
+* Step 6. Establish a passwordless ssh login to the client using ssh-keygen.
+* Step 7. Verify the installation.  
+    poppins -v
 
 ### Configuration ###
 All configuration in {filename}.poppins.ini. See example.poppins.ini for instructions.
