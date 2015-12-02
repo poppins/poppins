@@ -726,7 +726,7 @@ class Application
                 }
                 else
                 {
-                    $success = file_put_contents($logfile_host, $messages);
+                    $success = file_put_contents($logfile_host, $messages."\n");
                     if (!$success)
                     {
                         $content []= 'WARNING! Cannot write to host logfile. Write protected?';
