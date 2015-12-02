@@ -29,7 +29,7 @@ OPTIONS
 
 INSTALLATION
     Make sure following packages are installed on local machine: hg, php5-cli 
-(Debian) or php-cli (RedHat), rsync, ssh, grep.
+(Debian) or php-cli (RedHat), rsync, ssh, grep, gzip.
     
     Make sure following packages are installed on remote machine: rsync, ssh, 
 grep, aptitude (Debian) or yum-utils/rpm (Red Hat).

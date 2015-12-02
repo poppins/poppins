@@ -14,10 +14,11 @@ Written by Bruno Dooms, Frank Van Damme
 * Version: Puppet version 0.1
 
 ### Install ###
-* Step 1, Make sure following packages are installed on local machine: hg, php5-cli (Debian) or php-cli (RedHat), rsync, ssh, grep. 
-* Step 2, Make sure following packages are installed on remote machine: rsync, ssh, grep, aptitude (Debian) or yum-utils/rpm (Red Hat). 
-* Step 3, Make a link to init.php in /usr/local/bin, e.g.: ln -s ~/poppins/init.php /usr/local/bin/poppins
-* Step 4, Establish a passwordless ssh login to the client using ssh-keygen.
+* Step 0, download the source code with the hg command: hg clone https://bitbucket.org/poppins/poppins
+* Step 1, make sure following packages are installed on local machine: hg, php5-cli (Debian) or php-cli (RedHat), rsync, ssh, grep, gzip. 
+* Step 2, make sure following packages are installed on remote machine: rsync, ssh, grep, aptitude (Debian) or yum-utils/rpm (Red Hat). 
+* Step 3, make a link to init.php in /usr/local/bin, e.g.: ln -s ~/poppins/init.php /usr/local/bin/poppins
+* Step 4, establish a passwordless ssh login to the client using ssh-keygen.
 
 ### Configuration ###
 All configuration in {filename}.poppins.ini. See example.poppins.ini for instructions.
