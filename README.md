@@ -15,23 +15,36 @@ Written by Bruno Dooms, Frank Van Damme
 
 ### Install ###
 STEP 1
+
 Download the source code with the hg command. 
     hg clone https://bitbucket.org/poppins/poppins /opt/poppins
+
 STEP 2
+
 Make a link to init.php in /usr/local/bin.
     ln -s /opt/poppins/init.php /usr/local/bin/poppins
+
 STEP 3
+
 Verify if the timezone is configured correctly in the php.ini file in the /etc directory. For example:
     date.timezone = Europe/Brussels
+
 STEP 4
+
 Make sure following packages are installed on local machine: 
     hg, php5-cli (Debian) or php-cli (RedHat), rsync, ssh, grep, gzip. 
+
 STEP 5
+
 Make sure following packages are installed on remote machine: 
     rsync, ssh, grep, aptitude (Debian) or yum-utils/rpm (Red Hat). 
+
 STEP 6
+
 Establish a passwordless ssh login to the client using ssh-keygen.
+
 STEP 7
+
 Verify the installation.  
     poppins -v
 
