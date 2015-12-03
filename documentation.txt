@@ -39,6 +39,8 @@ grep, aptitude (Debian) or yum-utils/rpm (Red Hat).
 
     Establish a passwordless ssh login to the client using ssh-keygen.
 
+    If using MySQL backups, credentials must be provided in the .my.cnf file. See config.
+
 UPGRADE
     Navigate to the poppins source directory and pull the code with the hg command: 
         hg pull -u

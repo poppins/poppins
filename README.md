@@ -40,6 +40,9 @@ Step 7. Verify the installation.
 
     poppins -v
 
+### MySQL ###
+If using MySQL backups, credentials must be provided in the .my.cnf file. See config.
+
 ### Upgrade ###
 Navigate to the poppins source directory and pull the code with the hg command: 
 
