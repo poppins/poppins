@@ -40,6 +40,12 @@ Step 7. Verify the installation.
 
     poppins -v
 
+### Upgrade ###
+Navigate to the poppins source directory and pull the code with the hg command: 
+
+    hg pull -u
+
+
 ### Configuration ###
 All configuration in {filename}.poppins.ini. See example.poppins.ini for instructions.
 

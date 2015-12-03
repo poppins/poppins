@@ -317,7 +317,7 @@ class Application
         //Debian - Ubuntu
         if(in_array($this->settings['remote']['distro'], ['Debian', 'Ubuntu']))
         {
-            $dependencies['remote']['aptitude'] = 'aptitude --version';
+//            $dependencies['remote']['aptitude'] = 'aptitude --version';
         }
         //Red Hat - Fedora
         if(in_array($this->settings['remote']['distro'], ['Red Hat', 'CentOS', 'Fedora']))
