@@ -214,7 +214,11 @@ class Backup
                     $this->App->Cmd->exe("$this->ssh \"aptitude search '~i !~M' -F '%p' --disable-columns | sort -u\" > $this->rsyncdir/meta/" . $filebase . ".packages.txt");
                     if ($this->App->Cmd->is_error())
                     {
-                        $this->App->fail('Failed to retrieve package list!');
+                        $this->App->Cmd->exe("$this->ssh \"dpkg --get-selections \" > $this->rsyncdir/meta/" . $filebase . ".packages.txt");
+                        if ($this->App->Cmd->is_error())
+                        {
+                            $this->App->fail('Failed to retrieve package list!');
+                        }
                     }
                     break;
                 case 'Red Hat':

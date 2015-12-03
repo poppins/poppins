@@ -22,7 +22,7 @@ Step 2. Make a link to init.php in /usr/local/bin.
 
     ln -s /opt/poppins/init.php /usr/local/bin/poppins
 
-Step 3. Verify if the timezone is configured correctly in the php.ini file in the /etc directory. For example:
+Step 3. Verify if the timezone is configured correctly in php. Look for a php.ini file in the /etc directory. For example:
 
     date.timezone = Europe/Brussels
 
@@ -50,7 +50,7 @@ SYNOPSIS
 
 DESCRIPTION
 
-Poppins has one required option, "-c", the configfile. Good practice is to name it {filename}.poppins.ini. Options in the ini file may be overridden by cli options. See example.
+Poppins has one required option, "-c", the configfile. An example can be found in the poppins source directory. You must name it {filename}.poppins.ini. Options in the ini file may be overridden by cli options. See example.
 
 EXAMPLES
 
