@@ -28,19 +28,19 @@ OPTIONS
         prints Poppins version
 
 INSTALLATION
+    Make sure following packages are installed on local machine: hg, php5-cli 
+(Debian) or php-cli (RedHat), rsync, ssh, grep, gzip.
+
     Clone the bitbucket repository.
         hg clone https://bitbucket.org/poppins/poppins /opt/poppins
 
     Make a link to init.php in /usr/local/bin, e.g.:
         ln -s ~/poppins/init.php /usr/local/bin/poppins
 
-    Make sure following packages are installed on local machine: hg, php5-cli 
-(Debian) or php-cli (RedHat), rsync, ssh, grep, gzip.
-    
+    Establish a passwordless ssh login to the client using ssh-keygen & ssh-copy-id.
+
     Make sure following packages are installed on remote machine: rsync, ssh, 
 grep, aptitude (Debian) or yum-utils/rpm (Red Hat).
-
-    Establish a passwordless ssh login to the client using ssh-keygen & ssh-copy-id.
 
     If using MySQL backups, credentials must be provided in the .my.cnf file. See config.
 

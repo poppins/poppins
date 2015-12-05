@@ -14,22 +14,22 @@ Written by Bruno Dooms, Frank Van Damme
 * Version: Puppet version 0.1
 
 ### Install ###
-Step 1. Download the source code with the hg command. 
-
-    hg clone https://bitbucket.org/poppins/poppins /opt/poppins
-
-Step 2. Make a link to init.php in /usr/local/bin.
-
-    ln -s /opt/poppins/init.php /usr/local/bin/poppins
-
-Step 3. Make sure following packages are installed on local machine: 
+Step 1. Make sure following packages are installed on the backup server: 
 
     hg, php5-cli (Debian) or php-cli (RedHat), rsync, ssh, grep, gzip. 
 
-
-Step 4. Verify if the timezone is configured correctly in php. Look for a php.ini file in the /etc directory. For example:
+Step 2. Verify if the timezone is configured correctly in php. Look for a php.ini file in the /etc directory. For example:
 
     date.timezone = Europe/Brussels
+
+Step 3. Download the source code with the hg command. 
+
+    hg clone https://bitbucket.org/poppins/poppins /opt/poppins
+
+Step 4. Make a link to init.php in /usr/local/bin.
+
+    ln -s /opt/poppins/init.php /usr/local/bin/poppins
+
 
 Step 5. Make sure following packages are installed on remote machine: 
 
