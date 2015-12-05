@@ -28,8 +28,8 @@ OPTIONS
         prints Poppins version
 
 INSTALLATION
-    Make sure following packages are installed on local machine: mercurial, php5-cli (php-cli), rsync, ssh, grep, gzip.
--cli
+    Make sure following packages are installed on local machine: mercurial, php5-cli (php-cli), rsync, ssh, grep, gzip
+
     Clone the bitbucket repository.
         hg clone https://bitbucket.org/poppins/poppins /opt/poppins
 
