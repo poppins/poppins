@@ -34,7 +34,7 @@ Step 5. Make sure following packages are installed on remote machine:
 
     rsync, ssh, grep, aptitude (Debian) or yum-utils/rpm (Red Hat). 
 
-Step 6. Establish a passwordless ssh login to the client using ssh-keygen.
+Step 6. Establish a passwordless ssh login to the client using ssh-keygen & ssh-copy-id.
 
 Step 7. Verify the installation.  
 
