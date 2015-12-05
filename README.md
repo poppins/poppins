@@ -22,13 +22,14 @@ Step 2. Make a link to init.php in /usr/local/bin.
 
     ln -s /opt/poppins/init.php /usr/local/bin/poppins
 
-Step 3. Verify if the timezone is configured correctly in php. Look for a php.ini file in the /etc directory. For example:
-
-    date.timezone = Europe/Brussels
-
-Step 4. Make sure following packages are installed on local machine: 
+Step 3. Make sure following packages are installed on local machine: 
 
     hg, php5-cli (Debian) or php-cli (RedHat), rsync, ssh, grep, gzip. 
+
+
+Step 4. Verify if the timezone is configured correctly in php. Look for a php.ini file in the /etc directory. For example:
+
+    date.timezone = Europe/Brussels
 
 Step 5. Make sure following packages are installed on remote machine: 
 
