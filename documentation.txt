@@ -36,10 +36,10 @@ INSTALLATION
     Make a link to init.php in /usr/local/bin, e.g.:
         ln -s ~/poppins/init.php /usr/local/bin/poppins
 
-    Establish a passwordless ssh login to the client using ssh-keygen & ssh-copy-id.
-
     Make sure following packages are installed on remote machine: rsync, ssh, 
 grep, aptitude (Debian) or yum-utils/rpm (Red Hat).
+
+    Establish a passwordless ssh login to the client using ssh-keygen & ssh-copy-id.
 
     If using MySQL backups, credentials must be provided in the .my.cnf file. See config.
 
