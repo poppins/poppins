@@ -30,16 +30,17 @@ Step 4. Make a link to init.php in /usr/local/bin.
 
     ln -s /opt/poppins/init.php /usr/local/bin/poppins
 
+Step 5. Verify the installation.  
 
-Step 5. Make sure following packages are installed on remote machine: 
-
-    rsync, ssh, grep, aptitude (Debian) or yum-utils/rpm (Red Hat). 
+    poppins -v
 
 Step 6. Establish a passwordless ssh login to the client using ssh-keygen & ssh-copy-id.
 
-Step 7. Verify the installation.  
+Step 7. Make sure following packages are installed on remote machine: 
 
-    poppins -v
+    rsync, ssh, grep, aptitude (Debian) or yum-utils/rpm (Red Hat). 
+
+
 
 ### MySQL ###
 If using MySQL backups, credentials must be provided in the .my.cnf file. See config.
