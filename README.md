@@ -16,7 +16,7 @@ Written by Bruno Dooms, Frank Van Damme
 ### Install ###
 Step 1. Make sure following packages are installed on the backup server: 
 
-    hg, php5-cli (Debian) or php-cli (RedHat), rsync, ssh, grep, gzip. 
+    mercurial, php5-cli (php-cli), rsync, ssh, grep, gzip. 
 
 Step 2. Verify if the timezone is configured correctly in php. Look for a php.ini file in the /etc directory. For example:
 
