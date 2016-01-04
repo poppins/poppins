@@ -380,7 +380,7 @@ class Backup
                 $this->App->out("Create target dir $this->rsyncdir/files/$target...");
                 $this->App->Cmd->exe("mkdir -p $this->rsyncdir/files/$target");
             }
-            $cmd = "rsync $rsync_options -xa $excluded " . $this->settings['remote']['user'] . "@" . $this->settings['remote']['host'] . ":\"$sourcedir\" \"$targetdir\"";
+            $cmd = "rsync $rsync_options -xa $excluded " . $this->settings['remote']['user'] . "@" . $this->settings['remote']['host'] . ":\"$sourcedir\" \"$targetdir\" 2>&1";
             $this->App->out($cmd);
             //obviously try rsync at least once :)
             $attempts = 1;
