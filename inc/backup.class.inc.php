@@ -231,60 +231,72 @@ class Backup
             # remote disk layout and packages
             if ($this->settings['remote']['os'] == "Linux")
             {
-                $this->App->Cmd->exe("$this->ssh '( df -hT 2>&1; vgs 2>&1; pvs 2>&1; lvs 2>&1; blkid 2>&1; lsblk -fi 2>&1; for disk in $(ls /dev/sd[a-z]) ; do fdisk -l \$disk 2>&1; done )' > $this->rsyncdir/meta/" . $filebase . ".disk-layout.txt");
+                $this->App->Cmd->exe("$this->ssh '( df -hT 2>&1; vgs 2>&1; pvs 2>&1; lvs 2>&1; blkid 2>&1; lsblk -fi 2>&1; for disk in $(ls /dev/sd[a-z] /dev/cciss/* 2>/dev/null) ; do fdisk -l \$disk 2>&1; done )' > $this->rsyncdir/meta/" . $filebase . ".disk-layout.txt");
+                if ($this->App->Cmd->is_error())
+                {
+                    $this->App->warn('Failed to gather information about disk layout!');
+                }
+                else
+                {
+                    $this->App->out('Done!');
+                }
             }
         }
         //packages
         if ($this->settings['meta']['remote-package-list'])
         {
             $this->App->out('Gather information about packages...');
+            $commands = [];
             switch ($this->App->settings['remote']['distro'])
             {
                 case 'Debian':
                 case 'Ubuntu':
-                    $this->App->Cmd->exe("$this->ssh \"aptitude search '~i !~M' -F '%p' --disable-columns | sort -u\" > $this->rsyncdir/meta/" . $filebase . ".packages.txt");
-                    if ($this->App->Cmd->is_error())
-                    {
-                        $this->App->Cmd->exe("$this->ssh \"dpkg --get-selections \" > $this->rsyncdir/meta/" . $filebase . ".packages.txt");
-                        if ($this->App->Cmd->is_error())
-                        {
-                            $this->App->fail('Failed to retrieve package list!');
-                        }
-                    }
+                    $commands['aptitude --version'] = "aptitude search '~i !~M' -F '%p' --disable-columns | sort -u";
+                    $commands['dpkg --version'] = "dpkg --get-selections";
                     break;
                 case 'Red Hat':
                 case 'CentOS':
                 case 'Fedora':
-                    //check if yumdb installed on remote machine
-                    $_h = $this->App->settings['remote']['host'];
-                    $_u = $this->App->settings['remote']['user'];
-                    $this->App->Cmd->exe("ssh $_u@$_h 'yumdb --version'");
-                    if ($this->App->Cmd->is_error())
-                    {
-                        //warning not desired
-                        //$this->App->warn('Failed to retrieve package list with yumdb! Is it installed on the remote machine?');
-                        $this->App->Cmd->exe("$this->ssh \"rpm -qa \" > $this->rsyncdir/meta/" . $filebase . ".packages.txt");
-                        if ($this->App->Cmd->is_error())
-                        {
-                            $this->App->fail('Failed to retrieve package list!');
-                        }
-                    }
-                    else
-                    {
-                        $this->App->Cmd->exe("$this->ssh \"yumdb search reason user | sort | grep -v 'reason = user' | sed '/^$/d' \" > $this->rsyncdir/meta/" . $filebase . ".packages.txt");
-                        if ($this->App->Cmd->is_error())
-                        {
-                            $this->App->fail('Failed to retrieve package list!');
-                        }
-                    }
+                    $commands['yumdb --version'] =  "yumdb search reason user | sort | grep -v 'reason = user' | sed '/^$/d'";
+                    $commands['rpm --version'] =  "rpm -qa";
                     break;
                 case 'Arch':
                 case 'Manjaro':
-                    $this->App->Cmd->exe("$this->ssh \"pacman -Qet\" > $this->rsyncdir/meta/" . $filebase . ".packages.txt");
+                    $commands['pacman --version'] =  "pacman -Qet";
                     break;
                 default:
                     $this->App->out('Remote OS not supported.');
                     break;
+            }
+            //retrieve packge list
+            $c = count($commands);
+            $i = 1;
+            foreach ($commands as $validation => $execution)
+            {
+                $this->App->Cmd->exe("$this->ssh '$validation' 2>&1");
+                if ($this->App->Cmd->is_error())
+                {
+                    //no more commands to execute, fail
+                    if($i == $c)
+                    {
+                        $this->App->fail('Failed to retrieve package list! Remote package manager(s) not installed?');
+                    }
+                }
+                else
+                {
+                    $this->App->Cmd->exe("$this->ssh \"$execution\" > $this->rsyncdir/meta/" . $filebase . ".packages.txt");
+                    if ($this->App->Cmd->is_error())
+                    {
+                        $this->App->fail('Failed to retrieve package list! Cannot execute command!');
+                    }
+                    //success, break!
+                    else
+                    {
+                        $this->App->out('Done!');
+                        break;
+                    }
+                }
+                $i++;
             }
         }
     }
