@@ -744,10 +744,12 @@ class Application
                     $m['lapse'] = $lapse;
                     $m['logfile'] = $logfile_host;
                     //compress host logfile?
-                    if(isset($this->settings['log']['compress']) && $this->settings['log']['compress'] == 'yes')
+                    if(isset($this->settings['log']['compress']) && $this->settings['log']['compress'])
                     {
                         $content [] = 'Compress log file...';
                         $this->Cmd->exe("gzip " . $logfile_host);
+                        //append suffix in log
+                        $m['logfile'] .= '.gz';
                     }
                     $m['version'] = $this->version;
                     //$m['error'] = $error;
