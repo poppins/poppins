@@ -238,7 +238,7 @@ class Backup
                 }
                 else
                 {
-                    $this->App->out('Done!');
+                    $this->App->out("Done! Write to file $this->rsyncdir/meta/" . $filebase . ".disk-layout.txt");
                 }
             }
         }
@@ -292,7 +292,7 @@ class Backup
                     //success, break!
                     else
                     {
-                        $this->App->out('Done!');
+                        $this->App->out("Done! Write to file $this->rsyncdir/meta/" . $filebase . ".packages.txt");
                         break;
                     }
                 }
