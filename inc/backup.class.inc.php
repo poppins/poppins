@@ -246,32 +246,32 @@ class Backup
         if ($this->settings['meta']['remote-package-list'])
         {
             $this->App->out('Gather information about packages...');
-            $commands = [];
+            $packages = [];
             switch ($this->App->settings['remote']['distro'])
             {
                 case 'Debian':
                 case 'Ubuntu':
-                    $commands['aptitude --version'] = "aptitude search '~i !~M' -F '%p' --disable-columns | sort -u";
-                    $commands['dpkg --version'] = "dpkg --get-selections";
+                    $packages['aptitude --version'] = "aptitude search '~i !~M' -F '%p' --disable-columns | sort -u";
+                    $packages['dpkg --version'] = "dpkg --get-selections";
                     break;
                 case 'Red Hat':
                 case 'CentOS':
                 case 'Fedora':
-                    $commands['yumdb --version'] =  "yumdb search reason user | sort | grep -v 'reason = user' | sed '/^$/d'";
-                    $commands['rpm --version'] =  "rpm -qa";
+                    $packages['yumdb --version'] =  "yumdb search reason user | sort | grep -v 'reason = user' | sed '/^$/d'";
+                    $packages['rpm --version'] =  "rpm -qa";
                     break;
                 case 'Arch':
                 case 'Manjaro':
-                    $commands['pacman --version'] =  "pacman -Qet";
+                    $packages['pacman --version'] =  "pacman -Qet";
                     break;
                 default:
                     $this->App->out('Remote OS not supported.');
                     break;
             }
             //retrieve packge list
-            $c = count($commands);
+            $c = count($packages);
             $i = 1;
-            foreach ($commands as $validation => $execution)
+            foreach ($packages as $validation => $execution)
             {
                 $this->App->Cmd->exe("$this->ssh '$validation' 2>&1");
                 if ($this->App->Cmd->is_error())
@@ -285,14 +285,26 @@ class Backup
                 else
                 {
                     $this->App->Cmd->exe("$this->ssh \"$execution\" > $this->rsyncdir/meta/" . $filebase . ".packages.txt");
+                    //possibly sed, grep or sort not installed?
                     if ($this->App->Cmd->is_error())
                     {
-                        $this->App->fail('Failed to retrieve package list! Cannot execute command!');
+                        //no more commands to execute, fail
+                        if ($i == $c)
+                        {
+                            $this->App->fail('Failed to retrieve package list! Cannot execute command!');
+                        }
+                        else
+                        {
+                            //warn???
+                            continue;
+                        }
                     }
                     //success, break!
                     else
                     {
-                        $this->App->out("Done! Write to file $this->rsyncdir/meta/" . $filebase . ".packages.txt");
+                        $arr = explode(' ',trim($validation));
+                        $pkg_mngr = $arr[0];
+                        $this->App->out("Done, using the $pkg_mngr package manager! Write to file $this->rsyncdir/meta/" . $filebase . ".packages.txt");
                         break;
                     }
                 }
