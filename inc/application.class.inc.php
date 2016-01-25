@@ -262,12 +262,46 @@ class Application
             $this->fail("Remote host is not configured!! Specify it in the ini file or on the command line!");
         }
         $this->out('Check ssh connection...');
+        //obviously try ssh at least once :)
+        $attempts = 1;
+        //retry attempts on connection fail
+        if (isset($this->settings['connection']['retry-count']))
+        {
+          $attempts += (integer) $this->settings['connection']['retry-count'];
+        }
+        //allow for a timeout
+        $timeout = 0;
+        if (isset($this->settings['connection']['retry-timeout']))
+        {
+            $timeout += (integer) $this->settings['connection']['retry-timeout'];
+        }
+        $i = 1;
+        $success = false;
         $_h = $this->settings['remote']['host'];
         $_u = $this->settings['remote']['user'];
-        $this->Cmd->exe("ssh -o BatchMode=yes $_u@$_h echo OK");
-        if ($this->Cmd->is_error())
+        while ($i <= $attempts)
         {
-            $this->fail("SSH login attempt failed at remote host $_u@$_h! \nGenerate a key with ssh-keygen and ssh-copy-id to set up a passwordless ssh connection.");
+            $this->Cmd->exe("ssh -o BatchMode=yes $_u@$_h echo OK");
+            if ($this->Cmd->is_error())
+            {
+              $this->warn("SSH connection failed!");
+              if ($i != $attempts)
+              {
+                  $this->out("Will retry ssh attempt " . ($i + 1) . " of $attempts in $timeout second(s)...\n");
+                  sleep($timeout);
+              }
+              $i++;
+            }
+            else
+            {
+              $success = true;
+              break;
+            }
+        }
+        //check if successful
+        if (!$success)
+        {
+          $this->fail("SSH login attempt failed at remote host $_u@$_h! \nGenerate a key with ssh-keygen and ssh-copy-id to set up a passwordless ssh connection?");
         }
         //get remote os
         $this->settings['remote']['os'] = $this->Cmd->exe("ssh $_u@$_h uname");
@@ -645,7 +679,7 @@ class Application
         }
         //title
         $this->out('SUMMARY', 'header');
-        //report warnings 
+        //report warnings
         $warnings = count($this->warnings);
         //output all warnings
         if($warnings)
