@@ -193,7 +193,7 @@ class Backup
             }
             //run remote command
             $this->App->out('Running remote script...');
-            $output = $this->App->Cmd->exe($this->ssh . " '" . $script . "'");
+            $output = $this->App->Cmd->exe($this->ssh . " '" . $script . " 2>&1 '");
             if ($this->App->Cmd->is_error())
             {
                 $message = 'Remote script did not run successfully!';
