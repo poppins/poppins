@@ -199,10 +199,14 @@ class Backup
                 $message = 'Remote script did not run successfully!';
                 if ($this->settings['remote']['pre-backup-onfail'] == 'abort')
                 {
+		    $this->App->out('Output:');
+		    $this->App->out("\n" . $output . "\n");
                     $this->App->fail($message);
                 }
                 else
                 {
+		    $this->App->out('Output:');
+		    $this->App->out("\n" . $output . "\n");
                     $this->App->warn($message);
                 }
             }
