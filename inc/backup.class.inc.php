@@ -76,7 +76,7 @@ class Backup
         # MYSQL BACKUPS
         #####################################
         $this->App->out('Mysql backups', 'header');
-        //check config directories 
+        //check config directories
         $dirs = [];
         if (isset($this->settings['mysql']['configdirs']) && !empty($this->settings['mysql']['configdirs']))
         {
@@ -89,7 +89,7 @@ class Backup
         }
         //cache config files
         $cached = [];
-        //iterate dirs    
+        //iterate dirs
         foreach ($dirs as $dir)
         {
             $output = false;
@@ -170,7 +170,7 @@ class Backup
         #####################################
         # PRE BACKUP JOBS
         #####################################
-        # do our thing on the remote end. 
+        # do our thing on the remote end.
         $this->App->out('PRE BACKUP JOB', 'header');
         //check if jobs
         if (!empty($this->settings['remote']['pre-backup-script']))
@@ -194,27 +194,25 @@ class Backup
             //run remote command
             $this->App->out('Running remote script...');
             $output = $this->App->Cmd->exe($this->ssh . " '" . $script . " 2>&1 '");
+            $this->App->out('Output:');
+            $this->App->out();
+            $this->App->out($output);
+            $this->App->out();
             if ($this->App->Cmd->is_error())
             {
                 $message = 'Remote script did not run successfully!';
                 if ($this->settings['remote']['pre-backup-onfail'] == 'abort')
                 {
-		    $this->App->out('Output:');
-		    $this->App->out("\n" . $output . "\n");
                     $this->App->fail($message);
                 }
                 else
                 {
-		    $this->App->out('Output:');
-		    $this->App->out("\n" . $output . "\n");
                     $this->App->warn($message);
                 }
             }
             else
             {
                 $this->App->out('Remote job done... (' . date('Y-m-d H:i:s') . ')');
-                $this->App->out('Output:');
-                $this->App->out("\n" . $output . "\n");
             }
         }
         else
