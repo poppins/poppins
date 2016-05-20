@@ -559,7 +559,7 @@ class Application
             {
                 foreach($directives as $d)
                 {
-                    if(!array_key_exists($d, @$this->settings[$section]))
+                    if(@!is_array($this->settings[$section]) || @!array_key_exists($d, $this->settings[$section]))
                     {
                         if($onfail == 'error')
                         {
