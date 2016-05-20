@@ -405,7 +405,7 @@ class Backup
             //check trailing slash
             $sourcedir = (preg_match('/\/$/', $source)) ? $source : "$source/";
             $targetdir = stripslashes("$this->rsyncdir/files/$target/");
-            $cmd = "rsync $rsync_options -xa $excluded '" . $this->settings['remote']['user'] . "@" . $this->settings['remote']['host'] . ":$sourcedir' '$targetdir' 2>&1";
+            $cmd = "rsync $rsync_options -xas $excluded '" . $this->settings['remote']['user'] . "@" . $this->settings['remote']['host'] . ":$sourcedir' '$targetdir' 2>&1";
             $this->App->out($cmd);
             //obviously try rsync at least once :)
             $attempts = 1;
