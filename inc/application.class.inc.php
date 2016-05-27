@@ -2,6 +2,8 @@
 
 class Application
 {
+    private $config;
+
     private $version;
 
     public $intervals;
@@ -9,6 +11,8 @@ class Application
     public $settings;
 
     public $Cmd;
+
+    public $output_colors;
 
     private $messages;
 
@@ -22,13 +26,72 @@ class Application
 
     function __construct($appname, $version)
     {
+        #####################################
+        # CONFIGURATION
+        #####################################
+        //colored output - not enabled by default, see --color option
+        $this->config['colors'] = false;
+        // intervals
         $this->intervals = ['incremental', 'minutely', 'hourly', 'daily', 'weekly', 'monthly', 'yearly'];
-
+        // app name
         $this->appname = $appname;
-
+        // version
         $this->version = $version;
 
+        // set start time
         $this->start_time = date('U');
+    }
+
+    function colorize($string, $fgcolor = 'white', $bgcolor = false)
+    {
+        //colorize the string
+        if($this->config['colors'])
+        {
+            // foreground
+            $fgcolors['black'] = '0;30';
+            $fgcolors['dark_gray'] = '1;30';
+            $fgcolors['blue'] = '0;34';
+            $fgcolors['light_blue'] = '1;34';
+            $fgcolors['green'] = '0;32';
+            $fgcolors['light_green'] = '1;32';
+            $fgcolors['cyan'] = '0;36';
+            $fgcolors['light_cyan'] = '1;36';
+            $fgcolors['red'] = '0;31';
+            $fgcolors['light_red'] = '1;31';
+            $fgcolors['purple'] = '0;35';
+            $fgcolors['light_purple'] = '1;35';
+            $fgcolors['brown'] = '0;33';
+            $fgcolors['yellow'] = '1;33';
+            $fgcolors['light_gray'] = '0;37';
+            $fgcolors['white'] = '1;37';
+            //background
+            $bgcolors['black'] = '40';
+            $bgcolors['red'] = '41';
+            $bgcolors['green'] = '42';
+            $bgcolors['yellow'] = '43';
+            $bgcolors['blue'] = '44';
+            $bgcolors['magenta'] = '45';
+            $bgcolors['cyan'] = '46';
+            $bgcolors['light_gray'] = '47';
+            //return string
+            $colored_string = '';
+            // set foreground
+            if (isset($fgcolors[$fgcolor]))
+            {
+                $colored_string .= "\033[" . $fgcolors[$fgcolor] . "m";
+            }
+            // set background
+            if (isset($bgcolors[$bgcolor]))
+            {
+                $colored_string .= "\033[" . $bgcolors[$bgcolor] . "m";
+            }
+            $colored_string .=  $string . "\033[0m";
+            return $colored_string;
+        }
+        else
+        {
+            return $string;
+        }
     }
 
     function fail($message = '', $error = 'generic')
@@ -36,11 +99,10 @@ class Application
         $this->errors []= $message;
         //compose message
         $output = [];
-        $output []= "Application failed!";
-        $output []= "MESSAGE: $message";
+        $output []= "$message";
         $this->out(implode("\n", $output), 'error');
         //quit
-        $this->quit("SCRIPT FAILED!", $error);
+        $this->quit($error);
     }
 
     function init()
@@ -49,7 +111,7 @@ class Application
         # HELP
         #####################################\
         $CLI_SHORT_OPTS = ["c:dhv"];
-        $CLI_LONG_OPTS = ["version", "help"];
+        $CLI_LONG_OPTS = ["version", "help", "color"];
         $this->options = getopt(implode('', $CLI_SHORT_OPTS), $CLI_LONG_OPTS);
         if (!count($this->options))
         {
@@ -69,8 +131,14 @@ class Application
         {
             print $this->appname.' version '.$this->version."\n";
             $content = file_get_contents(dirname(__FILE__).'/../license.txt');
+
             print "$content\n";
             $this->abort();
+        }
+        // colored output
+        if (isset($this->options['color']))
+        {
+            $this->config['colors'] = true;
         }
         #####################################
         # START
@@ -600,23 +668,40 @@ class Application
         $this->out(trim(implode("\n", $output)));
     }
 
-    function log($message = '')
+    function log($message = '', $fgcolor = false, $bgcolor = false)
     {
         $this->messages [] = $message;
+        //output color
+        if($fgcolor) $this->output_colors [count($this->messages) - 1] = [$fgcolor, $bgcolor];
     }
 
     function out($message = '', $type = 'default')
     {
         $content = [];
+        $fgcolor = false;
+        $bgcolor = false;
         switch ($type)
         {
             case 'error':
-                $l1 = '$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ ERROR $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$';
-                $l2 = '$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$';
+                $fgcolor = 'light_red';
+                $l1 = '$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ FATAL ERROR $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$';
+                $l2 = '$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$';
                 $content [] = '';
                 $content [] = $l1;
-                $content [] = 'ERROR! '.$message;
+                $content [] = wordwrap($message, 80);
                 $content [] = $l2;
+                $content [] = '';
+                break;
+            case 'final-error':
+                $fgcolor = 'light_red';
+                $content [] = '';
+                $content [] = $message;
+                $content [] = '';
+                break;
+            case 'final-success':
+                $fgcolor = 'green';
+                $content [] = '';
+                $content [] = $message;
                 $content [] = '';
                 break;
             case 'header':
@@ -626,7 +711,32 @@ class Application
                 $content [] = $l;
                 break;
             case 'indent':
+                $fgcolor = 'cyan';
                 $content [] = "-----------> " . $message;
+                break;
+            case 'indent-error':
+                $fgcolor = 'light_red';
+                $content [] = "-----------> " . $message;
+                break;
+            case 'indent-warning':
+                $fgcolor = 'brown';
+                $content [] = "-----------> " . $message;
+                break;
+            case 'simple-error':
+                $fgcolor = 'light_red';
+                $content [] = $message;
+                break;
+            case 'simple-info':
+                $fgcolor = 'cyan';
+                $content [] = $message;
+                break;
+            case 'simple-warning':
+                $fgcolor = 'brown';
+                $content [] = $message;
+                break;
+            case 'simple-success':
+                $fgcolor = 'green';
+                $content [] = $message;
                 break;
             case 'title':
                 $l = "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%";
@@ -635,11 +745,12 @@ class Application
                 $content [] = $l;
                 break;
             case 'warning':
-                $l1 = '||||||||||||||||||||||||||||||||||| WARNING ||||||||||||||||||||||||||||||||||||||||||||';
-                $l2 = '||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||';
+                $fgcolor = 'brown';
+                $l1 = '|||||||||||||||||||||||||||||||||||| WARNING |||||||||||||||||||||||||||||||||||||||||||||';
+                $l2 = '||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||';
                 $content [] = '';
                 $content [] = $l1;
-                $content [] = 'WARNING! '.$message;
+                $content [] = wordwrap($message, 85);
                 $content [] = $l2;
                 $content [] = '';
                 break;
@@ -649,9 +760,7 @@ class Application
         }
         $message = implode("\n", $content);
         //log to file
-        $this->log($message);
-        //print to screen
-        //print $message."\n";
+        $this->log($message, $fgcolor, $bgcolor);
     }
 
     function abort($message = '')
@@ -663,7 +772,7 @@ class Application
         die($message);
     }
 
-    function quit($message = '', $error = false)
+    function quit($error = false)
     {
         //debug output
         if(isset($this->options['d']))
@@ -684,10 +793,10 @@ class Application
         //output all warnings
         if($warnings)
         {
-           $this->out("WARNINGS (".$warnings.")");
+           $this->out("WARNINGS (".$warnings.")", 'simple-warning');
             foreach($this->warnings as $w)
             {
-                $this->out($w, 'indent');
+                $this->out($w, 'indent-warning');
             }
             $this->out();
         }
@@ -695,17 +804,22 @@ class Application
         $errors = count($this->errors);
         if($errors)
         {
-           $this->out("ERRORS (".$errors.")");
+           $this->out("ERRORS (".$errors.")", 'simple-error');
             foreach($this->errors as $e)
             {
-                $this->out($e, 'indent');
+                $this->out($e, 'indent-error');
             }
             $this->out();
         }
         //log message
-        if ($message)
+        if(!$error)
         {
-            $this->log($message);
+            $this->out("SCRIPT RAN SUCCESSFULLY!", 'final-success');
+        }
+        else
+        {
+            $this->out("SCRIPT FAILED!", 'final-error');
+
         }
         //time script
         $lapse = date('U') - $this->start_time;
@@ -716,11 +830,21 @@ class Application
         #####################################
         # OUTPUT
         #####################################
-        //format messages
-        $messages = implode("\n", $this->messages);
-        //content
+        //colorize output
         $content = [];
-        $content [] = $messages;
+        $i = 0;
+        foreach($this->messages as $m)
+        {
+            if(@isset($this->output_colors[$i]))
+            {
+                $content []= $this->colorize($m, $this->output_colors[$i][0], $this->output_colors[$i][1]);
+            }
+            else
+            {
+                $content []= $m;
+            }
+            $i++;
+        }
         #####################################
         # CLEANUP
         #####################################
@@ -747,6 +871,7 @@ class Application
                 {
                     $result = (count($this->warnings))? 'warning':'success';
                 }
+                
                 $hostdirname = ($this->settings['local']['hostdir-name'])? $this->settings['local']['hostdir-name']:$this->settings['remote']['host'];
                 $logfile_host = $this->settings['local']['logdir'] . '/' . $hostdirname . '.' . date('Y-m-d_His', $this->start_time) . '.poppins.' . $result. '.log';
                 $logfile_app = $this->settings['local']['logdir'] . '/poppins.log';
@@ -760,7 +885,7 @@ class Application
                 }
                 else
                 {
-                    $success = file_put_contents($logfile_host, $messages."\n");
+                    $success = file_put_contents($logfile_host, implode($this->messages, "\n")."\n");
                     if (!$success)
                     {
                         $content []= 'WARNING! Cannot write to host logfile. Write protected?';
@@ -810,7 +935,7 @@ class Application
             $content []= 'WARNING! Cannot write to logfile. Log directory not created!';
         }
         //be polite
-        $content [] = "Bye...";
+        $content [] = "Bye...!";
         //last newline
         $content [] = "";
         //output
@@ -833,7 +958,7 @@ class Application
                 $this->out("$du");
             }
         }
-        $this->quit("SCRIPT RAN SUCCESFULLY!");
+        $this->quit();
     }
 
     function warn($message)

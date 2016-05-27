@@ -171,7 +171,7 @@ class Rotator
         //final housekeeping if needed
         $this->finalize();
         //done
-        $this->App->out("Done!");
+        $this->App->out("OK!", 'simple-success');
     }
     
     function finalize()

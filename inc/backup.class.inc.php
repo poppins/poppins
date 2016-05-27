@@ -240,7 +240,8 @@ class Backup
                 }
                 else
                 {
-                    $this->App->out("Done! Write to file $this->rsyncdir/meta/" . $filebase . ".disk-layout.txt");
+                    $this->App->out("Write to file $this->rsyncdir/meta/" . $filebase . ".disk-layout.txt...");
+                    $this->App->out("OK!", 'simple-success');
                 }
             }
         }
@@ -306,7 +307,8 @@ class Backup
                     {
                         $arr = explode(' ',trim($validation));
                         $pkg_mngr = $arr[0];
-                        $this->App->out("Done, using the $pkg_mngr package manager! Write to file $this->rsyncdir/meta/" . $filebase . ".packages.txt");
+                        $this->App->out("Using the $pkg_mngr package manager. Write to file $this->rsyncdir/meta/" . $filebase . ".packages.txt...");
+                        $this->App->out("OK!", 'simple-success');
                         break;
                     }
                 }
@@ -469,7 +471,7 @@ class Backup
                 $this->App->fail("Rsync of $sourcedir directory failed! Aborting! Exit status " . $this->App->Cmd->exit_status . $message);
             }
         }
-        $this->App->out("Done!");
+        $this->App->out("OK!", 'simple-success');
     }
 
     function validate()
