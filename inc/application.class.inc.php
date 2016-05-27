@@ -333,15 +333,23 @@ class Application
         //obviously try ssh at least once :)
         $attempts = 1;
         //retry attempts on connection fail
-        if (isset($this->settings['connection']['retry-count']))
+        if (isset($this->settings['remote']['retry-count']))
         {
-          $attempts += (integer) $this->settings['connection']['retry-count'];
+          $attempts += (integer) $this->settings['remote']['retry-count'];
+        }
+        else
+        {
+            $this->warn('Directive retry-count [remote] is not configured!');
         }
         //allow for a timeout
         $timeout = 0;
-        if (isset($this->settings['connection']['retry-timeout']))
+        if (isset($this->settings['remote']['retry-timeout']))
         {
-            $timeout += (integer) $this->settings['connection']['retry-timeout'];
+            $timeout += (integer) $this->settings['remote']['retry-timeout'];
+        }
+        else
+        {
+            $this->warn('Directive retry-timeout [remote] is not configured!');
         }
         $i = 1;
         $success = false;
