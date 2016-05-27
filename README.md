@@ -53,28 +53,32 @@ Navigate to the poppins source directory and pull the code with the hg command:
 All configuration in {filename}.poppins.ini. See example.poppins.ini for instructions.
 
 ### Deployment ###
-SYNOPSIS
+NAME
+    poppins - backup script with incremental snapshots
 
+SYNOPSIS
     poppins -c {configfile} [-d] [-h] [-v] [--long-options]
 
 DESCRIPTION
-
-Poppins has one required option, "-c", the configfile. An example can be found in the poppins source directory. You must name it {filename}.poppins.ini. Options in the ini file may be overridden by cli options. See example.
+    Poppins has one required option, "-c", the config file. Good practice is to
+name it {filename}.poppins.ini. Options in the ini file may be overridden by cli
+options. A useful overriden parameter is the remote host. See example.
 
 EXAMPLES
-
-    poppins -c example.poppins.ini --remote-host=webserver1
+    poppins -c example.poppins.ini --remote-host=webserver1 --color
 
 OPTIONS
-
     -c {configfile}
-        configfile. Required. 
+        Required configuration file.
 
-    -d 
-        debugmode. Will output all commands ran by poppins
+     --color
+         Output in pretty colors.
+
+    -d
+        Debugmode. Output all commands ran by Poppins.
 
     -h, --help
-        prints this help page
+        Print this help page.
 
     -v
-        prints poppins version
+        Print Poppins version.

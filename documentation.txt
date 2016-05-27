@@ -16,13 +16,16 @@ EXAMPLES
 
 OPTIONS
     -c {configfile}
-        configfile. Required.
+        Required configuration file.
+
+     --color
+         Output in pretty colors.
 
     -d
-        debugmode. Will output all commands ran by Poppins
+        Debugmode. Output all commands ran by Poppins.
 
     -h, --help
-        prints this help page
+        Print this help page.
 
     -v
-        prints Poppins version
+        Print Poppins version.
