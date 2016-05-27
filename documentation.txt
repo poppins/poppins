@@ -12,7 +12,7 @@ name it {filename}.poppins.ini. Options in the ini file may be overridden by cli
 options. A useful overriden parameter is the remote host. See example.
 
 EXAMPLES
-    poppins -c example.poppins.ini --remote-host=webserver1
+    poppins -c example.poppins.ini --remote-host=webserver1 --color
 
 OPTIONS
     -c {configfile}
