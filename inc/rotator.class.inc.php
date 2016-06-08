@@ -4,28 +4,42 @@ class Rotator
 {
 
     protected $App;
-    
-    protected $settings;
-    
-    protected $cdatestamp;
-    
-    protected $destdir;
-    protected $sourcedir;
 
+    // Config class
+    protected $Config;
+
+    // Options class - options passed by getopt and ini file
+    protected $Options;
+
+    // Settings class - application specific settings
+    protected $Settings;
+    
     function __construct($App)
     {
         $this->App = $App;
 
-        $this->settings = $App->settings;
+        $this->Cmd = $App->Cmd;
+        #####################################
+        # CONFIGURATION
+        #####################################
+        //Config from ini file
+        $this->Config = Config::get_instance();
 
-        $this->cdatestamp = date('Y-m-d_His', $this->App->start_time);
+        // Command line options
+        $this->Options = Options::get_instance();
+
+        // App specific settings
+        $this->Settings = Settings::get_instance();
+
+        //create datestamp
+        $this->Settings->set('rsync.cdatestamp', date('Y-m-d_His', $this->Settings->get('start_time')));
 
         //directories
-        $this->archivedir = $this->settings['local']['hostdir'] . '/archive';
+        $this->archivedir = $this->Config->get('local.hostdir') . '/archive';
         
-        $this->newdir = $this->settings['local']['hostdir-name'] . '.' . $this->cdatestamp . '.poppins';
+        $this->newdir = $this->Config->get('local.hostdir-name') . '.' . $this->Settings->get('rsync.cdatestamp') . '.poppins';
 
-        $this->rsyncdir = $this->App->settings['local']['rsyncdir'];
+        $this->rsyncdir = $this->Config->get('local.rsyncdir');
                 
         $this->dir_regex = '[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{6}';
     }
@@ -80,7 +94,7 @@ class Rotator
                         //directory timestamp
                         $ddatestamp = $m[0];
                         //convert to seconds
-                        $cdatestamp2unix = $this->to_time($this->cdatestamp);
+                        $cdatestamp2unix = $this->to_time($this->Settings->get('rsync.cdatestamp'));
                         $ddatestamp2unix = $this->to_time($ddatestamp);
                         //in theory this is not possible, check it anyway - testing purposes
                         if ($cdatestamp2unix < $ddatestamp2unix)
@@ -109,7 +123,7 @@ class Rotator
         //check how many dirs are desired 
         foreach ($arch2 as $k => $v)
         {
-            $n = $this->settings['snapshots'][$k];
+            $n = $this->Config->get(['snapshots', $k]);
             $arch2[$k] = array_slice($arch2[$k], -$n, $n);
         }
         #####################################
@@ -159,7 +173,7 @@ class Rotator
                             $this->App->out($message, 'indent');
                             $this->$action($vv, $k);
                             //check if command returned ok
-                            if($this->App->Cmd->is_error())
+                            if($this->Cmd->is_error())
                             {
                                 $this->App->fail('Cannot rotate. Command failed!');
                             }
@@ -188,11 +202,11 @@ class Rotator
         //validate dir
         foreach (['archive'] as $d)
         {
-            $dd = $this->settings['local']['hostdir'] . '/' . $d;
+            $dd = $this->Config->get('local.hostdir') . '/' . $d;
             if (!is_dir($dd))
             {
                 $this->App->out('Create subdirectory ' . $dd . '...');
-                $this->App->Cmd->exe("mkdir -p " . $dd);
+                $this->Cmd->exe("mkdir -p " . $dd);
             }
         }
         #####################################
@@ -200,13 +214,13 @@ class Rotator
         #####################################
         $this->App->out('Check archive subdirectories...');
         //validate dir
-        foreach (array_keys($this->settings['snapshots']) as $d)
+        foreach (array_keys($this->Config->get('snapshots')) as $d)
         {
             $dd = $this->archivedir . '/' . $d;
             if (!is_dir($dd))
             {
                 $this->App->out('Create subdirectory ' . $dd . '...');
-                $this->App->Cmd->exe("mkdir -p " . $dd);
+                $this->Cmd->exe("mkdir -p " . $dd);
             }
         }
     }
@@ -219,7 +233,7 @@ class Rotator
         //archive dir
         $archivedir = $this->archivedir;
         //scan thru all intervals
-        foreach (array_keys($this->settings['snapshots']) as $k)
+        foreach (array_keys($this->Config->get('snapshots')) as $k)
         {
             //keys must be stored in array!
             $res[$k] = [];
@@ -270,7 +284,7 @@ class Rotator
         $offset = (integer) $a[0];
         $interval = $a[1];
         //validate
-        if (!in_array($interval, $this->App->intervals))
+        if (!in_array($interval, $this->Settings->get('intervals')))
         {
             $this->App->fail('Interval not supported!');
         }
@@ -297,15 +311,15 @@ class DefaultRotator extends Rotator
     function add($dir, $parent)
     {
         $cmd = "{CP} -la $this->rsyncdir ". $this->archivedir."/$parent/$dir";
-        $this->App->out('Create hardlink copy: '.$this->App->Cmd->parse($cmd));
-        return $this->App->Cmd->exe("$cmd");
+        $this->App->out('Create hardlink copy: '.$this->Cmd->parse($cmd));
+        return $this->Cmd->exe("$cmd");
     }
     
     function remove($dir, $parent)
     {
         $cmd = "{RM} -rf ". $this->archivedir."/$parent/$dir";
-        $this->App->out('Remove direcory: '.$this->App->Cmd->parse($cmd));
-        return $this->App->Cmd->exe("$cmd");
+        $this->App->out('Remove direcory: '.$this->Cmd->parse($cmd));
+        return $this->Cmd->exe("$cmd");
     }
 }
 
@@ -315,14 +329,14 @@ class BTRFSRotator extends Rotator
     {
         $cmd = "btrfs subvolume snapshot -r $this->rsyncdir ". $this->archivedir."/$parent/$dir";
         $this->App->out("Create BTRFS snapshot: $cmd");
-        return $this->App->Cmd->exe("$cmd");
+        return $this->Cmd->exe("$cmd");
     }
     
     function remove($dir, $parent)
     {
         $cmd = "btrfs subvolume delete ". $this->archivedir."/$parent/$dir";
         $this->App->out("Remove BTRFS snapshot: $cmd");
-        return $this->App->Cmd->exe("$cmd");
+        return $this->Cmd->exe("$cmd");
     }
 }
 
@@ -333,17 +347,17 @@ class ZFSRotator extends Rotator
         $rsyncdir = preg_replace('/^\//', '', $this->rsyncdir);
         $cmd = "zfs snapshot $rsyncdir@$parent-$dir";
         $this->App->out("Create ZFS snapshot: $cmd");
-        return $this->App->Cmd->exe("$cmd");
+        return $this->Cmd->exe("$cmd");
     }
     
     function finalize()
     {
         //create a symlink to .zfs
-        if(file_exists($this->rsyncdir.'/.zfs/snapshot') && !file_exists($this->settings['local']['hostdir'].'/archive'))
+        if(file_exists($this->rsyncdir.'/.zfs/snapshot') && !file_exists($this->Config->get('local.hostdir').'/archive'))
         {
             $this->App->out("Create an archive dir symlink to ZFS snapshots...");
-            $cmd = 'ln -s '.$this->rsyncdir.'/.zfs/snapshot '.$this->settings['local']['hostdir'].'/archive';
-            $this->App->Cmd->exe("$cmd");
+            $cmd = 'ln -s '.$this->rsyncdir.'/.zfs/snapshot '.$this->Config->get('local.hostdir').'/archive';
+            $this->Cmd->exe("$cmd");
 
         }
     }
@@ -353,7 +367,7 @@ class ZFSRotator extends Rotator
         $rsyncdir = preg_replace('/^\//', '', $this->rsyncdir);
         $cmd = "zfs destroy $rsyncdir@$parent-$dir";
         $this->App->out("Remove ZFS snapshot: $cmd");
-        return $this->App->Cmd->exe("$cmd");
+        return $this->Cmd->exe("$cmd");
     }
     
     function prepare()
@@ -369,7 +383,7 @@ class ZFSRotator extends Rotator
         $archivedir = $this->rsyncdir.'/.zfs/snapshot';
         $snapshots = scandir($archivedir);
         //scan thru all intervals
-        foreach (array_keys($this->settings['snapshots']) as $k)
+        foreach (array_keys($this->Config->get('snapshots')) as $k)
         {
             //keys must be stored in array!
             $res[$k] = [];

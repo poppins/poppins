@@ -25,6 +25,34 @@ $Settings->set('intervals', ['incremental', 'minutely', 'hourly', 'daily', 'week
 #####################################
 $App = new Application();
 $App->init();
+////$Config = new Config();
+//$Config = Config::get_instance();
+//$s['familie']['goussy']['kinderen'] = ['Nette', 'Ebba'];
+//$Config->store($s);
+////var_dump($Config->get_all());
+//
+//$Config->set(['familie', 'dooms1', 'kinderen'], ['Haroun', 'Rania']);
+//$Config->set(['familie', 'peeraerts', 'kinderen'], ['Liesbet', 'Stijn']);
+//$Config->set(['familie', 'peeraerts', 'kinderen'], ['Liesbet', 'Stijn', 'Karen']);
+////var_dump($Config->get_all());
+//
+//$Config->set('familie.dooms2.kinderen', ['Elmer', 'Stik']);
+//$Config->set('familie.dooms2.kinderen', ['Elmer', 'Stig']);
+//
+//$mama = $Config->get('mama', false);
+//var_dump($mama);
+//if($mama)
+//{
+//    echo 'mama';
+//}
+//else
+//{
+//    echo 'geen mama';
+//}
+//var_dump($Config->get());
+//var_dump($Config->get('familie.dooms1.kinderen'));
+//var_dump($Config->get(['familie', 'dooms1', 'kinderen']));
+//die();
 #####################################
 # BACKUPS
 #####################################

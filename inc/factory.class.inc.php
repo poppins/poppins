@@ -1,11 +1,6 @@
 <?php
 
-class Factory
-{
-    private $App;
-    
-    private $settings;
-}
+class Factory {}
 
 class BackupFactory extends Factory
 {
@@ -13,17 +8,17 @@ class BackupFactory extends Factory
     
     public static function create($App)
     {
-        //settings
-        $settings = $App->settings;
+        //Config
+        $Config = Config::get_instance();
         // build the class
         $classname = self::base;
-        if (in_array($settings['local']['filesystem'], ['ZFS', 'BTRFS']))
+        if (in_array($Config->get('local.filesystem'), ['ZFS', 'BTRFS']))
         {
-            $classname = $settings['local']['filesystem'].$classname;
+            $classname = $Config->get('local.filesystem').$classname;
         }
         else
         {
-            $classname = ucfirst($settings['local']['filesystem']).$classname;
+            $classname = ucfirst($Config->get('local.filesystem')).$classname;
         }
         return new $classname($App);
     }
@@ -48,11 +43,11 @@ class RotatorFactory extends Factory
     
     public static function create($App)
     {
-        //settings
-        $settings = $App->settings;
+        //Config
+        $Config = Config::get_instance();
         // build the class
         $classname = self::base;
-        $classname = ucfirst($settings['local']['filesystem']).$classname;
+        $classname = ucfirst($Config->get('local.filesystem')).$classname;
         return new $classname($App);
     }
 }

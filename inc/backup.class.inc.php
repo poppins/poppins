@@ -4,18 +4,37 @@ class Backup
 {
 
     public $App;
-    public $settings;
-    private $ssh;
+
+    // Config class
+    protected $Config;
+
+    // Options class - options passed by getopt and ini file
+    protected $Options;
+
+    // Settings class - application specific settings
+    protected $Settings;
+
+    //rsyncdir
+    protected $rsyncdir;
 
     function __construct($App)
     {
         $this->App = $App;
 
-        $this->settings = $this->App->settings;
+        $this->Cmd = $App->Cmd;
+        #####################################
+        # CONFIGURATION
+        #####################################
+        //Config from ini file
+        $this->Config = Config::get_instance();
 
-        $this->ssh = "ssh " . $this->settings['remote']['user'] . "@" . $this->settings['remote']['host'];
+        // Command line options
+        $this->Options = Options::get_instance();
 
-        $this->rsyncdir = $this->settings['local']['rsyncdir'];
+        // App specific settings
+        $this->Settings = Settings::get_instance();
+
+        $this->rsyncdir = $this->Config->get('local.rsyncdir');
     }
 
     function init()
@@ -29,7 +48,7 @@ class Backup
         //remote system info
         $this->meta();
         //mysql
-        if ($this->settings['mysql']['enabled'])
+        if ($this->Config->get('mysql.enabled'))
         {
             $this->mysql();
         }
@@ -78,9 +97,9 @@ class Backup
         $this->App->out('Mysql backups', 'header');
         //check config directories
         $dirs = [];
-        if (isset($this->settings['mysql']['configdirs']) && !empty($this->settings['mysql']['configdirs']))
+        if ($this->Config->get('mysql.configdirs'))
         {
-            $dirs = explode(',', $this->settings['mysql']['configdirs']);
+            $dirs = explode(',', $this->Config->get('mysql.configdirs'));
         }
         //assume home dir
         else
@@ -94,14 +113,14 @@ class Backup
         {
             $output = false;
             //check if allowed
-            $this->App->Cmd->exe("$this->ssh 'cd $dir';");
-            if ($this->App->Cmd->is_error())
+            $this->Cmd->exe("'cd $dir'", true);
+            if ($this->Cmd->is_error())
             {
                 $this->App->warn('Cannot access remote dir ' . $dir . '...');
             }
             else
             {
-                $output = $this->App->Cmd->exe("$this->ssh 'cd $dir;ls .my.cnf* 2>/dev/null'");
+                $output = $this->Cmd->exe("'cd $dir;ls .my.cnf* 2>/dev/null'", true);
             }
             //check output
             if ($output)
@@ -124,7 +143,7 @@ class Backup
                     $instance = ($instance) ? $instance : 'default';
 
                     //ignore if file is the same
-                    $contents = $this->App->Cmd->exe("$this->ssh 'cd $dir;cat .my.cnf*'");
+                    $contents = $this->Cmd->exe("'cd $dir;cat .my.cnf*'", true);
                     if (in_array($contents, $cached))
                     {
                         $this->App->warn("Found duplicate mysql config file $dir/$configfile...");
@@ -137,21 +156,22 @@ class Backup
 
                     $this->App->out("Backup databases from $dir/$configfile");
                     $instancedir = "$this->rsyncdir/mysql/$instance";
+                    // check if dir exists
                     if (!is_dir($instancedir))
                     {
                         $this->App->out("Create directory $instancedir...");
-                        $this->App->Cmd->exe("mkdir -p $instancedir");
+                        $this->Cmd->exe("mkdir -p $instancedir");
                     }
                     //get all dbs
-                    $dbs = $this->App->Cmd->exe("$this->ssh 'mysql --defaults-file=\"$dir/$configfile\" --skip-column-names -e \"show databases\" | grep -v \"^information_schema$\"'");
+                    $dbs = $this->Cmd->exe("'mysql --defaults-file=\"$dir/$configfile\" --skip-column-names -e \"show databases\" | grep -v \"^information_schema$\"'", true);
                     foreach (explode("\n", $dbs) as $db)
                     {
                         if (empty($db))
                         {
                             continue;
                         }
-                        $this->App->Cmd->exe("$this->ssh mysqldump --defaults-file=$dir/$configfile --ignore-table=mysql.event --routines --single-transaction --quick --databases $db | gzip > $instancedir/$db.sql.gz");
-                        if (!$this->App->Cmd->is_error())
+                        $this->Cmd->exe("'mysqldump --defaults-file=$dir/$configfile --ignore-table=mysql.event --routines --single-transaction --quick --databases $db' | gzip > $instancedir/$db.sql.gz", true);
+                        if (!$this->Cmd->is_error())
                         {
                             $this->App->out("$db... OK.", 'indent');
                         }
@@ -170,19 +190,19 @@ class Backup
         #####################################
         # PRE BACKUP JOBS
         #####################################
-        # do our thing on the remote end.
+        // do our thing on the remote end.
         $this->App->out('PRE BACKUP JOB', 'header');
         //check if jobs
-        if (!empty($this->settings['remote']['pre-backup-script']))
+        if ($this->Config->get('remote.pre-backup-script'))
         {
             $this->App->out('Remote script configured, validating...');
-            $script = $this->settings['remote']['pre-backup-script'];
+            $script = $this->Config->get('remote.pre-backup-script');
             //test if the script exists
-            $this->App->Cmd->exe($this->ssh . " 'test -x " . $script . "'");
-            if ($this->App->Cmd->is_error())
+            $this->Cmd->exe("'test -x $script'", true);
+            if ($this->Cmd->is_error())
             {
                 $message = 'Remote script is not an executable script!';
-                if ($this->settings['remote']['pre-backup-onfail'] == 'abort')
+                if ($this->Config->get('remote.pre-backup-onfail') == 'abort')
                 {
                     $this->App->fail($message);
                 }
@@ -193,15 +213,15 @@ class Backup
             }
             //run remote command
             $this->App->out('Running remote script...');
-            $output = $this->App->Cmd->exe($this->ssh . " '" . $script . " 2>&1 '");
+            $output = $this->Cmd->exe("'$script 2>&1'", true);
             $this->App->out('Output:');
             $this->App->out();
             $this->App->out($output);
             $this->App->out();
-            if ($this->App->Cmd->is_error())
+            if ($this->Cmd->is_error())
             {
                 $message = 'Remote script did not run successfully!';
-                if ($this->settings['remote']['pre-backup-onfail'] == 'abort')
+                if ($this->Config->get('remote.pre-backup-onfail') == 'abort')
                 {
                     $this->App->fail($message);
                 }
@@ -224,17 +244,18 @@ class Backup
     function meta()
     {
         //variables
-        $filebase = strtolower($this->settings['local']['hostdir-name'] . '.' . $this->App->settings['application']['name']);
+        $filebase = strtolower($this->Config->get('local.hostdir-name') . '.' . $this->Settings->get('appname'));
         $this->App->out('Remote meta data', 'header');
         //disk layout
-        if ($this->settings['meta']['remote-disk-layout'])
+        if ($this->Config->get('meta.remote-disk-layout'))
         {
             $this->App->out('Gather information about disk layout...');
-            # remote disk layout and packages
-            if ($this->settings['remote']['os'] == "Linux")
+            // remote disk layout and packages
+            if ($this->Config->get('remote.os') == "Linux")
             {
-                $this->App->Cmd->exe("$this->ssh '( df -hT 2>&1; vgs 2>&1; pvs 2>&1; lvs 2>&1; blkid 2>&1; lsblk -fi 2>&1; for disk in $(ls /dev/sd[a-z] /dev/cciss/* 2>/dev/null) ; do fdisk -l \$disk 2>&1; done )' > $this->rsyncdir/meta/" . $filebase . ".disk-layout.txt");
-                if ($this->App->Cmd->is_error())
+                $this->Cmd->exe("'( df -hT 2>&1; vgs 2>&1; pvs 2>&1; lvs 2>&1; blkid 2>&1; lsblk -fi 2>&1; for disk in $(ls /dev/sd[a-z] /dev/cciss/* 2>/dev/null) ; do fdisk -l \$disk 2>&1; done )' > $this->rsyncdir/meta/" . $filebase . ".disk-layout.txt", true);
+
+                if ($this->Cmd->is_error())
                 {
                     $this->App->warn('Failed to gather information about disk layout!');
                 }
@@ -246,11 +267,11 @@ class Backup
             }
         }
         //packages
-        if ($this->settings['meta']['remote-package-list'])
+        if ($this->Config->get('meta.remote-package-list'))
         {
             $this->App->out('Gather information about packages...');
             $packages = [];
-            switch ($this->App->settings['remote']['distro'])
+            switch ($this->Config->get('remote.distro'))
             {
                 case 'Debian':
                 case 'Ubuntu':
@@ -276,8 +297,8 @@ class Backup
             $i = 1;
             foreach ($packages as $validation => $execution)
             {
-                $this->App->Cmd->exe("$this->ssh '$validation' 2>&1");
-                if ($this->App->Cmd->is_error())
+                $this->Cmd->exe("'$validation' 2>&1", true);
+                if ($this->Cmd->is_error())
                 {
                     //no more commands to execute, fail
                     if($i == $c)
@@ -287,9 +308,9 @@ class Backup
                 }
                 else
                 {
-                    $this->App->Cmd->exe("$this->ssh \"$execution\" > $this->rsyncdir/meta/" . $filebase . ".packages.txt");
+                    $this->Cmd->exe("'$execution' > $this->rsyncdir/meta/" . $filebase . ".packages.txt", true);
                     //possibly sed, grep or sort not installed?
-                    if ($this->App->Cmd->is_error())
+                    if ($this->Cmd->is_error())
                     {
                         //no more commands to execute, fail
                         if ($i == $c)
@@ -331,7 +352,7 @@ class Backup
         # OTHER DIRS
         #####################################
         $a = ['meta', 'files'];
-        if ($this->settings['mysql']['enabled'])
+        if ($this->Config->get('mysql.enabled'))
         {
             $a [] = 'mysql';
         }
@@ -340,7 +361,7 @@ class Backup
             if (!file_exists($this->rsyncdir . '/' . $aa))
             {
                 $this->App->out("Create $aa dir $this->rsyncdir/$aa...");
-                $this->App->Cmd->exe("mkdir -p $this->rsyncdir/$aa");
+                $this->Cmd->exe("mkdir -p $this->rsyncdir/$aa");
             }
         }
     }
@@ -357,24 +378,27 @@ class Backup
         $o [] = "--delete-excluded --delete --numeric-ids";
 
         //ssh
-        $ssh = $this->App->Cmd->parse('{SSH}');
-        $o [] = '-e "' . $ssh . ' -o TCPKeepAlive=yes -o ServerAliveInterval=30"';
+        if ($this->Config->get('remote.ssh'))
+        {
+            $ssh = $this->Cmd->parse('{SSH}');
+            $o [] = '-e "' . $ssh . ' -o TCPKeepAlive=yes -o ServerAliveInterval=30"';
+        }
 
-        # general options
-        if ($this->settings['rsync']['verbose'])
+        // general options
+        if ($this->Config->get('rsync.verbose'))
         {
             $o [] = "-v";
         }
-        if ($this->settings['rsync']['hardlinks'])
+        if ($this->Config->get('rsync.hardlinks'))
         {
             $o [] = "-H";
         }
-        if (in_array((integer) $this->settings['rsync']['compresslevel'], range(1, 9)))
+        if (in_array((integer) $this->Config->get('rsync.compresslevel'), range(1, 9)))
         {
-            $o [] = "-z --compress-level=" . $this->settings['rsync']['compresslevel'];
+            $o [] = "-z --compress-level=" . $this->Config->get('rsync.compresslevel');
         }
         // rewrite as little blocks as possible. do not set this for default!
-        if (in_array($this->settings['local']['filesystem'], ['ZFS', 'BTRFS']))
+        if (in_array($this->Config->get('local.filesystem'), ['ZFS', 'BTRFS']))
         {
             $o [] = "--inplace";
         }
@@ -382,13 +406,13 @@ class Backup
         #####################################
         # RSYNC DIRECTORIES
         #####################################
-        foreach ($this->settings['included'] as $source => $target)
+        foreach ($this->Config->get('included') as $source => $target)
         {
             //exclude dirs
             $excluded = [];
-            if (isset($this->settings['excluded'][$source]))
+            if ($this->Config->get(['excluded', $source]))
             {
-                $exludedirs = explode(',', $this->settings['excluded'][$source]);
+                $exludedirs = explode(',', $this->Config->get(['excluded', $source]));
 
                 foreach ($exludedirs as $d)
                 {
@@ -402,7 +426,7 @@ class Backup
             if (!is_dir("$this->rsyncdir/files/$target"))
             {
                 $this->App->out("Create target dir $this->rsyncdir/files/$target...");
-                $this->App->Cmd->exe("mkdir -p $this->rsyncdir/files/$target");
+                $this->Cmd->exe("mkdir -p $this->rsyncdir/files/$target");
             }
             //check trailing slash
             $sourcedir = (preg_match('/\/$/', $source)) ? $source : "$source/";
@@ -410,42 +434,42 @@ class Backup
             //slashes are protected by -s option in rsync
             $sourcedir = stripslashes($sourcedir);
             $targetdir = stripslashes($targetdir);
-            $cmd = "rsync $rsync_options -xas $excluded " . $this->settings['remote']['user'] . "@" . $this->settings['remote']['host'] . ":\"$sourcedir\" '$targetdir' 2>&1";
+            $cmd = "rsync $rsync_options -xas $excluded " . $this->Config->get('remote.user') . "@" . $this->Config->get('remote.host') . ":\"$sourcedir\" '$targetdir' 2>&1";
             $this->App->out($cmd);
             //obviously try rsync at least once :)
             $attempts = 1;
             //retry attempts on rsync fail
-            if (isset($this->settings['rsync']['retry-count']))
+            if ($this->Config->get('rsync.retry-count'))
             {
-                $attempts += (integer) $this->settings['rsync']['retry-count'];
+                $attempts += (integer) $this->Config->get('rsync.retry-count');
             }
             //retry timeout between attempts
             $timeout = 0;
-            if (isset($this->settings['rsync']['retry-timeout']))
+            if ($this->Config->get('rsync.retry-timeout'))
             {
-                $timeout += (integer) $this->settings['rsync']['retry-timeout'];
+                $timeout += (integer) $this->Config->get('rsync.retry-timeout');
             }
             $i = 1;
             $success = false;
             while ($i <= $attempts)
             {
-                $output = $this->App->Cmd->exe("$cmd");
+                $output = $this->Cmd->exe("$cmd");
                 $this->App->out($output);
                 //WARNINGS - allow some rsync errors to occur
-                if (in_array($this->App->Cmd->exit_status, [24]))
+                if (in_array($this->Cmd->exit_status, [24]))
                 {
-                    $message = $this->get_rsync_status($this->App->Cmd->exit_status);
+                    $message = $this->get_rsync_status($this->Cmd->exit_status);
                     $message = (empty($message)) ? '' : ': "' . $message . '".';
-                    $this->App->warn("Rsync of $sourcedir directory exited with a non-zero status! Non fatal, will continue. Exit status: " . $this->App->Cmd->exit_status . $message);
+                    $this->App->warn("Rsync of $sourcedir directory exited with a non-zero status! Non fatal, will continue. Exit status: " . $this->Cmd->exit_status . $message);
                     $success = true;
                     break;
                 }
                 //ERRORS
-                elseif ($this->App->Cmd->exit_status != 0)
+                elseif ($this->Cmd->exit_status != 0)
                 {
-                    $message = $this->get_rsync_status($this->App->Cmd->exit_status);
+                    $message = $this->get_rsync_status($this->Cmd->exit_status);
                     $message = (empty($message)) ? '' : ': "' . $message . '".';
-                    $this->App->warn("Rsync of $sourcedir directory attempt $i/$attempts exited with a non-zero status! Fatal, will abort. Exit status " . $this->App->Cmd->exit_status . $message);
+                    $this->App->warn("Rsync of $sourcedir directory attempt $i/$attempts exited with a non-zero status! Fatal, will abort. Exit status " . $this->Cmd->exit_status . $message);
                     $message = [];
                     if ($i != $attempts)
                     {
@@ -466,9 +490,9 @@ class Backup
             //check if successful
             if (!$success)
             {
-                $message = $this->get_rsync_status($this->App->Cmd->exit_status);
+                $message = $this->get_rsync_status($this->Cmd->exit_status);
                 $message = (empty($message)) ? '' : ': "' . $message . '".';
-                $this->App->fail("Rsync of $sourcedir directory failed! Aborting! Exit status " . $this->App->Cmd->exit_status . $message);
+                $this->App->fail("Rsync of $sourcedir directory failed! Aborting! Exit status " . $this->Cmd->exit_status . $message);
             }
         }
         $this->App->out("OK!", 'simple-success');
@@ -480,14 +504,14 @@ class Backup
         # CREATE LOCK FILE
         #####################################
         # check for lock
-        if (file_exists($this->settings['local']['hostdir'] . "/LOCK"))
+        if (file_exists($this->Config->get('local.hostdir') . "/LOCK"))
         {
-            $this->App->fail("LOCK file " . $this->settings['local']['hostdir'] . "/LOCK exists!", 'LOCKED');
+            $this->App->fail("LOCK file " . $this->Config->get('local.hostdir') . "/LOCK exists!", 'LOCKED');
         }
         else
         {
             $this->App->out('Create LOCK file...');
-            $this->App->Cmd->exe("touch " . $this->settings['local']['hostdir'] . "/LOCK");
+            $this->Cmd->exe("touch " . $this->Config->get('local.hostdir') . "/LOCK");
         }
     }
 
@@ -498,7 +522,7 @@ class BTRFSBackup extends Backup
 
     function create_syncdir()
     {
-        $this->App->Cmd->exe("btrfs subvolume create " . $this->rsyncdir);
+        $this->Cmd->exe("btrfs subvolume create " . $this->rsyncdir);
     }
 
 }
@@ -508,7 +532,7 @@ class DefaultBackup extends Backup
 
     function create_syncdir()
     {
-        $this->App->Cmd->exe("mkdir -p " . $this->rsyncdir);
+        $this->Cmd->exe("mkdir -p " . $this->rsyncdir);
     }
 
 }
@@ -519,7 +543,7 @@ class ZFSBackup extends Backup
     function create_syncdir()
     {
         $rsyncdir = preg_replace('/^\//', '', $this->rsyncdir);
-        $this->App->Cmd->exe("zfs create " . $rsyncdir);
+        $this->Cmd->exe("zfs create " . $rsyncdir);
     }
 
 }

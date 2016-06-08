@@ -4,19 +4,57 @@ class Cmd
 {
 
     public $commands = [];
+
     public $exit_code = [];
     
-    private $error = false;
-    
     public $output = '';
+
+    // Config class
+    protected $Config;
+
+    // Options class - options passed by getopt and ini file
+    protected $Options;
+
+    // Settings class - application specific settings
+    protected $Settings;
 
     function __construct()
     {
         $this->map = $this->map();
+
+        #####################################
+        # CONFIGURATION
+        #####################################
+        //Config from ini file
+        $this->Config = Config::get_instance();
+
+        // Command line options
+        $this->Options = Options::get_instance();
+
+        // App specific settings
+        $this->Settings = Settings::get_instance();
+
     }
 
-    function exe($cmd)
+    function exe($cmd, $remote = false)
     {
+        //check if command is run on remote host
+        if($remote)
+        {
+            //run cmd over ssh
+            if ($this->Config->get('remote.ssh'))
+            {
+                $host = $this->Config->get('remote.host');
+                $user = $this->Config->get('remote.user');
+                $cmd = "ssh -o BatchMode=yes $user@$host $cmd";
+            }
+            // run on localhost (no ssh mode)
+            else
+            {
+                $cmd = "eval $cmd";
+            }
+        }
+
         //check if parsing is needed
         foreach (array_keys($this->map) as $c)
         {
