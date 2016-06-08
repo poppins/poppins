@@ -3,7 +3,7 @@
 class Application
 {
     // Cmd class
-    protected $Cmd;
+    public $Cmd;
 
     // Config class
     protected $Config;
