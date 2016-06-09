@@ -244,7 +244,7 @@ class Backup
     function meta()
     {
         //variables
-        $filebase = strtolower($this->Config->get('local.hostdir-name') . '.' . $this->Settings->get('appname'));
+        $filebase = $this->Settings->get('meta.filebase');
         $this->App->out('Remote meta data', 'header');
         //disk layout
         if ($this->Config->get('meta.remote-disk-layout'))

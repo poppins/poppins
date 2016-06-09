@@ -610,7 +610,7 @@ class Application
                 break;
         }
         #####################################
-        # VALIDATE RSYNC CONFIG
+        # VALIDATE RSYNC DIR
         #####################################
         //set syncdir
         switch($this->Config->get('local.filesystem'))
@@ -623,10 +623,63 @@ class Application
                 $rsyncdir = 'rsync.dir';
         }
         $this->Config->set('local.rsyncdir',  $this->Config->get('local.hostdir').'/'.$rsyncdir);
+        //check if rsync dir is clean
+        $dir = $this->Config->get('local.rsyncdir').'/files';
+        $allowed = array_map('stripslashes', array_values($this->Config->get('included')));
+        $diff = Validator::diff_listing($dir, $allowed);
+        if(count($diff))
+        {
+            foreach($diff as $file => $type)
+            {
+                $this->warn("Directory $dir not clean, $type '$file' is not configured..");
+            }
+        }
+        #####################################
+        # VALIDATE META DIR
+        #####################################
+        $filebase = strtolower($this->Config->get('local.hostdir-name') . '.' . $this->Settings->get('appname'));
+        $this->Settings->set('meta.filebase', $filebase);
+
+        //check if meta dir is clean
+        $dir = $this->Config->get('local.rsyncdir').'/meta';
+        $allowed = [];
+        $directives = ['remote-disk-layout' => 'disk-layout.txt', 'remote-package-list' =>  'packages.txt'];
+        foreach($directives as $directive => $file)
+        {
+            if($this->Config->get(['meta', $directive]))
+            {
+                $allowed []= $filebase.'.'.$file;
+            }
+        }
+        $diff = Validator::diff_listing($dir, $allowed);
+        if(count($diff))
+        {
+            foreach($diff as $file => $type)
+            {
+                $this->warn("Directory $dir not clean, $type '$file' is not configured..");
+            }
+        }
+        #####################################
+        # VALIDATE MYSQL DIR
+        #####################################
+        //check if mysql dir is clean
+        if(!$this->Config->get(['mysql.enabled']))
+        {
+            $dir = $this->Config->get('local.rsyncdir').'/mysql';
+            $allowed = [];
+            $diff = Validator::diff_listing($dir, $allowed);
+            if(count($diff))
+            {
+                foreach($diff as $file => $type)
+                {
+                    $this->warn("Directory $dir not clean, $type '$file' is not configured..");
+                }
+            }
+        }
         #####################################
         # BASIC DIRECTIVE VALIDATION
         #####################################
-        // TODO xml?
+        // TODO put a template in json?
         $validate = [];
         //required directives - give an error
         $sections = [];
