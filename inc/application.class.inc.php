@@ -1095,7 +1095,7 @@ class Application
         //write to log
         if (is_dir($this->Config->get('local.logdir')))
         {
-            if ($this->Config->get('remote.host'))
+            if ($this->Config->get('local.hostdir-name'))
             {
                 //output
                 if($error)
