@@ -769,6 +769,20 @@ class Application
             }
         }
         #####################################
+        # VALIDATE ARCHIVE DIR
+        #####################################
+        //check if archive dir is clean
+        $dir = $this->Config->get('local.hostdir') . '/archive';
+        $allowed = array_keys($this->Config->get('snapshots'));
+        $diff = Validator::diff_listing($dir, $allowed);
+        if(count($diff))
+        {
+            foreach($diff as $file => $type)
+            {
+                $this->warn("Directory $dir not clean, $type '$file' is not configured..");
+            }
+        }
+        #####################################
         # BASIC DIRECTIVE VALIDATION
         #####################################
         // TODO put a template in json?
