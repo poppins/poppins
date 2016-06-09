@@ -1,6 +1,10 @@
 <?php
 class Validator
 {
+    static function is_absolute_path($path)
+    {
+        return (preg_match('/^\//', $path))? true:false;
+    }
     /*
      * Return a diff with unexpected
      */

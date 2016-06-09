@@ -269,7 +269,7 @@ class Application
                 }
             }
         }
-        //check if there is backup is configured
+        //check if there is anything to do
         if(!count($this->Config->get('included')) && $this->Config->get('mysql.enabled') != 'yes')
         {
             $this->fail("No directories configured for backup nor MySQL configured. Nothing to do...");
@@ -321,11 +321,6 @@ class Application
         //check log dir early so we can log stuff
         $this->out('Check logdir...');
         $logdir = $this->Config->get('local.logdir');
-        //to avoid confusion, an absolute path is required
-        if (!preg_match('/^\//', $logdir))
-        {
-            $this->fail("logdir must be an absolute path!");
-        }
         //validate dir, create if required
         if (!file_exists($logdir))
         {
@@ -356,6 +351,65 @@ class Application
                 }
             }
         }
+        #####################################
+        # VALIDATE SINGLE ABSOLUTE PATH
+        #####################################
+        // TODO json
+        //absent directives - give a warning
+        $paths = [];
+        $paths ['local'] = ['rootdir', 'logdir'];
+        //check if path
+        foreach($paths as $section => $directives)
+        {
+            foreach($directives as $directive)
+            {
+                if($this->Config->is_set($section))
+                {
+                    $value = $this->Config->get([$section, $directive]);
+                    $error = false;
+                    if(!Validator::is_absolute_path($value))
+                    {
+                        $error = true;
+                    }
+                    if($error)
+                    {
+                        $this->fail('Directive '.$directive.' ['.$section.'] is not not an absolute path ('.$value.')!');
+                    }
+                }
+            }
+        }
+        #####################################
+        # VALIDATE MULTIPLE ABSOLUTE PATHS
+        #####################################
+        // TODO json
+        //absent directives - give a warning
+        $paths = [];
+        $paths ['mysql'] = ['configdirs'];
+        //check if path
+        foreach($paths as $section => $directives)
+        {
+            foreach($directives as $directive)
+            {
+                if($this->Config->is_set($section))
+                {
+                    $values = explode(',', $this->Config->get([$section, $directive]));
+                    foreach($values as $value)
+                    {
+                        $error = false;
+                        //must be absolute path or tilde
+                        if (!Validator::is_absolute_path($value) && $value != '~')
+                        {
+                            $error = true;
+                        }
+                        if ($error)
+                        {
+                            $this->fail('Directive ' . $directive . ' [' . $section . '] must contain absolute paths (' . $value . ')!');
+                        }
+                    }
+                }
+            }
+        }
+        dd();
         #####################################
         # VALIDATE BOOLEANS
         #####################################
@@ -515,7 +569,7 @@ class Application
         elseif($this->Config->get('remote.pre-backup-script') != '')
         {
             //check if path is set correctly
-            if (!preg_match('/^\//',  $this->Config->get('remote.pre-backup-script')))
+            if (!Validator::is_absolute_path($this->Config->get('remote.pre-backup-script')))
             {
                 $this->fail("pre-backup-script must be an absolute path!");
             }
@@ -572,11 +626,6 @@ class Application
         $this->out('Check rootdir...');
         $rootdir = $this->Config->get('local.rootdir');
         $filesystem = $this->Config->get('local.filesystem');
-        //to avoid confusion, an absolute path is required
-        if (!preg_match('/^\//', $rootdir))
-        {
-            $this->fail("rootdir must be an absolute path!");
-        }
         //root dir must exist!
         if (!file_exists($rootdir))
         {
@@ -648,7 +697,7 @@ class Application
             $this->fail('No hostdir-name [local] configured!');
         }
         $this->Config->set('local.hostdir-name', $dirname);
-        //check if absolute path
+        //check if no slashes
         if (preg_match('/^\//', $this->Config->get('local.hostdir-name')))
         {
             $this->fail("hostname may not contain slashes!");
@@ -787,7 +836,7 @@ class Application
             }
         }
         #####################################
-        # BASIC DIRECTIVE VALIDATION
+        # VALIDATE IF PRESENT
         #####################################
         // TODO put a template in json?
         $validate = [];
