@@ -434,10 +434,7 @@ class Backup
             //slashes are protected by -s option in rsync
             $sourcedir = stripslashes($sourcedir);
             $targetdir = stripslashes($targetdir);
-            if($this->Config->get('remote.ssh'))
-            {
-                $remote_connection =  $this->Config->get('remote.user') . "@" . $this->Config->get('remote.host') .':';
-            }
+            $remote_connection = ($this->Config->get('remote.ssh'))? $this->Config->get('remote.user') . "@" . $this->Config->get('remote.host') .':':'';
             $cmd = "rsync $rsync_options -xas $excluded " .$remote_connection. "\"$sourcedir\" '$targetdir' 2>&1";
             $this->App->out($cmd);
             //obviously try rsync at least once :)

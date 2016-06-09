@@ -287,12 +287,6 @@ class Application
             {
                 $this->fail("Error in snapshot configuration, $k not supported!");
             }
-            //check if value is an integer
-            //check syntax of value
-            if(!preg_match("/^[0-9]+$/", $v))
-            {
-                $this->fail("Error in snapshot configuration, value for $k is not an integer!");
-            }
         }
         #####################################
         # VALIDATE LOG DIR
@@ -331,6 +325,70 @@ class Application
                     if (!preg_match("/^[0-9]+$/", $this->Config->get([$section, $option])))
                     {
                         $this->fail("Illegal value for '$option' [$section]. Not an integer!");
+                    }
+                }
+            }
+        }
+        #####################################
+        # VALIDATE BOOLEANS
+        #####################################
+        // TODO json
+        //absent directives - give a warning
+        $booleans = [];
+        $booleans ['local'] = ['hostdir-create'];
+        $booleans ['remote'] = ['ssh'];
+        $booleans ['meta'] = ['remote-disk-layout', 'remote-package-list'];
+        $booleans ['log'] = ['local-disk-usage', 'compress'];
+        $booleans ['rsync'] = ['hardlinks', 'verbose'];
+        $booleans ['mysql'] = ['enabled'];
+        //check if booleans
+        foreach($booleans as $section => $directives)
+        {
+            foreach($directives as $directive)
+            {
+                if($this->Config->is_set($section))
+                {
+                    $value = $this->Config->get([$section, $directive]);
+                    $error = false;
+                    if(in_array($value ,['yes', 'true']))
+                    {
+                        $error = true;
+                        $this->Config->set([$section, $directive], '1');
+                    }
+                    elseif(in_array($value ,['no', '0', 'false']))
+                    {
+                        $error = true;
+                        $this->Config->set([$section, $directive], '');
+                    }
+                    if($error)
+                    {
+                        $this->warn('Directive '.$directive.' ['.$section.'] is not not a valid boolean. Use values yes/no without quotes..');
+                    }
+                }
+            }
+        }
+        #####################################
+        # VALIDATE NUMBERS
+        #####################################
+        // TODO json
+        //absent directives - give a warning
+        $integers = [];
+        $integers ['remote'] = ['retry-count', 'retry-timeout'];
+        $integers ['snapshots'] = array_keys($this->Config->get('snapshots'));
+        $integers ['rsync'] = ['compresslevel', 'retry-count', 'retry-timeout'];
+        //check if booleans
+        foreach($integers as $section => $directives)
+        {
+            foreach($directives as $directive)
+            {
+                if($this->Config->is_set($section))
+                {
+                    $value = $this->Config->get([$section, $directive]);
+                    $error = false;
+                    if(!preg_match("/^[0-9]+$/", $value))
+                    {
+                        $error = true;
+                        $this->fail('Directive '.$directive.' ['.$section.'] is not not an integer!');
                     }
                 }
             }
