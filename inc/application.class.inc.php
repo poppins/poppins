@@ -196,6 +196,18 @@ class Application
                 }
                 //store override options
                 $options = getopt(implode('', $CLI_SHORT_OPTS), $override_options);
+                //allow a yes or no value in override
+                foreach($options as $k => $v)
+                {
+                    if(in_array($v, ['yes', 'true']))
+                    {
+                        $options[$k] = '1';
+                    }
+                    elseif(in_array($v, ['no', 'false']))
+                    {
+                        $options[$k] = '';
+                    }
+                }
                 $this->Options->store($options);
                 //override configuration with cli options
                 foreach($options as $k => $v)
@@ -373,7 +385,7 @@ class Application
                     }
                     if($error)
                     {
-                        $this->warn('Directive '.$directive.' ['.$section.'] is not not a valid boolean. Use values yes/no without quotes..');
+                        $this->warn('Directive '.$directive.' ['.$section.'] is not not a valid boolean ('.$value.'). Use values yes/no without quotes..');
                     }
                 }
             }
