@@ -171,7 +171,18 @@ class Application
             }
             else
             {
-                //ini file
+                //check for illegal comments in ini file
+                $lines = file($configfile);
+                $i = 1;
+                foreach($lines as $line)
+                {
+                    if(preg_match('/^#/', $line))
+                    {
+                        $this->fail("Error on line $i. Hash (#) found! Use semicolon for comments!");
+                    }
+                    $i++;
+                }
+                // read config
                 $config = parse_ini_file($configfile, 1);
                 $this->Config->store($config);
                 // check cli options of format --foo-bar
