@@ -684,7 +684,10 @@ class Application
         //required directives - give an error
         $sections = [];
         $sections ['local'] = ['rootdir', 'logdir', 'hostdir-name', 'hostdir-create', 'filesystem'];
-        $sections ['remote'] = ['host', 'user'];
+        if($this->Config->get('ssh.enabled'))
+        {
+            $sections ['remote'] = ['host', 'user'];
+        }
         $sections ['mysql'] = ['enabled'];
         $validate['error'] = $sections;
         //absent directives - give a warning
