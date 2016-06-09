@@ -113,7 +113,7 @@ class Backup
         {
             $output = false;
             //check if allowed
-            $this->Cmd->exe("'cd $dir'", true);
+            $this->Cmd->exe("'cd $dir' 2>&1", true);
             if ($this->Cmd->is_error())
             {
                 $this->App->warn('Cannot access remote dir ' . $dir . '...');

@@ -184,6 +184,10 @@ class Application
                 }
                 // read config
                 $config = parse_ini_file($configfile, 1);
+                if(!$config)
+                {
+                    $this->fail('Error reading ini file!');
+                }
                 $this->Config->store($config);
                 // check cli options of format --foo-bar
                 $override_options= [];
