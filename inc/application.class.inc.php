@@ -619,7 +619,18 @@ class Application
         # VALIDATE HOST DIR
         #####################################
         $this->out('Check host...');
-        $dirname = ($this->Config->get('local.hostdir-name'))? $this->Config->get('local.hostdir-name'):$this->Config->get('remote.host');
+        if($this->Config->get('local.hostdir-name'))
+        {
+            $dirname = $this->Config->get('local.hostdir-name');
+        }
+        elseif($this->Config->get('remote.host'))
+        {
+            $dirname = $this->Config->get('remote.host');
+        }
+        else
+        {
+            $this->fail('No hostdir-name [local] configured!');
+        }
         $this->Config->set('local.hostdir-name', $dirname);
         //check if absolute path
         if (preg_match('/^\//', $this->Config->get('local.hostdir-name')))
@@ -790,7 +801,8 @@ class Application
         ######################################
         # DUMP ALL CONFIG
         #####################################
-        $this->out('LIST CONFIGURATION @'.$this->Config->get('remote.host'), 'header');
+        $hostname = ($this->Config->get('remote.ssh'))? '@'.$this->Config->get('remote.host'):'(LOCAL)';
+        $this->out('LIST CONFIGURATION '.$hostname, 'header');
         $output = [];
         foreach ($this->Config->get() as $k => $v)
         {
