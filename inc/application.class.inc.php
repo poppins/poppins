@@ -841,9 +841,10 @@ class Application
         {
             foreach ($directive as $k => $v)
             {
-                if (!empty($v) && !preg_match("#^[A-Za-z0-9/\\\\ \-\._]+$#", $v))
+                if(!empty($v) && !preg_match("#^[A-Za-z0-9/\\\\ \-\._\+\pL]+$#u", $v))
                 {
-                    $this->fail("Illegl character in string '$v' in directive $k [$section]!");
+//                    $this->Config->set([$section, $directive], escapeshellarg ($v));
+                    $this->fail("Illegal character found in string '$v' in directive $k [$section]!");
                 }
             }
         }
