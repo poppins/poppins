@@ -843,8 +843,12 @@ class Application
             {
                 if(!empty($v) && !preg_match("#^[A-Za-z0-9/\\\\ \-\._\+\pL]+$#u", $v))
                 {
-//                    $this->Config->set([$section, $directive], escapeshellarg ($v));
-                    $this->fail("Illegal character found in string '$v' in directive $k [$section]!");
+                    //check bad characters - #&;`|*?~<>^()[]{}$\, \x0A and \xFF. ' and " are escaped
+                    $e = escapeshellcmd($v);
+                    if($v != $e)
+                    {
+                        $this->fail("Illegal character found in string '$v' in directive $k [$section]!");
+                    }
                 }
             }
         }
