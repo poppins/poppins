@@ -10,6 +10,14 @@ class Validator
     }
 
     /*
+     * check if relative home path
+     */
+    static function is_relative_home_path($path)
+    {
+        return ($path == '~' || preg_match('/^~\//', $path))? true:false;
+    }
+
+    /*
      * Return a diff with unexpected
      */
     static function diff_listing($dir, $allowed = [])
@@ -29,6 +37,11 @@ class Validator
             }
         }
         return $unexpected;
+    }
+
+    static function validate_ini_setting($string)
+    {
+        return (empty($string) || preg_match("#^[A-Za-z0-9/\\\\ \-\._\+\pL]+$#u", $string))? true:false;
     }
 }
 ?>

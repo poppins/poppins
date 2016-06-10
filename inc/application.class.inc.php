@@ -322,14 +322,22 @@ class Application
         $this->out('Check logdir...');
         $logdir = $this->Config->get('local.logdir');
         //validate dir, create if required
-        if (!file_exists($logdir))
+        if($logdir)
         {
-            $this->out('Create logdir  ' . $logdir . '...');
-            $this->Cmd->exe("mkdir -p " . $logdir);
-            if($this->Cmd->is_error())
+            if (!file_exists($logdir))
             {
-                $this->fail('Cannot create log dir '.$logdir);
+                $this->out('Create logdir  ' . $logdir . '...');
+                $this->Cmd->exe("mkdir -p " . $logdir);
+                if ($this->Cmd->is_error())
+                {
+                    $this->fail('Cannot create log dir ' . $logdir);
+                }
             }
+        }
+        else
+        {
+            //TODO: also validated as not empty elsewhere
+            $this->fail('Logdir may not be empty!');
         }
         #####################################
         # VALIDATE RETRY OPTIONS
@@ -373,13 +381,14 @@ class Application
                     }
                     if($error)
                     {
+                        $value = ($value)? $value:'empty';
                         $this->fail('Directive '.$directive.' ['.$section.'] is not not an absolute path ('.$value.')!');
                     }
                 }
             }
         }
         #####################################
-        # VALIDATE MULTIPLE ABSOLUTE PATHS
+        # VALIDATE MULTIPLE MYSQL PATHS
         #####################################
         // TODO json
         //absent directives - give a warning
@@ -395,15 +404,10 @@ class Application
                     $values = explode(',', $this->Config->get([$section, $directive]));
                     foreach($values as $value)
                     {
-                        $error = false;
                         //must be absolute path or tilde
-                        if (!Validator::is_absolute_path($value) && $value != '~')
+                        if (!empty($value) && !Validator::is_absolute_path($value) && !Validator::is_relative_home_path($value))
                         {
-                            $error = true;
-                        }
-                        if ($error)
-                        {
-                            $this->fail('Directive ' . $directive . ' [' . $section . '] must contain absolute paths (' . $value . ')!');
+                            $this->fail('Directive ' . $directive . ' [' . $section . '] must contain an absolute path or relative to ~ (' . $value . ')!');
                         }
                     }
                 }
@@ -442,6 +446,7 @@ class Application
                     }
                     if($error)
                     {
+                        $value = ($value)? $value:'empty';
                         $this->warn('Directive '.$directive.' ['.$section.'] is not not a valid boolean ('.$value.'). Use values yes/no without quotes..');
                     }
                 }
@@ -841,13 +846,38 @@ class Application
         {
             foreach ($directive as $k => $v)
             {
-                if(!empty($v) && !preg_match("#^[A-Za-z0-9/\\\\ \-\._\+\pL]+$#u", $v))
+                if(!Validator::validate_ini_setting($v))
                 {
                     //check bad characters - #&;`|*?~<>^()[]{}$\, \x0A and \xFF. ' and " are escaped
                     $e = escapeshellcmd($v);
                     if($v != $e)
                     {
-                        $this->fail("Illegal character found in string '$v' in directive $k [$section]!");
+                        //allow tilde in mysql configdirs
+                        if($section == 'mysql' && $k == 'configdirs')
+                        {
+                            $paths = explode(',', $v);
+                            foreach($paths as $p)
+                            {
+                                $p = trim($p);
+                                if(preg_match('/~/', $p))
+                                {
+                                    if (!Validator::is_relative_home_path($p))
+                                    {
+                                        $this->fail("Not a home path, MySQL configdir path '$v' in directive $k [$section]!");
+                                    }
+                                    $p = preg_replace('/\~/', '', $p);
+                                }
+                                //check characters
+                                if (!Validator::validate_ini_setting($p))
+                                {
+                                    $this->fail("Illegal character found in MySQL configdir path '$v' in directive $k [$section]!");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            $this->fail("Illegal character found in string '$v' in directive $k [$section]!");
+                        }
                     }
                 }
             }
@@ -858,29 +888,25 @@ class Application
         // TODO put a template in json?
         $validate = [];
         //required directives - give an error
-        $sections = [];
-        $sections ['local'] = ['rootdir', 'logdir', 'hostdir-name', 'hostdir-create', 'filesystem'];
+        $validate['error']['local'] = ['rootdir', 'logdir', 'hostdir-name', 'hostdir-create', 'filesystem'];
         if($this->Config->get('ssh.enabled'))
         {
-            $sections ['remote'] = ['host', 'user'];
+            $validate['error']['remote'] = ['host', 'user'];
         }
-        $sections ['mysql'] = ['enabled'];
-        $validate['error'] = $sections;
+        $validate['error']['mysql'] = ['enabled'];
         //absent directives - give a warning
-        $sections = [];
-        $sections ['remote'] = ['pre-backup-script', 'pre-backup-onfail', 'ssh', 'retry-count', 'retry-timeout' ];
-        $sections ['rsync'] = ['compresslevel', 'hardlinks', 'verbose', 'retry-count', 'retry-timeout'];
-        $sections ['meta'] = ['remote-disk-layout', 'remote-package-list'];
-        $sections ['mysql'] = ['configdirs'];
-        $sections ['log'] = ['local-disk-usage', 'compress'];
-        $validate['warning'] = $sections;
+        $validate['warning']['remote'] = ['pre-backup-script', 'pre-backup-onfail', 'ssh', 'retry-count', 'retry-timeout' ];
+        $validate['warning']['rsync'] = ['compresslevel', 'hardlinks', 'verbose', 'retry-count', 'retry-timeout'];
+        $validate['warning']['meta'] = ['remote-disk-layout', 'remote-package-list'];
+        $validate['warning']['mysql'] = ['configdirs'];
+        $validate['warning']['log'] = ['local-disk-usage', 'compress'];
         foreach($validate as $onfail => $sections)
         {
             foreach($sections as $section => $directives)
             {
                 foreach($directives as $directive)
                 {
-                    if(@!$this->Config->is_set($section) || @!$this->Config->is_set([$section, $directive]))
+                    if(!$this->Config->is_set([$section, $directive]))
                     {
                         if($onfail == 'error')
                         {
@@ -889,6 +915,36 @@ class Application
                         else
                         {
                             $this->warn('Directive '.$directive.' ['.$section.'] is not configured!');
+                        }
+                    }
+                }
+            }
+        }
+        #####################################
+        # VALIDATE IF NOT EMPTY
+        #####################################
+        // TODO put a template in json?
+        $validate = [];
+        //required directives - give an error
+        $validate['error']['local'] = ['rootdir', 'logdir', 'filesystem'];
+        $validate['error']['remote'] = ['pre-backup-onfail'];
+        //absent directives - give a warning
+        $validate['warning'] = [];
+        foreach($validate as $onfail => $sections)
+        {
+            foreach($sections as $section => $directives)
+            {
+                foreach($directives as $directive)
+                {
+                    if(@!$this->Config->get($section) || @!$this->Config->get([$section, $directive]))
+                    {
+                        if($onfail == 'error')
+                        {
+                            $this->fail('Directive '.$directive.' ['.$section.'] is empty!');
+                        }
+                        else
+                        {
+                            $this->warn('Directive '.$directive.' ['.$section.'] is empty!');
                         }
                     }
                 }
