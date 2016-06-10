@@ -270,7 +270,7 @@ class Application
             }
         }
         //check if there is anything to do
-        if(!count($this->Config->get('included')) && $this->Config->get('mysql.enabled') != 'yes')
+        if(!count($this->Config->get('included')) && !$this->Config->get('mysql.enabled'))
         {
             $this->fail("No directories configured for backup nor MySQL configured. Nothing to do...");
         }
@@ -710,7 +710,7 @@ class Application
                 $hostdir_check = $this->Cmd->exe("zfs get -H -o value mountpoint " . $this->Config->get('local.hostdir'));
                 if ($hostdir_check != $this->Config->get('local.hostdir'))
                 {
-                    if ($this->Config->get('local.hostdir-create') == 'yes')
+                    if ($this->Config->get('local.hostdir-create'))
                     {
                         $zfs_fs = preg_replace('/^\//', '', $this->Config->get('local.hostdir'));
                         $this->out("ZFS filesystem " . $zfs_fs . " does not exist, creating zfs filesystem..");
@@ -722,7 +722,7 @@ class Application
                     }
                     else
                     {
-                        $this->fail("Directory " . $this->Config->get('local.hostdir') . " does not exist! Not allowed to create it..");
+                        $this->fail("Directory " . $this->Config->get('local.hostdir') . " does not exist! Directive not set to create it (no)..");
                     }
                 }
                 //validate if dataset name and mountpoint are the same
@@ -737,7 +737,7 @@ class Application
                 //check if dir exists
                 if (!file_exists($this->Config->get('local.hostdir')))
                 {
-                    if ($this->Config->get('local.hostdir-create') == 'yes')
+                    if ($this->Config->get('local.hostdir-create'))
                     {
                         $this->out("Directory " . $this->Config->get('local.hostdir') . " does not exist, creating it..");
                         $this->Cmd->exe("mkdir -p " . $this->Config->get('local.hostdir'));
@@ -748,7 +748,7 @@ class Application
                     }
                     else
                     {
-                        $this->fail("Directory " . $this->Config->get('local.hostdir') . " does not exist! Not allowed to create it..");
+                        $this->fail("Directory " . $this->Config->get('local.hostdir') . " does not exist! Directive not set to create it..");
                     }
                 }
                 break;
