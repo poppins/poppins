@@ -407,7 +407,7 @@ class Application
                         //must be absolute path or tilde
                         if (!empty($value) && !Validator::is_absolute_path($value) && !Validator::is_relative_home_path($value))
                         {
-                            $this->fail('Directive ' . $directive . ' [' . $section . '] is an illegal path (' . $value . ')!');
+                            $this->fail('Directive ' . $directive . ' [' . $section . '] contains an illegal path (' . $value . ')!');
                         }
                     }
                 }
