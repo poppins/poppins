@@ -835,6 +835,19 @@ class Application
             }
         }
         #####################################
+        # VALIDATE ALLOWED CHARACTERS
+        #####################################
+        foreach($this->Config->get() as $section => $directive)
+        {
+            foreach ($directive as $k => $v)
+            {
+                if (!empty($v) && !preg_match("#^[A-Za-z0-9/\\\\ \-\._]+$#", $v))
+                {
+                    $this->fail("Illegl character in string '$v' in directive $k [$section]!");
+                }
+            }
+        }
+        #####################################
         # VALIDATE IF PRESENT
         #####################################
         // TODO put a template in json?
