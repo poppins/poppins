@@ -438,7 +438,7 @@ class Application
                             }
                             else
                             {
-                                $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an absolute path!';
+                                $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] contains an illegal path!';
                                 $paths = explode(',', $value);
                                 if(!count($paths))
                                 {
@@ -446,7 +446,7 @@ class Application
                                 }
                                 foreach($paths as $path)
                                 {
-                                    if($path != '~' && !Validator::is_absolute_path($$path))
+                                    if($path != '~' && !Validator::is_absolute_path($path) && (!Validator::is_relative_home_path($path)))
                                     {
                                         if ($directive['validate']['mysqlpaths'] == 'warning')
                                         {
@@ -458,7 +458,6 @@ class Application
                                         }
                                     }
                                 }
-                                dd('mysqlend');
                             }
                         }
                     }
@@ -482,7 +481,6 @@ class Application
                 }
             }
         }
-        dd('The End');
         #####################################
         # VALIDATE INCLUDED/EXCLUDED
         #####################################
