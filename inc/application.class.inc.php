@@ -471,7 +471,7 @@ class Application
                         if (isset($directive['default']))
                         {
                             $this->Config->set([$section['name'], $directive['name']], $directive['default']);
-                            $this->warn($message);
+                            $this->warn($message.' Using default value ('.$directive['default'].').');
                         }
                         else
                         {
