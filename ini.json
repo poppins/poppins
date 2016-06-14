@@ -5,11 +5,11 @@
       "directives":[
         {
           "name":"rootdir",
-          "validate":{"notempty":"error", "absolutepath":"error"}
+          "validate":{"absolutepath":"error"}
         },
         {
           "name":"logdir",
-          "validate":{"notempty":"error", "absolutepath":"error"}
+          "validate":{"absolutepath":"error"}
         },
         {
           "name":"hostdir-name",
@@ -24,7 +24,7 @@
         {
           "name":"filesystem",
           "default":"default",
-          "validate":{"notempty":"error", "allowed":["default", "zfs", "ZFS", "btrfs", "BTRFS"]}
+          "validate":{"allowed":["default", "ZFS", "BTRFS"]}
         }
       ]
     },
@@ -49,7 +49,7 @@
         {
           "name":"pre-backup-script",
           "default":"",
-          "validate":{"absolutepath":"error"}
+          "validate":{"absolutepath?":"error"}
         },
         {
           "name":"pre-backup-onfail",
@@ -59,12 +59,12 @@
         {
           "name":"retry-count",
           "default":0,
-          "validate":{"notempty":"error", "integer":"error"}
+          "validate":{"integer":"error"}
         },
         {
           "name":"retry-timeout",
           "default":0,
-          "validate":{"notempty":"error", "integer":"error"}
+          "validate":{"integer":"error"}
         }
       ]
     },
@@ -113,7 +113,7 @@
         {
           "name":"compresslevel",
           "default":0,
-          "validate":{"notempty":"error", "integer":"error"}
+          "validate":{"integer":"error"}
         },
         {
           "name":"hardlinks",
@@ -128,12 +128,12 @@
         {
           "name":"retry-count",
           "default":0,
-          "validate":{"notempty":"error", "integer":"error"}
+          "validate":{"integer":"error"}
         },
         {
           "name":"retry-timeout",
           "default":0,
-          "validate":{"notempty":"error", "integer":"error"}
+          "validate":{"integer":"error"}
         }
       ]
     },

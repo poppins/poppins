@@ -187,6 +187,8 @@ class Application
             }
             // read config
             $config = parse_ini_file($configfile, 1);
+            // TODO PHP > 5.6
+            // $config = parse_ini_file($configfile, 1, INI_SCANNER_TYPED);
             if(!$config)
             {
                 $this->fail('Error parsing ini file!');
@@ -312,145 +314,170 @@ class Application
                     $message = '';
                     if($this->Config->is_set([$section['name'], $directive['name']]))
                     {
+                        // set value
                         $value = $this->Config->get([$section['name'], $directive['name']]);
-                        //check if empty
-                        if ($value === '')
+                        #####################################
+                        # ALLOWED CHARACTERS
+                        #####################################
+                        if (!Validator::contains_allowed_characters($value))
                         {
-                            #####################################
-                            # NOT EMPTY
-                            #####################################
-                            if (isset($directive['validate']['notempty']))
+                            //check bad characters - #&;`|*?~<>^()[]{}$\, \x0A and \xFF. ' and " are escaped
+                            $escaped = escapeshellcmd($value);
+                            if ($value != $escaped)
                             {
-                                $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is empty!';
-                                if ($directive['validate']['notempty'] == 'warning')
+                                //allow tilde in mysql configdirs!!
+                                if ($section['name'] == 'mysql' && $directive['name'] == 'configdirs')
+                                {
+                                    $paths = explode(',', $value);
+                                    foreach ($paths as $p)
+                                    {
+                                        $p = trim($p);
+                                        if (preg_match('/~/', $p))
+                                        {
+                                            if (!Validator::is_relative_home_path($p))
+                                            {
+                                                $this->fail("Not a home path, MySQL configdir path '$value' in directive " . $directive['name'] . " [" . $section['name'] . "]!");
+                                            }
+                                            $p = preg_replace('/\~/', '', $p);
+                                        }
+                                        //check characters
+                                        if (!Validator::contains_allowed_characters($p))
+                                        {
+                                            $this->fail("Illegal character found in MySQL configdir path '$value' in directive " . $directive['name'] . " [" . $section['name'] . "]!");
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    $this->fail("Illegal character found in string '$value' in directive " . $directive['name'] . " [" . $section['name'] . "]!");
+                                }
+                            }
+                        }
+                        #####################################
+                        # ALLOWED
+                        #####################################
+                        if (isset($directive['validate']['allowed']))
+                        {
+                            $allowed = $directive['validate']['allowed'];
+                            $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not not an allowed value. Use values "'.implode('/', $allowed).'"!';
+                            if (!in_array($value, $allowed))
+                            {
+                                if ($directive['validate']['allowed'] == 'warning')
                                 {
                                     $this->warn($message);
-                                } else
+                                }
+                                else
                                 {
                                     $this->fail($message);
                                 }
                             }
                         }
-                        else
+                        #####################################
+                        # BOOLEAN
+                        #####################################
+                        if (isset($directive['validate']['boolean']))
                         {
-                            #####################################
-                            # ALLOWED CHARACTERS
-                            #####################################
-                            if (!Validator::contains_allowed_characters($value))
+                            $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not not a valid boolean. Use values yes/no without quotes!';
+                            if (in_array($value, ['yes', 'true']))
                             {
-                                //check bad characters - #&;`|*?~<>^()[]{}$\, \x0A and \xFF. ' and " are escaped
-                                $escaped = escapeshellcmd($value);
-                                if ($value != $escaped)
-                                {
-                                    //allow tilde in mysql configdirs!!
-                                    if ($section['name'] == 'mysql' && $directive['name'] == 'configdirs')
-                                    {
-                                        $paths = explode(',', $value);
-                                        foreach ($paths as $p)
-                                        {
-                                            $p = trim($p);
-                                            if (preg_match('/~/', $p))
-                                            {
-                                                if (!Validator::is_relative_home_path($p))
-                                                {
-                                                    $this->fail("Not a home path, MySQL configdir path '$value' in directive " . $directive['name'] . " [" . $section['name'] . "]!");
-                                                }
-                                                $p = preg_replace('/\~/', '', $p);
-                                            }
-                                            //check characters
-                                            if (!Validator::contains_allowed_characters($p))
-                                            {
-                                                $this->fail("Illegal character found in MySQL configdir path '$value' in directive " . $directive['name'] . " [" . $section['name'] . "]!");
-                                            }
-                                        }
-                                    } else
-                                    {
-                                        $this->fail("Illegal character found in string '$value' in directive " . $directive['name'] . " [" . $section['name'] . "]!");
-                                    }
-                                }
+                                $this->Config->set([$section['name'], $directive['name']], '1');
+                                $this->warn($message);
                             }
-                            #####################################
-                            # BOOLEAN
-                            #####################################
-                            if (isset($directive['validate']['boolean']))
+                            elseif (in_array($value, ['no', '0', 'false']))
                             {
-                                $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not not a valid boolean. Use values yes/no without quotes..';
-                                if (in_array($value, ['yes', 'true']))
+                                $this->Config->set([$section['name'], $directive['name']], '');
+                                $this->warn($message);
+                            }
+                            elseif (!in_array($value, ['', '1']))
+                            {
+                                $this->fail($message);
+                            }
+                        }
+                        #####################################
+                        # INTEGER
+                        #####################################
+                        if (isset($directive['validate']['integer']))
+                        {
+                            if (!preg_match("/^[0-9]+$/", $value))
+                            {
+                                $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an integer!';
+                                if ($directive['validate']['integer'] == 'warning')
                                 {
-                                    $this->Config->set([$section['name'], $directive['name']], '1');
                                     $this->warn($message);
-                                } elseif (in_array($value, ['no', '0', 'false']))
-                                {
-                                    $this->Config->set([$section['name'], $directive['name']], '');
-                                    $this->warn($message);
-                                } elseif (!in_array($value, ['', '1']))
+                                }
+                                else
                                 {
                                     $this->fail($message);
                                 }
                             }
-                            #####################################
-                            # INTEGER
-                            #####################################
-                            if (isset($directive['validate']['integer']))
+                        }
+                        #####################################
+                        # 1 ABSOLUTE PATH
+                        #####################################
+                        //exactly one absolute path
+                        if (isset($directive['validate']['absolutepath']))
+                        {
+                            if (!Validator::is_absolute_path($value))
                             {
-                                if (!preg_match("/^[0-9]+$/", $value))
+                                $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an absolute path!';
+                                if ($directive['validate']['absolutepath'] == 'warning')
                                 {
-                                    $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an integer!';
-                                    if ($directive['validate']['integer'] == 'warning')
-                                    {
-                                        $this->warn($message);
-                                    } else
-                                    {
-                                        $this->fail($message);
-                                    }
+                                    $this->warn($message);
+                                }
+                                else
+                                {
+                                    $this->fail($message);
                                 }
                             }
-                            #####################################
-                            # ABSOLUTE PATH
-                            #####################################
-                            //exactly one absolute path
-                            if (isset($directive['validate']['absolutepath']))
+                        }
+                        #####################################
+                        # 1 ABSOLUTE PATH OR EMPTY
+                        #####################################
+                        //exactly one absolute path
+                        if (isset($directive['validate']['absolutepath?']))
+                        {
+                            if (!empty($value) && !Validator::is_absolute_path($value))
                             {
-                                if (!Validator::is_absolute_path($value))
+                                $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an absolute path!';
+                                if ($directive['validate']['absolutepath?'] == 'warning')
                                 {
-                                    $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an absolute path!';
-                                    if ($directive['validate']['integer'] == 'warning')
-                                    {
-                                        $this->warn($message);
-                                    } else
-                                    {
-                                        $this->fail($message);
-                                    }
+                                    $this->warn($message);
+                                }
+                                else
+                                {
+                                    $this->fail($message);
                                 }
                             }
-                            #####################################
-                            # MULTIPLE MYSQL PATHS
-                            #####################################
-                            if (isset($directive['validate']['mysqlpaths']))
+                        }
+                        #####################################
+                        # MULTIPLE MYSQL PATHS
+                        #####################################
+                        if (isset($directive['validate']['mysqlpaths']))
+                        {
+                            //set to home if empty
+                            if(empty($value))
                             {
-                                //set to home if empty
-                                if (empty($value))
+                                $this->Config->set([$section['name'], $directive['name']], $directive['default']);
+                            }
+                            else
+                            {
+                                $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] contains an illegal path!';
+                                $paths = explode(',', $value);
+                                if(!count($paths))
                                 {
-                                    $this->Config->set([$section['name'], $directive['name']], $directive['default']);
-                                } else
+                                    $paths = [$value];
+                                }
+                                foreach($paths as $path)
                                 {
-                                    $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] contains an illegal path!';
-                                    $paths = explode(',', $value);
-                                    if (!count($paths))
+                                    if($path != '~' && !Validator::is_absolute_path($path) && (!Validator::is_relative_home_path($path)))
                                     {
-                                        $paths = [$value];
-                                    }
-                                    foreach ($paths as $path)
-                                    {
-                                        if ($path != '~' && !Validator::is_absolute_path($path) && (!Validator::is_relative_home_path($path)))
+                                        if ($directive['validate']['mysqlpaths'] == 'warning')
                                         {
-                                            if ($directive['validate']['mysqlpaths'] == 'warning')
-                                            {
-                                                $this->warn($message);
-                                            } else
-                                            {
-                                                $this->fail($message);
-                                            }
+                                            $this->warn($message);
+                                        }
+                                        else
+                                        {
+                                            $this->fail($message);
                                         }
                                     }
                                 }
