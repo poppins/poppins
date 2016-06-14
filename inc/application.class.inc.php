@@ -21,7 +21,6 @@ class Application
 
     // Errors
     private $errors = [];
-
     //Warnings
     private $warnings = [];
 
@@ -45,6 +44,7 @@ class Application
         //colorize the string
         if ($this->Options->is_set('color'))
         {
+            // TODO json
             // foreground
             $fgcolors['black'] = '0;30';
             $fgcolors['dark_gray'] = '1;30';
@@ -154,87 +154,83 @@ class Application
         //load commands
         $this->Cmd = $Cmd;
         #####################################
-        # LOAD OPTIONS FROM CONFIG FILE
+        # LOAD OPTIONS FROM INI FILE
         #####################################
         $this->out("configuration file", 'header');
         //validate config file
-        if ($this->Options->get('c'))
-        {
-            $configfile = $this->Options->get('c');
-            if (!file_exists($configfile))
-            {
-                $this->abort("Config file not found!");
-            }
-            elseif (!preg_match('/^.+\.poppins\.ini$/', $configfile))
-            {
-                $this->abort("Wrong ini file format: {hostname}.poppins.ini!");
-            }
-            else
-            {
-                //check for illegal comments in ini file
-                $lines = file($configfile);
-                $i = 1;
-                foreach($lines as $line)
-                {
-                    if(preg_match('/^#/', $line))
-                    {
-                        $this->fail("Error on line $i. Hash (#) found! Use semicolon for comments!");
-                    }
-                    $i++;
-                }
-                // read config
-                $config = parse_ini_file($configfile, 1);
-                if(!$config)
-                {
-                    $this->fail('Error reading ini file!');
-                }
-                $this->Config->store($config);
-                // check cli options of format --foo-bar
-                $override_options= [];
-                foreach($this->Config->get() as $k => $v)
-                {
-                    foreach($v as $kk => $vv)
-                    {
-                        $override_options[]= "$k-$kk::";
-                    }
-                }
-                //store override options
-                $options = getopt(implode('', $CLI_SHORT_OPTS), $override_options);
-                //allow a yes or no value in override
-                foreach($options as $k => $v)
-                {
-                    if(in_array($v, ['yes', 'true']))
-                    {
-                        $options[$k] = '1';
-                    }
-                    elseif(in_array($v, ['no', 'false']))
-                    {
-                        $options[$k] = '';
-                    }
-                }
-                $this->Options->store($options);
-                //override configuration with cli options
-                foreach($options as $k => $v)
-                {
-                    if(in_array("$k::", $override_options))
-                    {
-                        $p = explode('-', $k);
-                        $k1 = $p[0];
-                        unset ($p[0]);
-                        $k2 = implode('', $p);
-                        $this->Config->set([$k1, $k2], $v);
-                    }
-                }
-                //add data
-                $this->Config->set('local.os', $OS);
-            }
-        }
-        else
+        if (!$this->Options->get('c'))
         {
             $this->abort("Option -c {configfile} is required!");
         }
+        // read configfile
+        $configfile = $this->Options->get('c');
+        if (!file_exists($configfile))
+        {
+            $this->abort("Config file not found!");
+        }
+        elseif (!preg_match('/^.+\.poppins\.ini$/', $configfile))
+        {
+            $this->abort("Wrong ini file format: {hostname}.poppins.ini!");
+        }
+        else
+        {
+            //check for illegal comments in ini file
+            $lines = file($configfile);
+            $i = 1;
+            foreach($lines as $line)
+            {
+                if(preg_match('/^#/', $line))
+                {
+                    $this->fail("Error on line $i. Hash (#) found! Use semicolon for comments!");
+                }
+                $i++;
+            }
+            // read config
+            $config = parse_ini_file($configfile, 1);
+            if(!$config)
+            {
+                $this->fail('Error parsing ini file!');
+            }
+            $this->Config->store($config);
+            // check cli options of format --foo-bar
+            $override_options= [];
+            foreach($this->Config->get() as $k => $v)
+            {
+                foreach($v as $kk => $vv)
+                {
+                    $override_options[]= "$k-$kk::";
+                }
+            }
+            //store override options
+            $options = getopt(implode('', $CLI_SHORT_OPTS), $override_options);
+            //allow a yes or no value in override
+            foreach($options as $k => $v)
+            {
+                if(in_array($v, ['yes', 'true']))
+                {
+                    $options[$k] = '1';
+                }
+                elseif(in_array($v, ['no', 'false']))
+                {
+                    $options[$k] = '';
+                }
+            }
+            $this->Options->store($options);
+            //override configuration with cli options
+            foreach($options as $k => $v)
+            {
+                if(in_array("$k::", $override_options))
+                {
+                    $p = explode('-', $k);
+                    $k1 = $p[0];
+                    unset ($p[0]);
+                    $k2 = implode('', $p);
+                    $this->Config->set([$k1, $k2], $v);
+                }
+            }
+        }
         #####################################
-        # PARSE CONFIG FILE
+        # CONFIGURATION CLEANUP
         #####################################
         //trim spaces
         $this->out("Check configuration syntax (spaces and trailing slashes not allowed)...");
@@ -269,18 +265,234 @@ class Application
                 }
             }
         }
+        #####################################
+        # ABORT IF NO ACTION NEEDED
+        #####################################
         //check if there is anything to do
         if(!count($this->Config->get('included')) && !$this->Config->get('mysql.enabled'))
         {
             $this->fail("No directories configured for backup nor MySQL configured. Nothing to do...");
         }
+        #####################################
+        # VALIDATE INI FILE
+        #####################################
+        $json_file = dirname(__FILE__).'/../ini.json';
+        if (!file_exists($json_file))
+        {
+            $this->fail('Cannot find required json file ' . $json_file);
+        }
+        $contents = file_get_contents($json_file);
+        $json = json_decode($contents, true);
+        if(!$json)
+        {
+            $this->fail('Cannot parse json file:"'.json_last_error_msg().'"!');
+        }
+        //iterate sections
+        foreach($json['sections'] as $section)
+        {
+            if (!$this->Config->is_set($section['name']))
+            {
+                $this->fail('Section [' . $section['name'] . '] is not set!');
+            }
+            //add snapshots to validation
+            if($section['name'] == 'snapshots')
+            {
+                foreach(array_keys($this->Config->get('snapshots')) as $k)
+                {
+                    $section['directives'][] = ['name' => $k, 'validate'=> ['integer'=>'error']];
+                }
+            }
+            // iterate all directives
+            if(isset($section['directives']) && is_array($section['directives']))
+            {
+                //validate directives
+                foreach ($section['directives'] as $directive)
+                {
+                    //initiate message
+                    $message = '';
+                    if($this->Config->is_set([$section['name'], $directive['name']]))
+                    {
+                        #####################################
+                        # ALLOWED CHARACTERS
+                        #####################################
+                        $value = $this->Config->get([$section['name'], $directive['name']]);
+                        if (!Validator::contains_allowed_characters($value))
+                        {
+                            //check bad characters - #&;`|*?~<>^()[]{}$\, \x0A and \xFF. ' and " are escaped
+                            $escaped = escapeshellcmd($value);
+                            if ($value != $escaped)
+                            {
+                                //allow tilde in mysql configdirs!!
+                                if ($section['name'] == 'mysql' && $directive['name'] == 'configdirs')
+                                {
+                                    $paths = explode(',', $value);
+                                    foreach ($paths as $p)
+                                    {
+                                        $p = trim($p);
+                                        if (preg_match('/~/', $p))
+                                        {
+                                            if (!Validator::is_relative_home_path($p))
+                                            {
+                                                $this->fail("Not a home path, MySQL configdir path '$value' in directive " . $directive['name'] . " [" . $section['name'] . "]!");
+                                            }
+                                            $p = preg_replace('/\~/', '', $p);
+                                        }
+                                        //check characters
+                                        if (!Validator::contains_allowed_characters($p))
+                                        {
+                                            $this->fail("Illegal character found in MySQL configdir path '$value' in directive " . $directive['name'] . " [" . $section['name'] . "]!");
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    $this->fail("Illegal character found in string '$value' in directive " . $directive['name'] . " [" . $section['name'] . "]!");
+                                }
+                            }
+                        }
+                        #####################################
+                        # BOOLEAN
+                        #####################################
+                        if (isset($directive['validate']['boolean']))
+                        {
+                            $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not not a valid boolean. Use values yes/no without quotes..';
+                            if (in_array($value, ['yes', 'true']))
+                            {
+                                $this->Config->set([$section['name'], $directive['name']], '1');
+                                $this->warn($message);
+                            }
+                            elseif (in_array($value, ['no', '0', 'false']))
+                            {
+                                $this->Config->set([$section['name'], $directive['name']], '');
+                                $this->warn($message);
+                            }
+                            elseif (!in_array($value, ['', '1']))
+                            {
+                                $this->fail($message);
+                            }
+                        }
+                        #####################################
+                        # INTEGER
+                        #####################################
+                        if (isset($directive['validate']['integer']))
+                        {
+                            if (!preg_match("/^[0-9]+$/", $value))
+                            {
+                                $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an integer!';
+                                if ($directive['validate']['integer'] == 'warning')
+                                {
+                                    $this->warn($message);
+                                }
+                                else
+                                {
+                                    $this->fail($message);
+                                }
+                            }
+                        }
+                        #####################################
+                        # NOT EMPTY
+                        #####################################
+                        if (isset($directive['validate']['notempty']))
+                        {
+                            if ($value === '')
+                            {
+                                $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is empty!';
+                                if ($directive['validate']['notempty'] == 'warning')
+                                {
+                                    $this->warn($message);
+                                }
+                                else
+                                {
+                                    $this->fail($message);
+                                }
+                            }
+                        }
+                        #####################################
+                        # ABSOLUTE PATH
+                        #####################################
+                        //exactly one absolute path
+                        if (isset($directive['validate']['absolutepath']))
+                        {
+                            if (!Validator::is_absolute_path($value))
+                            {
+                                $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an absolute path!';
+                                if ($directive['validate']['integer'] == 'warning')
+                                {
+                                    $this->warn($message);
+                                }
+                                else
+                                {
+                                    $this->fail($message);
+                                }
+                            }
+                        }
+                        #####################################
+                        # MULTIPLE MYSQL PATHS
+                        #####################################
+                        if (isset($directive['validate']['mysqlpaths']))
+                        {
+                            //set to home if empty
+                            if(empty($value))
+                            {
+                                $this->Config->set([$section['name'], $directive['name']], $directive['default']);
+                            }
+                            else
+                            {
+                                $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an absolute path!';
+                                $paths = explode(',', $value);
+                                if(!count($paths))
+                                {
+                                    $paths = [$value];
+                                }
+                                foreach($paths as $path)
+                                {
+                                    if($path != '~' && !Validator::is_absolute_path($$path))
+                                    {
+                                        if ($directive['validate']['mysqlpaths'] == 'warning')
+                                        {
+                                            $this->warn($message);
+                                        }
+                                        else
+                                        {
+                                            $this->fail($message);
+                                        }
+                                    }
+                                }
+                                dd('mysqlend');
+                            }
+                        }
+                    }
+                    #####################################
+                    # DEFAULTS
+                    #####################################
+                    else
+                    {
+                        $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not set!';
+                        // check if default value
+                        if (isset($directive['default']))
+                        {
+                            $this->Config->set([$section['name'], $directive['name']], $directive['default']);
+                            $this->warn($message);
+                        }
+                        else
+                        {
+                            $this->fail($message);
+                        }
+                    }
+                }
+            }
+        }
+        dd('The End');
+        #####################################
+        # VALIDATE INCLUDED/EXCLUDED
+        #####################################
         //validate spaces in keys of included section
         foreach ($this->Config->get('included') as $k => $v)
         {
             $k1 = str_replace(' ', '\ ', stripslashes($k));
             if ($k != $k1)
             {
-                $this->fail("You must escape white space in [included] section! Aborting...");
+                $this->fail("You must escape white space in [included] section!");
             }
         }
         //validate spaces in values of included/excluded section
@@ -291,7 +503,7 @@ class Application
                 $v1 = str_replace(' ', '\ ', stripslashes($v));
                 if ($v != $v1)
                 {
-                    $this->fail("You must escape white space in [$section] section! Aborting...");
+                    $this->fail("You must escape white space in [$section] section!");
                 }
             }
         }
@@ -316,10 +528,10 @@ class Application
             }
         }
         #####################################
-        # VALIDATE LOG DIR
+        # SET LOG DIR
         #####################################
         //check log dir early so we can log stuff
-        $this->out('Check logdir...');
+        $this->out('Set logdir...');
         $logdir = $this->Config->get('local.logdir');
         //validate dir, create if required
         if($logdir)
@@ -334,163 +546,13 @@ class Application
                 }
             }
         }
-        else
-        {
-            //TODO: also validated as not empty elsewhere
-            $this->fail('Logdir may not be empty!');
-        }
         #####################################
-        # VALIDATE RETRY OPTIONS
+        # SET SSH CONNECTION
         #####################################
-        //retry options must be integers
-        $sections = ['remote', 'rsync'];
-        $options = ['retry-count', 'retry-timeout'];
-        foreach($sections as $section)
-        {
-            foreach ($options as $option)
-            {
-                if ($this->Config->get([$section, $option]))
-                {
-                    //must be a number
-                    if (!preg_match("/^[0-9]+$/", $this->Config->get([$section, $option])))
-                    {
-                        $this->fail("Illegal value for '$option' [$section]. Not an integer!");
-                    }
-                }
-            }
-        }
-        #####################################
-        # VALIDATE SINGLE ABSOLUTE PATH
-        #####################################
-        // TODO json
-        //absent directives - give a warning
-        $paths = [];
-        $paths ['local'] = ['rootdir', 'logdir'];
-        //check if path
-        foreach($paths as $section => $directives)
-        {
-            foreach($directives as $directive)
-            {
-                if($this->Config->is_set($section))
-                {
-                    $value = $this->Config->get([$section, $directive]);
-                    $error = false;
-                    if(!Validator::is_absolute_path($value))
-                    {
-                        $error = true;
-                    }
-                    if($error)
-                    {
-                        $value = ($value)? $value:'empty';
-                        $this->fail('Directive '.$directive.' ['.$section.'] is not not an absolute path ('.$value.')!');
-                    }
-                }
-            }
-        }
-        #####################################
-        # VALIDATE MULTIPLE MYSQL PATHS
-        #####################################
-        // TODO json
-        //absent directives - give a warning
-        $paths = [];
-        $paths ['mysql'] = ['configdirs'];
-        //check if path
-        foreach($paths as $section => $directives)
-        {
-            foreach($directives as $directive)
-            {
-                if($this->Config->is_set($section))
-                {
-                    $values = explode(',', $this->Config->get([$section, $directive]));
-                    foreach($values as $value)
-                    {
-                        //must be absolute path or tilde
-                        if (!empty($value) && !Validator::is_absolute_path($value) && !Validator::is_relative_home_path($value))
-                        {
-                            $this->fail('Directive ' . $directive . ' [' . $section . '] contains an illegal path (' . $value . ')!');
-                        }
-                    }
-                }
-            }
-        }
-        #####################################
-        # VALIDATE BOOLEANS
-        #####################################
-        // TODO json
-        //absent directives - give a warning
-        $booleans = [];
-        $booleans ['local'] = ['hostdir-create'];
-        $booleans ['remote'] = ['ssh'];
-        $booleans ['meta'] = ['remote-disk-layout', 'remote-package-list'];
-        $booleans ['log'] = ['local-disk-usage', 'compress'];
-        $booleans ['rsync'] = ['hardlinks', 'verbose'];
-        $booleans ['mysql'] = ['enabled'];
-        //check if booleans
-        foreach($booleans as $section => $directives)
-        {
-            foreach($directives as $directive)
-            {
-                if($this->Config->is_set($section))
-                {
-                    $value = $this->Config->get([$section, $directive]);
-                    $error = false;
-                    if(in_array($value ,['yes', 'true']))
-                    {
-                        $error = true;
-                        $this->Config->set([$section, $directive], '1');
-                    }
-                    elseif(in_array($value ,['no', '0', 'false']))
-                    {
-                        $error = true;
-                        $this->Config->set([$section, $directive], '');
-                    }
-                    if($error)
-                    {
-                        $value = ($value)? $value:'empty';
-                        $this->warn('Directive '.$directive.' ['.$section.'] is not not a valid boolean ('.$value.'). Use values yes/no without quotes..');
-                    }
-                }
-            }
-        }
-        #####################################
-        # VALIDATE NUMBERS
-        #####################################
-        // TODO json
-        //absent directives - give a warning
-        $integers = [];
-        $integers ['remote'] = ['retry-count', 'retry-timeout'];
-        $integers ['snapshots'] = array_keys($this->Config->get('snapshots'));
-        $integers ['rsync'] = ['compresslevel', 'retry-count', 'retry-timeout'];
-        //check if booleans
-        foreach($integers as $section => $directives)
-        {
-            foreach($directives as $directive)
-            {
-                if($this->Config->is_set($section))
-                {
-                    $value = $this->Config->get([$section, $directive]);
-                    $error = false;
-                    if(!preg_match("/^[0-9]+$/", $value))
-                    {
-                        $error = true;
-                        $this->fail('Directive '.$directive.' ['.$section.'] is not not an integer!');
-                    }
-                }
-            }
-        }
-        #####################################
-        # VALIDATE REMOTE PARAMS
-        #####################################
-        $this->out('Check remote parameters...');
-        //ssh - on by default
-        if (!$this->Config->is_set('remote.ssh'))
-        {
-            $this->Config->set('remote.ssh', true);
-            $this->warn('Directive ssh [remote] is not configured!');
-        }
         // only applicable for ssh
         if($this->Config->get('remote.ssh'))
         {
+            $this->out('Check remote parameters...');
             //validate user
             $remote_user  = ( empty($this->Config->get('remote.user'))) ? $this->Cmd->exe('whoami') : $this->Config->get('remote.user');
             $this->Config->set('remote.user', $remote_user);
@@ -584,7 +646,7 @@ class Application
             }
         }
         #####################################
-        # VALIDATE DEPENDENCIES
+        # CHECK DEPENDENCIES
         #####################################
         $this->out('Check dependencies...');
         $remote_distro = $this->Config->get('remote.distro');
@@ -625,7 +687,7 @@ class Application
             }
         }
         #####################################
-        # VALIDATE ROOT DIR & FILE SYSTEM
+        # SET ROOT DIR
         #####################################
         $this->out('Check rootdir...');
         $rootdir = $this->Config->get('local.rootdir');
@@ -642,7 +704,7 @@ class Application
         {
             $this->fail('Local filesystem not supported! Supported: '.implode(",", $supported_fs));
         }
-        //validate filesystem
+        // validate filesystem
         switch($filesystem)
         {
             case 'ZFS':
@@ -685,7 +747,7 @@ class Application
                 }
         }
         #####################################
-        # VALIDATE HOST DIR
+        # SET HOST DIR
         #####################################
         $this->out('Check host...');
         if($this->Config->get('local.hostdir-name'))
@@ -759,7 +821,7 @@ class Application
                 break;
         }
         #####################################
-        # VALIDATE RSYNC DIR
+        # SET RSYNC DIR
         #####################################
         //set syncdir
         switch($this->Config->get('local.filesystem'))
@@ -772,7 +834,9 @@ class Application
                 $rsyncdir = 'rsync.dir';
         }
         $this->Config->set('local.rsyncdir',  $this->Config->get('local.hostdir').'/'.$rsyncdir);
-        //check if rsync dir is clean
+        #####################################
+        # CHECK IF RSYNC DIR IS CLEAN
+        #####################################
         $dir = $this->Config->get('local.rsyncdir').'/files';
         $allowed = array_map('stripslashes', array_values($this->Config->get('included')));
         $diff = Validator::diff_listing($dir, $allowed);
@@ -784,11 +848,10 @@ class Application
             }
         }
         #####################################
-        # VALIDATE META DIR
+        # CHECK IF META DIR IS CLEAN
         #####################################
         $filebase = strtolower($this->Config->get('local.hostdir-name') . '.' . $this->Settings->get('appname'));
         $this->Settings->set('meta.filebase', $filebase);
-
         //check if meta dir is clean
         $dir = $this->Config->get('local.rsyncdir').'/meta';
         $allowed = [];
@@ -809,7 +872,7 @@ class Application
             }
         }
         #####################################
-        # VALIDATE MYSQL DIR
+        # CHECK IF MYSQL DIR IS CLEAN
         #####################################
         //check if mysql dir is clean
         if(!$this->Config->get(['mysql.enabled']))
@@ -826,7 +889,7 @@ class Application
             }
         }
         #####################################
-        # VALIDATE ARCHIVE DIR
+        # CHECK IF ARCHIVE DIR IS CLEAN
         #####################################
         //check if archive dir is clean
         $dir = $this->Config->get('local.hostdir') . '/archive';
@@ -837,117 +900,6 @@ class Application
             foreach($diff as $file => $type)
             {
                 $this->warn("Directory $dir not clean, $type '$file' is not configured..");
-            }
-        }
-        #####################################
-        # VALIDATE ALLOWED CHARACTERS
-        #####################################
-        foreach($this->Config->get() as $section => $directive)
-        {
-            foreach ($directive as $k => $v)
-            {
-                if(!Validator::validate_ini_setting($v))
-                {
-                    //check bad characters - #&;`|*?~<>^()[]{}$\, \x0A and \xFF. ' and " are escaped
-                    $e = escapeshellcmd($v);
-                    if($v != $e)
-                    {
-                        //allow tilde in mysql configdirs
-                        if($section == 'mysql' && $k == 'configdirs')
-                        {
-                            $paths = explode(',', $v);
-                            foreach($paths as $p)
-                            {
-                                $p = trim($p);
-                                if(preg_match('/~/', $p))
-                                {
-                                    if (!Validator::is_relative_home_path($p))
-                                    {
-                                        $this->fail("Not a home path, MySQL configdir path '$v' in directive $k [$section]!");
-                                    }
-                                    $p = preg_replace('/\~/', '', $p);
-                                }
-                                //check characters
-                                if (!Validator::validate_ini_setting($p))
-                                {
-                                    $this->fail("Illegal character found in MySQL configdir path '$v' in directive $k [$section]!");
-                                }
-                            }
-                        }
-                        else
-                        {
-                            $this->fail("Illegal character found in string '$v' in directive $k [$section]!");
-                        }
-                    }
-                }
-            }
-        }
-        #####################################
-        # VALIDATE IF PRESENT
-        #####################################
-        // TODO put a template in json?
-        $validate = [];
-        //required directives - give an error
-        $validate['error']['local'] = ['rootdir', 'logdir', 'hostdir-name', 'hostdir-create', 'filesystem'];
-        if($this->Config->get('ssh.enabled'))
-        {
-            $validate['error']['remote'] = ['host', 'user'];
-        }
-        $validate['error']['mysql'] = ['enabled'];
-        //absent directives - give a warning
-        $validate['warning']['remote'] = ['pre-backup-script', 'pre-backup-onfail', 'ssh', 'retry-count', 'retry-timeout' ];
-        $validate['warning']['rsync'] = ['compresslevel', 'hardlinks', 'verbose', 'retry-count', 'retry-timeout'];
-        $validate['warning']['meta'] = ['remote-disk-layout', 'remote-package-list'];
-        $validate['warning']['mysql'] = ['configdirs'];
-        $validate['warning']['log'] = ['local-disk-usage', 'compress'];
-        foreach($validate as $onfail => $sections)
-        {
-            foreach($sections as $section => $directives)
-            {
-                foreach($directives as $directive)
-                {
-                    if(!$this->Config->is_set([$section, $directive]))
-                    {
-                        if($onfail == 'error')
-                        {
-                            $this->fail('Directive '.$directive.' ['.$section.'] is not configured!');
-                        }
-                        else
-                        {
-                            $this->warn('Directive '.$directive.' ['.$section.'] is not configured!');
-                        }
-                    }
-                }
-            }
-        }
-        #####################################
-        # VALIDATE IF NOT EMPTY
-        #####################################
-        // TODO put a template in json?
-        $validate = [];
-        //required directives - give an error
-        $validate['error']['local'] = ['rootdir', 'logdir', 'filesystem'];
-        $validate['error']['remote'] = ['pre-backup-onfail'];
-        //absent directives - give a warning
-        $validate['warning'] = [];
-        foreach($validate as $onfail => $sections)
-        {
-            foreach($sections as $section => $directives)
-            {
-                foreach($directives as $directive)
-                {
-                    if(@!$this->Config->get($section) || @!$this->Config->get([$section, $directive]))
-                    {
-                        if($onfail == 'error')
-                        {
-                            $this->fail('Directive '.$directive.' ['.$section.'] is empty!');
-                        }
-                        else
-                        {
-                            $this->warn('Directive '.$directive.' ['.$section.'] is empty!');
-                        }
-                    }
-                }
             }
         }
         ######################################

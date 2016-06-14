@@ -80,6 +80,12 @@ class Store
     //dot notation
     public function get_path_based($path, $default = '')
     {
+        //if no dotes, return index
+        if(!preg_match('/\./', $path))
+        {
+            return $this->stored[$path];
+        }
+
         $current = $this->stored;
         $p = strtok($path, '.');
 
@@ -137,6 +143,13 @@ class Store
     //dot notation
     public function is_set_path_based($path)
     {
+        //if no dotes, return index
+        if(!preg_match('/\./', $path))
+        {
+            return isset($this->stored[$path]);
+        }
+
+        // dots
         $current = $this->stored;
         $p = strtok($path, '.');
 

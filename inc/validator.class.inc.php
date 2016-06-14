@@ -10,6 +10,14 @@ class Validator
     }
 
     /*
+     * check if absolute path
+     */
+    static function is_integer($string)
+    {
+        return (preg_match("/^[0-9]+$/", $string))? true:false;
+    }
+
+    /*
      * check if relative home path
      */
     static function is_relative_home_path($path)
@@ -39,7 +47,7 @@ class Validator
         return $unexpected;
     }
 
-    static function validate_ini_setting($string)
+    static function contains_allowed_characters($string)
     {
         return (empty($string) || preg_match("#^[A-Za-z0-9/\\\\ \-\._\+\pL]+$#u", $string))? true:false;
     }
