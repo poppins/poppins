@@ -108,7 +108,7 @@ class Application
         #####################################
         # HELP
         #####################################
-        $CLI_SHORT_OPTS = ["c:dhv"];
+        $CLI_SHORT_OPTS = ["c:dhvt:"];
         $CLI_LONG_OPTS = ["version", "help", "color"];
         $this->Options->store(getopt(implode('', $CLI_SHORT_OPTS), $CLI_LONG_OPTS));
         if (!count($this->Options->get()))
@@ -132,6 +132,14 @@ class Application
 
             print "$content\n";
             $this->abort();
+        }
+        //check tag
+        if ($this->Options->is_set('t'))
+        {
+            if (!$this->Options->get('t'))
+            {
+                $this->abort("Option -t {tag} may not be empty!");
+            }
         }
         #####################################
         # START
@@ -1206,6 +1214,11 @@ class Application
                         $m['logfile'] .= '.gz';
                     }
                     $m['version'] = $this->Settings->get('version');
+                    // add tag to entry
+                    if($this->Options->get('t'))
+                    {
+                        $m['tag'] = $this->Options->get('t');
+                    }
                     foreach($m as $k => $v)
                     {
                         $m[$k] = '"'.$v.'"';
