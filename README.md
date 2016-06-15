@@ -55,7 +55,7 @@ All configuration in {filename}.poppins.ini. See example.poppins.ini for instruc
 ### Deployment ###
 SYNOPSIS
 
-    poppins -c {configfile} [-d] [-h] [-v] [--long-options]
+    poppins -c {configfile} [-d] [-h] [-v] [-t] [--long-options]
 
 DESCRIPTION
 
@@ -78,6 +78,9 @@ OPTIONS
 
     -h, --help
         Print this help page.
+
+    -t {tag}
+        Add a tag to the application log file.
 
     -v
         Print Poppins version.
