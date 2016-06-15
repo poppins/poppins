@@ -139,13 +139,26 @@ class Application
         $this->out($this->Settings->get('appname').' v'.$this->Settings->get('version')." - SCRIPT STARTED " . date('Y-m-d H:i:s', $this->Settings->get('start_time')), 'title');
         $this->out('local environment', 'header');
         #####################################
-        # VALIDATE OS
+        # LOCAL ENVIRONMENT
         #####################################
         $this->out('Check local operating system...');
         $OS = trim(shell_exec('uname'));
         if (!in_array($OS, ['Linux', 'SunOS']))
         {
             $this->abort("Local OS currently not supported!");
+        }
+        $this->out('Check PHP version...');
+        // full version e.g. 5.5.9-1ubuntu4.17
+        $this->Settings->set('php.version.full', PHP_VERSION);
+        // display version - debugging purposes
+        $this->out($this->Settings->get('php.version.full'));
+        // version id e.g. 505070
+        $this->Settings->set('php.version.id', PHP_VERSION_ID);
+        //check version < 5.6.1
+        //  TODO implement deprecated - see parse_ini_file($configfile, 1, INI_SCANNER_TYPED);
+        if($this->Settings->get('php.version.id') < 506010)
+        {
+            //$this->fail('PHP version 5.6.1 or higher required!');
         }
         #####################################
         # SETUP COMMANDS
