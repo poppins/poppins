@@ -331,6 +331,11 @@ class Application
                 //validate directives
                 foreach ($section['directives'] as $directive)
                 {
+                    //skip validation if dependency is not met
+                    if(isset($directive['depends']) && !$this->Config->get($directive['depends']))
+                    {
+                        continue;
+                    }
                     //initiate message
                     $message = '';
                     if($this->Config->is_set([$section['name'], $directive['name']]))
@@ -346,18 +351,28 @@ class Application
                             $escaped = escapeshellcmd($value);
                             if ($value != $escaped)
                             {
-                                //allow tilde in mysql configdirs!!
-                                if ($section['name'] == 'mysql' && $directive['name'] == 'configdirs')
+                                //allow tilde in home paths!
+                                $allow_homepath = false;
+                                $allowed_homepaths = ['homepath', 'absolutepath|homepath', 'mysqlpaths'];
+                                foreach($allowed_homepaths as $h)
+                                {
+                                    if(isset($directive['validate'][$h]))
+                                    {
+                                        $allow_homepath = true;
+                                        break;
+                                    }
+                                }
+                                if ($allow_homepath)
                                 {
                                     $paths = explode(',', $value);
                                     foreach ($paths as $p)
                                     {
                                         $p = trim($p);
-                                        if (preg_match('/~/', $p))
+                                        if (preg_match('/^~/', $p))
                                         {
                                             if (!Validator::is_relative_home_path($p))
                                             {
-                                                $this->fail("Not a home path, MySQL configdir path '$value' in directive " . $directive['name'] . " [" . $section['name'] . "]!");
+                                                $this->fail("Directive " . $directive['name'] . " [" . $section['name'] . "] is not a home path!");
                                             }
                                             $p = preg_replace('/\~/', '', $p);
                                         }
@@ -423,6 +438,25 @@ class Application
                             {
                                 $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an integer!';
                                 if ($directive['validate']['integer'] == 'warning')
+                                {
+                                    $this->warn($message);
+                                }
+                                else
+                                {
+                                    $this->fail($message);
+                                }
+                            }
+                        }
+                        #####################################
+                        # ABSOLUTE OR RELATIVE HOME PATH
+                        #####################################
+                        //exactly one absolute path
+                        if (isset($directive['validate']['absolutepath|homepath']))
+                        {
+                            if (!Validator::is_absolute_path($value) && (!Validator::is_relative_home_path($value)))
+                            {
+                                $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an absolute/home path!';
+                                if ($directive['validate']['absolutepath|homepath'] == 'warning')
                                 {
                                     $this->warn($message);
                                 }

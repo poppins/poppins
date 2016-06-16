@@ -38,11 +38,13 @@
         },
         {
           "name":"host",
+          "depends":"remote.ssh",
           "default":"",
           "validate":{}
         },
         {
           "name":"user",
+          "depends":"remote.ssh",
           "default":"",
           "validate":{}
         },
@@ -148,6 +150,7 @@
         {
           "name":"configdirs",
           "default":"~",
+          "depends":"mysql.enabled",
           "validate":{"mysqlpaths":"error"}
         }
       ]
