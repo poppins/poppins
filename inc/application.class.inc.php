@@ -46,31 +46,11 @@ class Application
         {
             // TODO json
             // foreground
-            $fgcolors['black'] = '0;30';
-            $fgcolors['dark_gray'] = '1;30';
-            $fgcolors['blue'] = '0;34';
-            $fgcolors['light_blue'] = '1;34';
-            $fgcolors['green'] = '0;32';
-            $fgcolors['light_green'] = '1;32';
-            $fgcolors['cyan'] = '0;36';
-            $fgcolors['light_cyan'] = '1;36';
-            $fgcolors['red'] = '0;31';
-            $fgcolors['light_red'] = '1;31';
-            $fgcolors['purple'] = '0;35';
-            $fgcolors['light_purple'] = '1;35';
-            $fgcolors['brown'] = '0;33';
-            $fgcolors['yellow'] = '1;33';
-            $fgcolors['light_gray'] = '0;37';
-            $fgcolors['white'] = '1;37';
+            $fgcolors = ['black' => '0;30','dark_gray' => '1;30','blue' => '0;34','light_blue' => '1;34','green' => '0;32','light_green' => '1;32','cyan' => '0;36',
+                         'light_cyan' => '1;36','red' => '0;31','light_red' => '1;31','purple' => '0;35','light_purple' => '1;35','brown' => '0;33','yellow' => '1;33',
+                         'light_gray' => '0;37','white' => '1;37'];
             //background
-            $bgcolors['black'] = '40';
-            $bgcolors['red'] = '41';
-            $bgcolors['green'] = '42';
-            $bgcolors['yellow'] = '43';
-            $bgcolors['blue'] = '44';
-            $bgcolors['magenta'] = '45';
-            $bgcolors['cyan'] = '46';
-            $bgcolors['light_gray'] = '47';
+            $bgcolors = ['black' => '40','red' => '41','green' => '42','yellow' => '43','blue' => '44','magenta' => '45','cyan' => '46','light_gray' => '47'];
             //return string
             $colored_string = '';
             // set foreground
