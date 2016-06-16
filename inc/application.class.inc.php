@@ -923,7 +923,7 @@ class Application
         # CHECK IF MYSQL DIR IS CLEAN
         #####################################
         //check if mysql dir is clean
-        if(!$this->Config->get(['mysql.enabled']))
+        if(!$this->Config->get('mysql.enabled'))
         {
             $dir = $this->Config->get('local.rsyncdir').'/mysql';
             if(file_exists($dir))
@@ -934,7 +934,7 @@ class Application
                 {
                     foreach ($diff as $file => $type)
                     {
-                        $this->warn("Directory $dir not clean, $type '$file' is not configured..");
+                        $this->warn("Directory $dir not clean, $type '$file' while MySQL is disabled..");
                     }
                 }
             }
