@@ -1,0 +1,65 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+RELEASE 0.2
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+DATE: 2016-06-15
+--------------------------------------------------------------------------------
+NEW FEATURES
+--------------------------------------------------------------------------------
+* ini configuration directives need to be added to the config file.
+See example.poppins.ini:
+    [remote]
+    ; enable remote connection with ssh, default is yes
+    ; disable if backing up local directories (e.g. to an external drive)
+    ; host and user directives are disregarded in case ssh is disabled
+    ssh = yes
+    ; ssh connection retries if desired
+    ; check is applied on first connection attempt only
+    ; default is 0
+    retry-count = 0
+    ; timeout between retries in seconds
+    ; default is 0
+    retry-timeout = 10
+* cli options added:
+    * -- color: adds colors to poppins output
+    * -t {tag}: adds an optional tag to poppins log file
+--------------------------------------------------------------------------------
+WHAT HAS CHANGED?
+--------------------------------------------------------------------------------
+MAJOR CHANGES
+* Local rsync (without ssh connection) is supported enabling you to schedule a
+backup on your local machine. E.g. using an external drive for backups.
+* Ssh connection attempts and retry timeouts implemented.
+* Stronger validation of ini file. 
+    * Strange or potentially dangerous characters (such as *) not allowed. 
+    * Quotes in 'yes' and 'no' are deprecated. Do not use quotes in booleans!
+
+MINOR CHANGES
+* Colored output. Show pretty colors on output with the --color option.
+* Allow unicode characters in ini file.
+* Warn if host directories (e.g. rsync.dir, archive, mysql) contain unconfigured 
+files/directories. 
+--------------------------------------------------------------------------------
+WHAT HAS BEEN FIXED?
+--------------------------------------------------------------------------------
+* Fixed issues with spaces in filenames.
+* Output pre-backup-script if script failed.
+* Strong ini file validation (see known issues)
+* Refactoring and bugfixing
+--------------------------------------------------------------------------------
+KNOWN ISSUES
+--------------------------------------------------------------------------------
+* Validation of ini files is imperfect because of the lack of type support of 
+the function parse_ini_file(). As of PHP 5.6, INI_SCANNER_TYPED needs to be 
+implemented when PHP 5.6+ is available on Debian, CentOS latest releases.
+--------------------------------------------------------------------------------
+INSTALLATION
+--------------------------------------------------------------------------------
+Run command:
+    hg pull -u
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+RELEASE 0.1
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+DATE: 2015-10-05
+(Initial release)
