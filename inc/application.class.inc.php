@@ -880,13 +880,16 @@ class Application
         # CHECK IF RSYNC DIR IS CLEAN
         #####################################
         $dir = $this->Config->get('local.rsyncdir').'/files';
-        $allowed = array_map('stripslashes', array_values($this->Config->get('included')));
-        $diff = Validator::diff_listing($dir, $allowed);
-        if(count($diff))
+        if(file_exists($dir))
         {
-            foreach($diff as $file => $type)
+            $allowed = array_map('stripslashes', array_values($this->Config->get('included')));
+            $diff = Validator::diff_listing($dir, $allowed);
+            if (count($diff))
             {
-                $this->warn("Directory $dir not clean, $type '$file' is not configured..");
+                foreach ($diff as $file => $type)
+                {
+                    $this->warn("Directory $dir not clean, $type '$file' is not configured..");
+                }
             }
         }
         #####################################
@@ -896,21 +899,24 @@ class Application
         $this->Settings->set('meta.filebase', $filebase);
         //check if meta dir is clean
         $dir = $this->Config->get('local.rsyncdir').'/meta';
-        $allowed = [];
-        $directives = ['remote-disk-layout' => 'disk-layout.txt', 'remote-package-list' =>  'packages.txt'];
-        foreach($directives as $directive => $file)
+        if(file_exists($dir))
         {
-            if($this->Config->get(['meta', $directive]))
+            $allowed = [];
+            $directives = ['remote-disk-layout' => 'disk-layout.txt', 'remote-package-list' => 'packages.txt'];
+            foreach ($directives as $directive => $file)
             {
-                $allowed []= $filebase.'.'.$file;
+                if ($this->Config->get(['meta', $directive]))
+                {
+                    $allowed [] = $filebase . '.' . $file;
+                }
             }
-        }
-        $diff = Validator::diff_listing($dir, $allowed);
-        if(count($diff))
-        {
-            foreach($diff as $file => $type)
+            $diff = Validator::diff_listing($dir, $allowed);
+            if (count($diff))
             {
-                $this->warn("Directory $dir not clean, $type '$file' is not configured..");
+                foreach ($diff as $file => $type)
+                {
+                    $this->warn("Directory $dir not clean, $type '$file' is not configured..");
+                }
             }
         }
         #####################################
@@ -920,13 +926,16 @@ class Application
         if(!$this->Config->get(['mysql.enabled']))
         {
             $dir = $this->Config->get('local.rsyncdir').'/mysql';
-            $allowed = [];
-            $diff = Validator::diff_listing($dir, $allowed);
-            if(count($diff))
+            if(file_exists($dir))
             {
-                foreach($diff as $file => $type)
+                $allowed = [];
+                $diff = Validator::diff_listing($dir, $allowed);
+                if (count($diff))
                 {
-                    $this->warn("Directory $dir not clean, $type '$file' is not configured..");
+                    foreach ($diff as $file => $type)
+                    {
+                        $this->warn("Directory $dir not clean, $type '$file' is not configured..");
+                    }
                 }
             }
         }
@@ -935,13 +944,16 @@ class Application
         #####################################
         //check if archive dir is clean
         $dir = $this->Config->get('local.hostdir') . '/archive';
-        $allowed = array_keys($this->Config->get('snapshots'));
-        $diff = Validator::diff_listing($dir, $allowed);
-        if(count($diff))
+        if(file_exists($dir))
         {
-            foreach($diff as $file => $type)
+            $allowed = array_keys($this->Config->get('snapshots'));
+            $diff = Validator::diff_listing($dir, $allowed);
+            if (count($diff))
             {
-                $this->warn("Directory $dir not clean, $type '$file' is not configured..");
+                foreach ($diff as $file => $type)
+                {
+                    $this->warn("Directory $dir not clean, $type '$file' is not configured..");
+                }
             }
         }
         ######################################
