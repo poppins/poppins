@@ -149,8 +149,8 @@
         },
         {
           "name":"configdirs",
-          "default":"~",
           "depends":"mysql.enabled",
+          "default":"~",
           "validate":{"mysqlpaths":"error"}
         }
       ]
