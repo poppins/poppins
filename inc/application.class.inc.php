@@ -90,7 +90,8 @@ class Application
         #####################################
         $CLI_SHORT_OPTS = ["c:dhvt:"];
         $CLI_LONG_OPTS = ["version", "help", "color"];
-        $this->Options->store(getopt(implode('', $CLI_SHORT_OPTS), $CLI_LONG_OPTS));
+        $options = getopt(implode('', $CLI_SHORT_OPTS), $CLI_LONG_OPTS);
+        $this->Options->store($options);
         if (!count($this->Options->get()))
         {
             $content = file_get_contents(dirname(__FILE__).'/../documentation.txt');
@@ -1241,7 +1242,7 @@ class Application
                     }
                     $m['version'] = $this->Settings->get('version');
                     // add tag to entry
-                    if($this->Options->get('t'))
+                    if($this->Options->is_set('t') && $this->Options->get('t'))
                     {
                         $m['tag'] = $this->Options->get('t');
                     }
