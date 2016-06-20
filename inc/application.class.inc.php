@@ -1261,7 +1261,7 @@ class Application
             }
             else
             {
-                $content []= 'WARNING! Cannot write to host logfile. Remote host not specified!';
+                $content []= 'WARNING! Cannot write to host logfile. Hostdir not set!';
             }
         }
         else
