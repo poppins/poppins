@@ -24,6 +24,9 @@ class Application
     //Warnings
     private $warnings = [];
 
+    /**
+     * Application constructor.
+     */
     function __construct()
     {
         #####################################
@@ -39,6 +42,15 @@ class Application
         $this->Settings = Settings::get_instance();
     }
 
+    /**
+     * Will take a string and add a color to it.
+     *
+     *
+     * @param $string
+     * @param string $fgcolor Foreground color
+     * @param bool $bgcolor Background color
+     * @return string The colorized string
+     */
     function colorize($string, $fgcolor = 'white', $bgcolor = false)
     {
         //colorize the string
@@ -72,6 +84,12 @@ class Application
         }
     }
 
+    /**
+     * Quit the application unsuccessfully
+     *
+     * @param string $message The (error) message
+     * @param string $error Type of error
+     */
     function fail($message = '', $error = 'generic')
     {
         $this->errors []= $message;
@@ -83,6 +101,16 @@ class Application
         $this->quit($error);
     }
 
+    /**
+     * Initialise the class.
+     * Read and validate cli options
+     * Read and validate ini file
+     * Validate all ini directives
+     * Configure all directories
+     * Check package dependencies
+     * Setup ssh connection as required
+     * Check if directories are clean
+     */
     function init()
     {
         #####################################
@@ -998,6 +1026,14 @@ class Application
         $this->out(trim(implode("\n", $output)));
     }
 
+    /**
+     * Add a message to messages array
+     * Add a message to colored messages array if required
+     *
+     * @param string $message The message
+     * @param bool $fgcolor Foreground color
+     * @param bool $bgcolor Background color
+     */
     function log($message = '', $fgcolor = false, $bgcolor = false)
     {
         $this->messages [] = $message;
@@ -1005,6 +1041,12 @@ class Application
         if($fgcolor) $this->cmessages [count($this->messages) - 1] = [$fgcolor, $bgcolor];
     }
 
+    /**
+     * Add style to the message
+     *
+     * @param string $message The message
+     * @param string $type The type of style
+     */
     function out($message = '', $type = 'default')
     {
         $content = [];
@@ -1093,6 +1135,12 @@ class Application
         $this->log($message, $fgcolor, $bgcolor);
     }
 
+    /**
+     * Abort the application.
+     *
+     * @param string $message The (error) message.
+     *
+     */
     function abort($message = '')
     {
         if($message)
@@ -1102,6 +1150,11 @@ class Application
         die($message);
     }
 
+    /**
+     * Quit the application.
+     *
+     * @param bool $error Set to true if unsuccessful
+     */
     function quit($error = false)
     {
         //debug output
@@ -1277,6 +1330,9 @@ class Application
         $this->abort();
     }
 
+    /**
+     * Quit the application successfully
+     */
     function succeed()
     {
         #####################################
@@ -1295,6 +1351,11 @@ class Application
         $this->quit();
     }
 
+    /**
+     * Add a warning
+     *
+     * @param $message The message
+     */
     function warn($message)
     {
         $this->warnings []= $message;
