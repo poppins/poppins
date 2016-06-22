@@ -176,12 +176,7 @@ class Application
             $this->abort("Local OS currently not supported!");
         }
         $this->out($OS);
-        // hostname
-        $this->out('Check hostname...');
-        $hostname = $this->Cmd->exec('hostname');
-        $this->Settings->set('local.hostname', $hostname);
-        $this->out($hostname);
-        // PHP version
+         // PHP version
         $this->out('Check PHP version...');
         // full version e.g. 5.5.9-1ubuntu4.17
         $this->Settings->set('php.version.full', PHP_VERSION);
@@ -201,6 +196,11 @@ class Application
         $Cmd = CmdFactory::create($OS);
         //load commands
         $this->Cmd = $Cmd;
+        // hostname
+        $this->out('Check hostname...');
+        $hostname = $this->Cmd->exe('hostname');
+        $this->Settings->set('local.hostname', $hostname);
+        $this->out($hostname);
         #####################################
         # LOAD OPTIONS FROM INI FILE
         #####################################
