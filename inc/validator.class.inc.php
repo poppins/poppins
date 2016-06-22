@@ -7,7 +7,9 @@
  * @author     Bruno Dooms, Frank Van Damme
  */
 
-
+/**
+ * Class Validator contains functions which validate strings, directories, etc
+ */
 class Validator
 {
     /**
@@ -81,4 +83,3 @@ class Validator
         return (empty($string) || preg_match("#^[A-Za-z0-9/\\\\ \-\._\+\pL]+$#u", $string))? true:false;
     }
 }
-?>
