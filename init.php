@@ -16,7 +16,8 @@ $Settings->set('appname', 'Poppins');
 $Settings->set('start_time', date('U'));
 // version
 $mercurial_version = shell_exec('cd "'.dirname(__FILE__).'";hg parent --template "{rev}" 2>/dev/null');
-$full_version = ($mercurial_version)? '0.1.'.$mercurial_version:'0.1';
+$poppins_version = '0.2';
+$full_version = ($mercurial_version)? $poppins_version.'.'.$mercurial_version:$poppins_version;
 $Settings->set('version', $full_version);
 // supported intervals
 $Settings->set('intervals', ['incremental', 'minutely', 'hourly', 'daily', 'weekly', 'monthly', 'yearly']);
