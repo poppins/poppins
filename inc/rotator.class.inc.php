@@ -1,8 +1,19 @@
 <?php
+/**
+ * File rotator.class.inc.php
+ *
+ * @package    Poppins
+ * @license    http://www.gnu.org/licenses/gpl-3.0.en.html  GNU Public License
+ * @author     Bruno Dooms, Frank Van Damme
+ */
 
+/**
+ * Class Rotator contains functions that will handle rotation based on hardlinks,
+ * ZFS or BTRFS snapshots
+ */
 class Rotator
 {
-
+    // Application class
     protected $App;
 
     // Config class
@@ -13,7 +24,11 @@ class Rotator
 
     // Settings class - application specific settings
     protected $Settings;
-    
+
+    /**
+     * Rotator constructor.
+     * @param $App Application class
+     */
     function __construct($App)
     {
         $this->App = $App;
@@ -44,6 +59,12 @@ class Rotator
         $this->dir_regex = '[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{6}';
     }
 
+    /**
+     * Initialise the class
+     * Sort data
+     * Compare datestamps
+     * Check archives
+     */
     function init()
     {
         $this->App->out('Rotating snapshots', 'header');
@@ -187,12 +208,19 @@ class Rotator
         //done
         $this->App->out("OK!", 'simple-success');
     }
-    
+
+    /**
+     * Wrap up the action
+     */
     function finalize()
     {
-	return;
+	    return;
     }
 
+    /**
+     * Prepare the rotation
+     * Check archive dir
+     */
     function prepare()
     {
         #####################################
@@ -224,7 +252,12 @@ class Rotator
             }
         }
     }
-    
+
+    /**
+     * Function will scan for directories
+     *
+     * @return array The directories
+     */
     function scandir()
     {
         //variables
@@ -258,6 +291,13 @@ class Rotator
         return $res;
     }
 
+    /**
+     * This function will convert timestamps to other formats
+     *
+     * @param $stamp The timestamp
+     * @param string $format The format: unix or date
+     * @return string The formatted string
+     */
     function to_time($stamp, $format = 'unix')
     {
         $t = explode('_', $stamp);
@@ -276,11 +316,18 @@ class Rotator
         return $result;
     }
 
-    //check if a diff exceeds a himan readable value
-    function time_exceed($diff, $type)
+    /**
+     * This function will check if an amount of seconds
+     * exceeds a human readable value
+     *
+     * @param $diff The amount of seconds passed
+     * @param $snapshot The snapshot directory, e.g. 1-daily
+     * @return bool Check if time has exceeded or not
+     */
+    function time_exceed($diff, $snapshot)
     {
         //parse type 
-        $a = explode('-', $type);
+        $a = explode('-', $snapshot);
         $offset = (integer) $a[0];
         $interval = $a[1];
         //validate

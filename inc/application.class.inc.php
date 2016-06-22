@@ -1,5 +1,16 @@
 <?php
+/**
+ * File application.class.inc.php
+ *
+ * @package    Poppins
+ * @license    http://www.gnu.org/licenses/gpl-3.0.en.html  GNU Public License
+ * @author     Bruno Dooms, Frank Van Damme
+ */
 
+
+/**
+ * Class Application contains common functions used throughout the application.
+ */
 class Application
 {
     // Cmd class
@@ -44,7 +55,6 @@ class Application
 
     /**
      * Will take a string and add a color to it.
-     *
      *
      * @param $string
      * @param string $fgcolor Foreground color
@@ -102,7 +112,7 @@ class Application
     }
 
     /**
-     * Initialise the class.
+     * Initialise the class
      * Read and validate cli options
      * Read and validate ini file
      * Validate all ini directives
@@ -926,7 +936,7 @@ class Application
         if(file_exists($dir))
         {
             $allowed = array_map('stripslashes', array_values($this->Config->get('included')));
-            $diff = Validator::diff_listing($dir, $allowed);
+            $diff = Validator::contains_allowed_files($dir, $allowed);
             if (count($diff))
             {
                 foreach ($diff as $file => $type)
@@ -953,7 +963,7 @@ class Application
                     $allowed [] = $filebase . '.' . $file;
                 }
             }
-            $diff = Validator::diff_listing($dir, $allowed);
+            $diff = Validator::contains_allowed_files($dir, $allowed);
             if (count($diff))
             {
                 foreach ($diff as $file => $type)
@@ -972,7 +982,7 @@ class Application
             if(file_exists($dir))
             {
                 $allowed = [];
-                $diff = Validator::diff_listing($dir, $allowed);
+                $diff = Validator::contains_allowed_files($dir, $allowed);
                 if (count($diff))
                 {
                     foreach ($diff as $file => $type)
@@ -990,7 +1000,7 @@ class Application
         if(file_exists($dir))
         {
             $allowed = array_keys($this->Config->get('snapshots'));
-            $diff = Validator::diff_listing($dir, $allowed);
+            $diff = Validator::contains_allowed_files($dir, $allowed);
             if (count($diff))
             {
                 foreach ($diff as $file => $type)
@@ -1139,7 +1149,6 @@ class Application
      * Abort the application.
      *
      * @param string $message The (error) message.
-     *
      */
     function abort($message = '')
     {

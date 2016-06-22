@@ -1,5 +1,17 @@
 <?php
+/**
+ * File cmd.class.inc.php
+ *
+ * @package    Poppins
+ * @license    http://www.gnu.org/licenses/gpl-3.0.en.html  GNU Public License
+ * @author     Bruno Dooms, Frank Van Damme
+ */
 
+
+/**
+ * Class Cmd is used to execute shell commands locally or remotely. These may vary
+ * according to a specific operating system.
+ */
 class Cmd
 {
 
@@ -18,6 +30,9 @@ class Cmd
     // Settings class - application specific settings
     protected $Settings;
 
+    /**
+     * Cmd constructor.
+     */
     function __construct()
     {
         $this->map = $this->map();
@@ -36,6 +51,13 @@ class Cmd
 
     }
 
+    /**
+     * Execute a shell command
+     *
+     * @param $cmd The command to be executed
+     * @param bool $remote Execute on remote host?
+     * @return string The output of the command
+     */
     function exe($cmd, $remote = false)
     {
         //check if command is run on remote host
@@ -77,6 +99,11 @@ class Cmd
         return $this->output;
     }
 
+    /**
+     * Returns if command executed successfully
+     *
+     * @return bool
+     */
     public function is_error()
     {
         //if all is well, 0 is returned, else e.g. 127
@@ -84,6 +111,13 @@ class Cmd
         return (boolean)(!in_array($this->exit_status, [0]));
     }
 
+    /**
+     * Parse the command. In some cases the command is a placeholder. Replace
+     * it with the right command, according to operating system.
+     *
+     * @param $cmd The command to be executed
+     * @return mixed The command
+     */
     function parse($cmd)
     {
         $map = $this->map;
@@ -95,6 +129,9 @@ class Cmd
 
 }
 
+/**
+ * Class LinuxCmd is used for all linux commands
+ */
 class LinuxCmd extends Cmd
 {
 
@@ -112,6 +149,9 @@ class LinuxCmd extends Cmd
 
 }
 
+/**
+ * Class SunOSCmd is used for all SunOS commands
+ */
 class SunOSCmd extends Cmd
 {
 

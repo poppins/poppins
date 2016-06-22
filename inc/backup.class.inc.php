@@ -1,8 +1,20 @@
 <?php
+/**
+ * File backup.class.inc.php
+ *
+ * @package    Poppins
+ * @license    http://www.gnu.org/licenses/gpl-3.0.en.html  GNU Public License
+ * @author     Bruno Dooms, Frank Van Damme
+ */
 
+
+/**
+ * Class Backup contains functions used to backup files and directories,
+ * metadata and MySQL databses.
+ */
 class Backup
 {
-
+    //Application class
     public $App;
 
     // Config class
@@ -17,6 +29,11 @@ class Backup
     //rsyncdir
     protected $rsyncdir;
 
+    /**
+     * Backup constructor.
+     * 
+     * @param $App Application class
+     */
     function __construct($App)
     {
         $this->App = $App;
@@ -37,6 +54,9 @@ class Backup
         $this->rsyncdir = $this->Config->get('local.rsyncdir');
     }
 
+    /**
+     * Initialise the class
+     */
     function init()
     {
         //validate (check if LOCK file exists)
@@ -56,6 +76,12 @@ class Backup
         $this->rsync();
     }
 
+    /**
+     * Lookup rsync status message
+     *
+     * @param $rsync_code Rsync error code
+     * @return string The message
+     */
     function get_rsync_status($rsync_code)
     {
         //list error codes
@@ -89,6 +115,9 @@ class Backup
         return $message;
     }
 
+    /**
+     * Backup remote MySQL databases
+     */
     function mysql()
     {
         #####################################
@@ -185,6 +214,9 @@ class Backup
         }
     }
 
+    /**
+     * Execute remote jobs/scripts before backups
+     */
     function jobs()
     {
         #####################################
@@ -241,6 +273,9 @@ class Backup
         }
     }
 
+    /**
+     * Gather metadata about remote installation such as disk and packages
+     */
     function meta()
     {
         //variables
@@ -338,6 +373,9 @@ class Backup
         }
     }
 
+    /**
+     * Prepare backups
+     */
     function prepare()
     {
         #####################################
@@ -366,6 +404,9 @@ class Backup
         }
     }
 
+    /**
+     * Rsync remote files and directories
+     */
     function rsync()
     {
         //rsync backups
@@ -499,6 +540,9 @@ class Backup
         $this->App->out("OK!", 'simple-success');
     }
 
+    /**
+     * Check if LOCK file exists
+     */
     function validate()
     {
         #####################################
@@ -518,9 +562,15 @@ class Backup
 
 }
 
+/**
+ * Class BTRFSBackup based on BTRFS filesystem (BTRFS snapshots)
+ */
 class BTRFSBackup extends Backup
 {
 
+    /**
+     * Create the syncdir
+     */
     function create_syncdir()
     {
         $this->Cmd->exe("btrfs subvolume create " . $this->rsyncdir);
@@ -528,9 +578,15 @@ class BTRFSBackup extends Backup
 
 }
 
+/**
+ * Class DefaultBackup based on default filesystem (hardlink rotation)
+ */
 class DefaultBackup extends Backup
 {
 
+    /**
+     * Create the syncdir
+     */
     function create_syncdir()
     {
         $this->Cmd->exe("mkdir -p " . $this->rsyncdir);
@@ -538,9 +594,15 @@ class DefaultBackup extends Backup
 
 }
 
+/**
+ * Class ZFSBackup based on ZFS filesystem (ZFS snapshots)
+ */
 class ZFSBackup extends Backup
 {
 
+    /**
+     * Create the syncdir
+     */
     function create_syncdir()
     {
         $rsyncdir = preg_replace('/^\//', '', $this->rsyncdir);
