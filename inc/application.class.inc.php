@@ -1,78 +1,78 @@
 <?php
+/**
+ * File application.class.inc.php
+ *
+ * @package    Poppins
+ * @license    http://www.gnu.org/licenses/gpl-3.0.en.html  GNU Public License
+ * @author     Bruno Dooms, Frank Van Damme
+ */
 
+
+/**
+ * Class Application contains common functions used throughout the application.
+ */
 class Application
 {
-    private $config;
-
-    private $version;
-
-    public $intervals;
-
-    public $settings;
-
+    // Cmd class
     public $Cmd;
 
-    public $output_colors;
+    // Config class
+    protected $Config;
 
+    // Options class - options passed by getopt and ini file
+    protected $Options;
+
+    // Settings class - application specific settings
+    protected $Settings;
+
+    // Messages intended for output
     private $messages;
+    // Array of messages with specific output color
+    private $cmessages;
 
-    private $options;
-
-    public $start_time;
-
+    // Errors
     private $errors = [];
-
+    //Warnings
     private $warnings = [];
 
-    function __construct($appname, $version)
+    /**
+     * Application constructor.
+     */
+    function __construct()
     {
         #####################################
         # CONFIGURATION
         #####################################
-        //colored output - not enabled by default, see --color option
-        $this->config['colors'] = false;
-        // intervals
-        $this->intervals = ['incremental', 'minutely', 'hourly', 'daily', 'weekly', 'monthly', 'yearly'];
-        // app name
-        $this->appname = $appname;
-        // version
-        $this->version = $version;
+        //Config from ini file
+        $this->Config = Config::get_instance();
 
-        // set start time
-        $this->start_time = date('U');
+        // Command line options
+        $this->Options = Options::get_instance();
+
+        // App specific settings
+        $this->Settings = Settings::get_instance();
     }
 
+    /**
+     * Will take a string and add a color to it.
+     *
+     * @param $string
+     * @param string $fgcolor Foreground color
+     * @param bool $bgcolor Background color
+     * @return string The colorized string
+     */
     function colorize($string, $fgcolor = 'white', $bgcolor = false)
     {
         //colorize the string
-        if($this->config['colors'])
+        if ($this->Options->is_set('color'))
         {
+            // TODO json
             // foreground
-            $fgcolors['black'] = '0;30';
-            $fgcolors['dark_gray'] = '1;30';
-            $fgcolors['blue'] = '0;34';
-            $fgcolors['light_blue'] = '1;34';
-            $fgcolors['green'] = '0;32';
-            $fgcolors['light_green'] = '1;32';
-            $fgcolors['cyan'] = '0;36';
-            $fgcolors['light_cyan'] = '1;36';
-            $fgcolors['red'] = '0;31';
-            $fgcolors['light_red'] = '1;31';
-            $fgcolors['purple'] = '0;35';
-            $fgcolors['light_purple'] = '1;35';
-            $fgcolors['brown'] = '0;33';
-            $fgcolors['yellow'] = '1;33';
-            $fgcolors['light_gray'] = '0;37';
-            $fgcolors['white'] = '1;37';
+            $fgcolors = ['black' => '0;30','dark_gray' => '1;30','blue' => '0;34','light_blue' => '1;34','green' => '0;32','light_green' => '1;32','cyan' => '0;36',
+                         'light_cyan' => '1;36','red' => '0;31','light_red' => '1;31','purple' => '0;35','light_purple' => '1;35','brown' => '0;33','yellow' => '1;33',
+                         'light_gray' => '0;37','white' => '1;37'];
             //background
-            $bgcolors['black'] = '40';
-            $bgcolors['red'] = '41';
-            $bgcolors['green'] = '42';
-            $bgcolors['yellow'] = '43';
-            $bgcolors['blue'] = '44';
-            $bgcolors['magenta'] = '45';
-            $bgcolors['cyan'] = '46';
-            $bgcolors['light_gray'] = '47';
+            $bgcolors = ['black' => '40','red' => '41','green' => '42','yellow' => '43','blue' => '44','magenta' => '45','cyan' => '46','light_gray' => '47'];
             //return string
             $colored_string = '';
             // set foreground
@@ -94,6 +94,12 @@ class Application
         }
     }
 
+    /**
+     * Quit the application unsuccessfully
+     *
+     * @param string $message The (error) message
+     * @param string $error Type of error
+     */
     function fail($message = '', $error = 'generic')
     {
         $this->errors []= $message;
@@ -105,54 +111,84 @@ class Application
         $this->quit($error);
     }
 
+    /**
+     * Initialise the class
+     * Read and validate cli options
+     * Read and validate ini file
+     * Validate all ini directives
+     * Configure all directories
+     * Check package dependencies
+     * Setup ssh connection as required
+     * Check if directories are clean
+     */
     function init()
     {
         #####################################
         # HELP
-        #####################################\
-        $CLI_SHORT_OPTS = ["c:dhv"];
+        #####################################
+        $CLI_SHORT_OPTS = ["c:dhvt:"];
         $CLI_LONG_OPTS = ["version", "help", "color"];
-        $this->options = getopt(implode('', $CLI_SHORT_OPTS), $CLI_LONG_OPTS);
-        if (!count($this->options))
+        $options = getopt(implode('', $CLI_SHORT_OPTS), $CLI_LONG_OPTS);
+        $this->Options->store($options);
+        if (!count($this->Options->get()))
         {
             $content = file_get_contents(dirname(__FILE__).'/../documentation.txt');
             preg_match('/SYNOPSIS\n(.*?)\n/s', $content, $match);
             print "Usage: " . trim($match[1]) . "\n";
             $this->abort();
         }
-        elseif(isset($this->options['h']) || isset($this->options['help']))
+        elseif($this->Options->is_set('h') || $this->Options->is_set('help'))
         {
-            print $this->appname.' '.$this->version."\n\n";
+            print $this->Settings->get('appname').' '.$this->Settings->get('version')."\n\n";
             $content = file_get_contents(dirname(__FILE__).'/../documentation.txt');
             print "$content\n";
             $this->abort();
         }
-        elseif(isset($this->options['v']) || isset($this->options['version']))
+        elseif($this->Options->is_set('v') || $this->Options->is_set('version'))
         {
-            print $this->appname.' version '.$this->version."\n";
+            print $this->Settings->get('appname').' version '.$this->Settings->get('version')."\n";
             $content = file_get_contents(dirname(__FILE__).'/../license.txt');
 
             print "$content\n";
             $this->abort();
         }
-        // colored output
-        if (isset($this->options['color']))
+        //check tag
+        if ($this->Options->is_set('t'))
         {
-            $this->config['colors'] = true;
+            if (!$this->Options->get('t'))
+            {
+                $this->abort("Option -t {tag} may not be empty!");
+            }
         }
         #####################################
         # START
         #####################################
-        $this->out("$this->appname v$this->version - SCRIPT STARTED " . date('Y-m-d H:i:s', $this->start_time), 'title');
+        $this->out($this->Settings->get('appname').' v'.$this->Settings->get('version')." - SCRIPT STARTED " . date('Y-m-d H:i:s', $this->Settings->get('start_time')), 'title');
         $this->out('local environment', 'header');
         #####################################
-        # VALIDATE OS
+        # LOCAL ENVIRONMENT
         #####################################
+        // operating system
         $this->out('Check local operating system...');
         $OS = trim(shell_exec('uname'));
         if (!in_array($OS, ['Linux', 'SunOS']))
         {
             $this->abort("Local OS currently not supported!");
+        }
+        $this->out($OS);
+         // PHP version
+        $this->out('Check PHP version...');
+        // full version e.g. 5.5.9-1ubuntu4.17
+        $this->Settings->set('php.version.full', PHP_VERSION);
+        // display version - debugging purposes
+        $this->out($this->Settings->get('php.version.full'));
+        // version id e.g. 505070
+        $this->Settings->set('php.version.id', PHP_VERSION_ID);
+        //check version < 5.6.1
+        //  TODO implement deprecated - see parse_ini_file($configfile, 1, INI_SCANNER_TYPED);
+        if($this->Settings->get('php.version.id') < 506010)
+        {
+            //$this->fail('PHP version 5.6.1 or higher required!');
         }
         #####################################
         # SETUP COMMANDS
@@ -160,62 +196,95 @@ class Application
         $Cmd = CmdFactory::create($OS);
         //load commands
         $this->Cmd = $Cmd;
+        // hostname
+        $this->out('Check hostname...');
+        $hostname = $this->Cmd->exe('hostname');
+        $this->Settings->set('local.hostname', $hostname);
+        $this->out($hostname);
         #####################################
-        # LOAD OPTIONS FROM CONFIG FILE
+        # LOAD OPTIONS FROM INI FILE
         #####################################
         $this->out("configuration file", 'header');
         //validate config file
-        if (isset($this->options['c']))
-        {
-            $configfile = $this->options['c'];
-            if (!file_exists($configfile))
-            {
-                $this->abort("Config file not found!");
-            }
-            elseif (!preg_match('/^.+\.poppins\.ini$/', $configfile))
-            {
-                $this->abort("Wrong ini file format: {hostname}.poppins.ini!");
-            }
-            else
-            {
-                $this->settings = parse_ini_file($configfile, 1);
-                $ini_options= [];
-                foreach($this->settings as $k => $v)
-                {
-                    foreach($v as $kk => $vv)
-                    {
-                        $option = "$k-$kk::";
-                        $ini_options[]= $option;
-                    }
-                }
-                $this->options = getopt(implode('', $CLI_SHORT_OPTS), $ini_options);
-                //override ini with cli options
-                foreach($this->options as $k => $v)
-                {
-                    if(in_array("$k::", $ini_options))
-                    {
-                        $p = explode('-', $k);
-                        $k1 = $p[0];
-                        unset ($p[0]);
-                        $k2 = implode('', $p);
-                        $this->settings[$k1][$k2] = $v;
-                    }
-                }
-                //add data
-                $this->settings['local']['os'] = $OS;
-                $this->settings['application']['name'] = $this->appname;
-            }
-        }
-        else
+        if (!$this->Options->get('c'))
         {
             $this->abort("Option -c {configfile} is required!");
         }
+        // read configfile
+        $configfile = $this->Options->get('c');
+        if (!file_exists($configfile))
+        {
+            $this->abort("Config file not found!");
+        }
+        elseif (!preg_match('/^.+\.poppins\.ini$/', $configfile))
+        {
+            $this->abort("Wrong ini file format: {hostname}.poppins.ini!");
+        }
+        else
+        {
+            //check for illegal comments in ini file
+            $lines = file($configfile);
+            $i = 1;
+            foreach($lines as $line)
+            {
+                if(preg_match('/^#/', $line))
+                {
+                    $this->fail("Error on line $i. Hash (#) found! Use semicolon for comments!");
+                }
+                $i++;
+            }
+            // read config
+            $config = parse_ini_file($configfile, 1);
+            // TODO PHP > 5.6
+            // $config = parse_ini_file($configfile, 1, INI_SCANNER_TYPED);
+            if(!$config)
+            {
+                $this->fail('Error parsing ini file!');
+            }
+            $this->Config->store($config);
+            // check cli options of format --foo-bar
+            $override_options= [];
+            foreach($this->Config->get() as $k => $v)
+            {
+                foreach($v as $kk => $vv)
+                {
+                    $override_options[]= "$k-$kk::";
+                }
+            }
+            //store override options
+            $options = getopt(implode('', $CLI_SHORT_OPTS), $override_options);
+            //allow a yes or no value in override
+            foreach($options as $k => $v)
+            {
+                if(in_array($v, ['yes', 'true']))
+                {
+                    $options[$k] = '1';
+                }
+                elseif(in_array($v, ['no', 'false']))
+                {
+                    $options[$k] = '';
+                }
+            }
+            $this->Options->store($options);
+            //override configuration with cli options
+            foreach($options as $k => $v)
+            {
+                if(in_array("$k::", $override_options))
+                {
+                    $p = explode('-', $k);
+                    $k1 = $p[0];
+                    unset ($p[0]);
+                    $k2 = implode('', $p);
+                    $this->Config->set([$k1, $k2], $v);
+                }
+            }
+        }
         #####################################
-        # PARSE CONFIG FILE
+        # CONFIGURATION CLEANUP
         #####################################
         //trim spaces
         $this->out("Check configuration syntax (spaces and trailing slashes not allowed)...");
-        foreach ($this->settings as $k => $v)
+        foreach ($this->Config->get() as $k => $v)
         {
             //do not validate if included or excluded directories
             if(in_array($k, ['included', 'excluded']))
@@ -223,7 +292,7 @@ class Application
                 //trim commas
                 foreach ($v as $kk => $vv)
                 {
-                    $this->settings[$k][$kk] = preg_replace('/\s?,\s?/', ',', $vv);
+                    $this->Config->set([$k, $kk], preg_replace('/\s?,\s?/', ',', $vv));
                 }
             }
             else
@@ -236,7 +305,7 @@ class Application
                     if($vv != $vv1)
                     {
                         $this->warn('Config values may not contain spaces. Value for '.$kk.' ['.$k.'] is trimmed!');
-                        $this->settings[$k][$kk] = $vv1;
+                        $this->Config->set([$k, $kk], $vv1);
                     }
                     //No trailing slashes
                     if (preg_match('/\/$/', $vv))
@@ -246,35 +315,304 @@ class Application
                 }
             }
         }
-        //check if there is backup is configured
-        if(!count($this->settings['included']) && $this->settings['mysql']['enabled'] != 'yes')
+        #####################################
+        # ABORT IF NO ACTION NEEDED
+        #####################################
+        //check if there is anything to do
+        if(!count($this->Config->get('included')) && !$this->Config->get('mysql.enabled'))
         {
             $this->fail("No directories configured for backup nor MySQL configured. Nothing to do...");
         }
+        #####################################
+        # VALIDATE INI FILE
+        #####################################
+        $json_file = dirname(__FILE__).'/../ini.json';
+        if (!file_exists($json_file))
+        {
+            $this->fail('Cannot find required json file ' . $json_file);
+        }
+        $contents = file_get_contents($json_file);
+        $json = json_decode($contents, true);
+        if(!$json)
+        {
+            $this->fail('Cannot parse json file:"'.json_last_error_msg().'"!');
+        }
+        //iterate sections
+        foreach($json['sections'] as $section)
+        {
+            if (!$this->Config->is_set($section['name']))
+            {
+                $this->fail('Section [' . $section['name'] . '] is not set!');
+            }
+            //add snapshots to validation
+            if($section['name'] == 'snapshots')
+            {
+                foreach(array_keys($this->Config->get('snapshots')) as $k)
+                {
+                    $section['directives'][] = ['name' => $k, 'validate'=> ['integer'=>'error']];
+                }
+            }
+            // iterate all directives
+            if(isset($section['directives']) && is_array($section['directives']))
+            {
+                //validate directives
+                foreach ($section['directives'] as $directive)
+                {
+                    //skip validation if dependency is not met
+                    if(isset($directive['depends']) && !$this->Config->get($directive['depends']))
+                    {
+                        continue;
+                    }
+                    //initiate message
+                    $message = '';
+                    if($this->Config->is_set([$section['name'], $directive['name']]))
+                    {
+                        // set value
+                        $value = $this->Config->get([$section['name'], $directive['name']]);
+                        #####################################
+                        # ALLOWED CHARACTERS
+                        #####################################
+                        if (!Validator::contains_allowed_characters($value))
+                        {
+                            //check bad characters - #&;`|*?~<>^()[]{}$\, \x0A and \xFF. ' and " are escaped
+                            $escaped = escapeshellcmd($value);
+                            if ($value != $escaped)
+                            {
+                                //allow tilde in home paths!
+                                $allow_homepath = false;
+                                $allowed_homepaths = ['homepath', 'absolutepath|homepath', 'mysqlpaths'];
+                                foreach($allowed_homepaths as $h)
+                                {
+                                    if(isset($directive['validate'][$h]))
+                                    {
+                                        $allow_homepath = true;
+                                        break;
+                                    }
+                                }
+                                if ($allow_homepath)
+                                {
+                                    $paths = explode(',', $value);
+                                    foreach ($paths as $p)
+                                    {
+                                        $p = trim($p);
+                                        if (preg_match('/^~/', $p))
+                                        {
+                                            if (!Validator::is_relative_home_path($p))
+                                            {
+                                                $this->fail("Directive " . $directive['name'] . " [" . $section['name'] . "] is not a home path!");
+                                            }
+                                            $p = preg_replace('/\~/', '', $p);
+                                        }
+                                        //check characters
+                                        if (!Validator::contains_allowed_characters($p))
+                                        {
+                                            $this->fail("Illegal character found in MySQL configdir path '$value' in directive " . $directive['name'] . " [" . $section['name'] . "]!");
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    $this->fail("Illegal character found in string '$value' in directive " . $directive['name'] . " [" . $section['name'] . "]!");
+                                }
+                            }
+                        }
+                        #####################################
+                        # ALLOWED
+                        #####################################
+                        if (isset($directive['validate']['allowed']))
+                        {
+                            $allowed = $directive['validate']['allowed'];
+                            $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not not an allowed value. Use values "'.implode('/', $allowed).'"!';
+                            if (!in_array($value, $allowed))
+                            {
+                                if ($directive['validate']['allowed'] == 'warning')
+                                {
+                                    $this->warn($message);
+                                }
+                                else
+                                {
+                                    $this->fail($message);
+                                }
+                            }
+                        }
+                        #####################################
+                        # BOOLEAN
+                        #####################################
+                        if (isset($directive['validate']['boolean']))
+                        {
+                            $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not not a valid boolean. Use values yes/no without quotes!';
+                            if (in_array($value, ['yes', 'true']))
+                            {
+                                $this->Config->set([$section['name'], $directive['name']], '1');
+                                $this->warn($message);
+                            }
+                            elseif (in_array($value, ['no', '0', 'false']))
+                            {
+                                $this->Config->set([$section['name'], $directive['name']], '');
+                                $this->warn($message);
+                            }
+                            elseif (!in_array($value, ['', '1']))
+                            {
+                                $this->fail($message);
+                            }
+                        }
+                        #####################################
+                        # INTEGER
+                        #####################################
+                        if (isset($directive['validate']['integer']))
+                        {
+                            if (!preg_match("/^[0-9]+$/", $value))
+                            {
+                                $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an integer!';
+                                if ($directive['validate']['integer'] == 'warning')
+                                {
+                                    $this->warn($message);
+                                }
+                                else
+                                {
+                                    $this->fail($message);
+                                }
+                            }
+                        }
+                        #####################################
+                        # ABSOLUTE OR RELATIVE HOME PATH
+                        #####################################
+                        //exactly one absolute path
+                        if (isset($directive['validate']['absolutepath|homepath']))
+                        {
+                            if (!Validator::is_absolute_path($value) && (!Validator::is_relative_home_path($value)))
+                            {
+                                $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an absolute/home path!';
+                                if ($directive['validate']['absolutepath|homepath'] == 'warning')
+                                {
+                                    $this->warn($message);
+                                }
+                                else
+                                {
+                                    $this->fail($message);
+                                }
+                            }
+                        }
+                        #####################################
+                        # 1 ABSOLUTE PATH
+                        #####################################
+                        //exactly one absolute path
+                        if (isset($directive['validate']['absolutepath']))
+                        {
+                            if (!Validator::is_absolute_path($value))
+                            {
+                                $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an absolute path!';
+                                if ($directive['validate']['absolutepath'] == 'warning')
+                                {
+                                    $this->warn($message);
+                                }
+                                else
+                                {
+                                    $this->fail($message);
+                                }
+                            }
+                        }
+                        #####################################
+                        # 1 ABSOLUTE PATH OR EMPTY
+                        #####################################
+                        //exactly one absolute path
+                        if (isset($directive['validate']['absolutepath?']))
+                        {
+                            if (!empty($value) && !Validator::is_absolute_path($value))
+                            {
+                                $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an absolute path!';
+                                if ($directive['validate']['absolutepath?'] == 'warning')
+                                {
+                                    $this->warn($message);
+                                }
+                                else
+                                {
+                                    $this->fail($message);
+                                }
+                            }
+                        }
+                        #####################################
+                        # MULTIPLE MYSQL PATHS
+                        #####################################
+                        if (isset($directive['validate']['mysqlpaths']))
+                        {
+                            //set to home if empty
+                            if(empty($value))
+                            {
+                                $this->Config->set([$section['name'], $directive['name']], $directive['default']);
+                            }
+                            else
+                            {
+                                $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] contains an illegal path!';
+                                $paths = explode(',', $value);
+                                if(!count($paths))
+                                {
+                                    $paths = [$value];
+                                }
+                                foreach($paths as $path)
+                                {
+                                    if($path != '~' && !Validator::is_absolute_path($path) && (!Validator::is_relative_home_path($path)))
+                                    {
+                                        if ($directive['validate']['mysqlpaths'] == 'warning')
+                                        {
+                                            $this->warn($message);
+                                        }
+                                        else
+                                        {
+                                            $this->fail($message);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    #####################################
+                    # DEFAULTS
+                    #####################################
+                    else
+                    {
+                        $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not set!';
+                        // check if default value
+                        if (isset($directive['default']))
+                        {
+                            $this->Config->set([$section['name'], $directive['name']], $directive['default']);
+                            $this->warn($message.' Using default value ('.$directive['default'].').');
+                        }
+                        else
+                        {
+                            $this->fail($message);
+                        }
+                    }
+                }
+            }
+        }
+        #####################################
+        # VALIDATE INCLUDED/EXCLUDED
+        #####################################
         //validate spaces in keys of included section
-        foreach ($this->settings['included'] as $k => $v)
+        foreach ($this->Config->get('included') as $k => $v)
         {
             $k1 = str_replace(' ', '\ ', stripslashes($k));
             if ($k != $k1)
             {
-                $this->fail("You must escape white space in [included] section! Aborting...");
+                $this->fail("You must escape white space in [included] section!");
             }
         }
         //validate spaces in values of included/excluded section
         foreach(['included', 'excluded'] as $section)
         {
-            foreach ($this->settings[$section] as $k => $v)
+            foreach ($this->Config->get($section) as $k => $v)
             {
                 $v1 = str_replace(' ', '\ ', stripslashes($v));
                 if ($v != $v1)
                 {
-                    $this->fail("You must escape white space in [$section] section! Aborting...");
+                    $this->fail("You must escape white space in [$section] section!");
                 }
             }
         }
         //validate included/excluded syntax
-        $included = array_keys($this->settings['included']);
-        $excluded = array_keys($this->settings['excluded']);
+        $included = array_keys($this->Config->get('included'));
+        $excluded = array_keys($this->Config->get('excluded'));
         foreach($excluded as $e)
         {
             if(!in_array($e, $included))
@@ -284,109 +622,100 @@ class Application
         }
         //validate snapshot config
         $this->out("Check snapshot config...");
-        foreach($this->settings['snapshots'] as $k => $v)
+        foreach($this->Config->get('snapshots') as $k => $v)
         {
             //check syntax of key
-            if($k != 'incremental' && !preg_match('/^[0-9]+-(' .  implode("|", $this->intervals).')$/', $k))
+            if($k != 'incremental' && !preg_match('/^[0-9]+-(' .  implode("|", $this->Settings->get('intervals')).')$/', $k))
             {
                 $this->fail("Error in snapshot configuration, $k not supported!");
             }
-            //check if value is an integer
-            //check syntax of value
-            if(!preg_match("/^[0-9]+$/", $v))
-            {
-                $this->fail("Error in snapshot configuration, value for $k is not an integer!");
-            }
         }
         #####################################
-        # VALIDATE LOG DIR
+        # SET LOG DIR
         #####################################
         //check log dir early so we can log stuff
-        $this->out('Check logdir...');
-        //to avoid confusion, an absolute path is required
-        if (!preg_match('/^\//', $this->settings['local']['logdir']))
-        {
-            $this->fail("logdir must be an absolute path!");
-        }
+        $this->out('Set logdir...');
+        $logdir = $this->Config->get('local.logdir');
         //validate dir, create if required
-        if (!file_exists($this->settings['local']['logdir']))
+        if($logdir)
         {
-            $this->out('Create logdir  ' . $this->settings['local']['logdir'] . '...');
-            $this->Cmd->exe("mkdir -p " . $this->settings['local']['logdir']);
-            if($this->Cmd->is_error())
+            if (!file_exists($logdir))
             {
-                $this->fail('Cannot create log dir '.$this->settings['local']['logdir']);
+                $this->out('Create logdir  ' . $logdir . '...');
+                $this->Cmd->exe("mkdir -p " . $logdir);
+                if ($this->Cmd->is_error())
+                {
+                    $this->fail('Cannot create log dir ' . $logdir);
+                }
             }
         }
         #####################################
-        # VALIDATE REMOTE PARAMS
+        # SET SSH CONNECTION
         #####################################
-        $this->out('Check remote parameters...');
-        //validate user
-        $this->settings['remote']['user'] = ( empty($this->settings['remote']['user'])) ? $this->Cmd->exe('whoami') : $this->settings['remote']['user'];
-        //check remote host
-        if (empty($this->settings['remote']['host']))
+        // only applicable for ssh
+        if($this->Config->get('remote.ssh'))
         {
-            $this->fail("Remote host is not configured!! Specify it in the ini file or on the command line!");
-        }
-        $this->out('Check ssh connection...');
-        //obviously try ssh at least once :)
-        $attempts = 1;
-        //retry attempts on connection fail
-        if (isset($this->settings['remote']['retry-count']))
-        {
-          $attempts += (integer) $this->settings['remote']['retry-count'];
-        }
-        else
-        {
-            $this->warn('Directive retry-count [remote] is not configured!');
-        }
-        //allow for a timeout
-        $timeout = 0;
-        if (isset($this->settings['remote']['retry-timeout']))
-        {
-            $timeout += (integer) $this->settings['remote']['retry-timeout'];
-        }
-        else
-        {
-            $this->warn('Directive retry-timeout [remote] is not configured!');
-        }
-        $i = 1;
-        $success = false;
-        $_h = $this->settings['remote']['host'];
-        $_u = $this->settings['remote']['user'];
-        while ($i <= $attempts)
-        {
-            $this->Cmd->exe("ssh -o BatchMode=yes $_u@$_h echo OK");
-            if ($this->Cmd->is_error())
+            $this->out('Check remote parameters...');
+            //validate user
+            $remote_user  = ( empty($this->Config->get('remote.user'))) ? $this->Cmd->exe('whoami') : $this->Config->get('remote.user');
+            $this->Config->set('remote.user', $remote_user);
+            //check remote host
+            if (empty($this->Config->get('remote.host')))
             {
-              $this->warn("SSH connection failed!");
-              if ($i != $attempts)
-              {
-                  $this->out("Will retry ssh attempt " . ($i + 1) . " of $attempts in $timeout second(s)...\n");
-                  sleep($timeout);
-              }
-              $i++;
+                $this->fail("Remote host is not configured!!");
             }
-            else
+            //first ssh attempt
+            $this->out('Check ssh connection...');
+            //obviously try ssh at least once :)
+            $attempts = 1;
+            //retry attempts on connection fail
+            if ($this->Config->get('remote.retry-count'))
             {
-              $success = true;
-              break;
+                $attempts += (integer)$this->Config->get('remote.retry-count');
             }
-        }
-        //check if successful
-        if (!$success)
-        {
-          $this->fail("SSH login attempt failed at remote host $_u@$_h! \nGenerate a key with ssh-keygen and ssh-copy-id to set up a passwordless ssh connection?");
+            //allow for a timeout
+            $timeout = 0;
+            if ($this->Config->get('remote.retry-timeout'))
+            {
+                $timeout += (integer)$this->Config->get('remote.retry-timeout');
+            }
+            $i = 1;
+            $success = false;
+            while ($i <= $attempts)
+            {
+                $this->Cmd->exe("'echo OK'", true);
+                if ($this->Cmd->is_error())
+                {
+                    $this->warn("SSH connection failed!");
+                    if ($i != $attempts)
+                    {
+                        $this->out("Will retry ssh attempt " . ($i + 1) . " of $attempts in $timeout second(s)...\n");
+                        sleep($timeout);
+                    }
+                    $i++;
+                }
+                else
+                {
+                    $success = true;
+                    break;
+                }
+            }
+            //check if successful
+            $user = $this->Config->get('remote.user');
+            $host = $this->Config->get('remote.host');
+            if (!$success)
+            {
+                $this->fail("SSH login attempt $user@$host failed! \nGenerate a key with ssh-keygen and ssh-copy-id to set up a passwordless ssh connection?");
+            }
         }
         //get remote os
-        $this->settings['remote']['os'] = $this->Cmd->exe("ssh $_u@$_h uname");
+        $this->Config->set('remote.os', $this->Cmd->exe("uname", true));
         //get distro
         // try /etc/*release
-        $output = $this->Cmd->exe("ssh $_u@$_h 'cat /etc/*release'");
+        $output = $this->Cmd->exe("'cat /etc/*release'", true);
         if ($this->Cmd->is_error())
         {
-            $output = $this->Cmd->exe("ssh $_u@$_h 'lsb_release -a'");
+            $output = $this->Cmd->exe("'lsb_release -a'", true);
             if ($this->Cmd->is_error())
             {
                  $this->fail('Cannot discover remote distro!');
@@ -396,47 +725,48 @@ class Application
         {
             if (preg_match("/$d/i", $output))
             {
-                $this->settings['remote']['distro'] = $d;
+                $this->Config->set('remote.distro', $d);
                 break;
             }
         }
         //check pre backup script
-        if(!array_key_exists('pre-backup-script', $this->settings['remote']))
+        if(!$this->Config->is_set('remote.pre-backup-script'))
         {
             $this->warn('Directive pre-backup-script [remote] is not configured!');
         }
-        //it exists, check onfail action
-        elseif($this->settings['remote']['pre-backup-script'])
+        //check if set and if so, validate onfail action
+        elseif($this->Config->get('remote.pre-backup-script') != '')
         {
             //check if path is set correctly
-            if (!preg_match('/^\//',  $this->settings['remote']['pre-backup-script']))
+            if (!Validator::is_absolute_path($this->Config->get('remote.pre-backup-script')))
             {
                 $this->fail("pre-backup-script must be an absolute path!");
             }
             //check if action is set correctly
-            if(!in_array($this->settings['remote']['pre-backup-onfail'], ['abort', 'continue']))
+            if(!in_array($this->Config->get('remote.pre-backup-onfail'), ['abort', 'continue']))
             {
                 $this->fail('Wrong value for "pre-backup-onfail". Use "abort" or "continue"!');
             }
         }
         #####################################
-        # VALIDATE DEPENDENCIES
+        # CHECK DEPENDENCIES
         #####################################
         $this->out('Check dependencies...');
+        $remote_distro = $this->Config->get('remote.distro');
         $dependencies = [];
         //Debian - Ubuntu
-        if(in_array($this->settings['remote']['distro'], ['Debian', 'Ubuntu']))
+        if(in_array($remote_distro, ['Debian', 'Ubuntu']))
         {
 //            $dependencies['remote']['aptitude'] = 'aptitude --version';
         }
         //Red Hat - Fedora
-        if(in_array($this->settings['remote']['distro'], ['Red Hat', 'CentOS', 'Fedora']))
+        if(in_array($remote_distro, ['Red Hat', 'CentOS', 'Fedora']))
         {
             //yum is nice though rpm will suffice, no hard dependency needed
             //$dependencies['remote']['yum-utils'] = 'yumdb --version';
         }
         //Arch - Manjaro
-        if(in_array($this->settings['remote']['distro'], ['Arch', 'Manjaro']))
+        if(in_array($remote_distro, ['Arch', 'Manjaro']))
         {
             $dependencies['remote']['pacman'] = 'pacman --version';
         }
@@ -451,8 +781,8 @@ class Application
             foreach ($packages as $package => $command)
             {
                 //check if installed
-                $command = ($host == 'remote')? "ssh $_u@$_h '" . $command."'":$command;
-                $this->Cmd->exe($command);
+                $remote = ($host == 'remote')? true:false;
+                $this->Cmd->exe($command, $remote);
                 if ($this->Cmd->is_error())
                 {
                     $this->fail("Package $package installed on $host machine?");
@@ -460,52 +790,49 @@ class Application
             }
         }
         #####################################
-        # VALIDATE ROOT DIR & FILE SYSTEM
+        # SET ROOT DIR
         #####################################
         $this->out('Check rootdir...');
-        //to avoid confusion, an absolute path is required
-        if (!preg_match('/^\//', $this->settings['local']['rootdir']))
-        {
-            $this->fail("rootdir must be an absolute path!");
-        }
+        $rootdir = $this->Config->get('local.rootdir');
+        $filesystem = $this->Config->get('local.filesystem');
         //root dir must exist!
-        if (!file_exists($this->settings['local']['rootdir']))
+        if (!file_exists($rootdir))
         {
-            $this->fail("Root dir '" . $this->settings['local']['rootdir'] . "' does not exist!");
+            $this->fail("Root dir '" . $rootdir . "' does not exist!");
         }
         //check filesystem config
         $this->out('Check filesystem config...');
         $supported_fs = ['default', 'ZFS', 'BTRFS'];
-        if(!in_array($this->settings['local']['filesystem'], $supported_fs))
+        if(!in_array($filesystem, $supported_fs))
         {
             $this->fail('Local filesystem not supported! Supported: '.implode(",", $supported_fs));
         }
-        //validate filesystem
-        switch($this->settings['local']['filesystem'])
+        // validate filesystem
+        switch($filesystem)
         {
             case 'ZFS':
             case 'BTRFS':
-                $fs = $this->Cmd->exe("{DF} -P -T ".$this->settings['local']['rootdir']." | tail -n +2 | awk '{print $2}'");
-                if($fs != strtolower($this->settings['local']['filesystem']))
+                $fs = $this->Cmd->exe("{DF} -P -T ".$rootdir." | tail -n +2 | awk '{print $2}'");
+                if($fs != strtolower($filesystem))
                 {
-                    $this->fail('Rootdir is not a '.$this->settings['local']['filesystem'].' filesystem!');
+                    $this->fail('Rootdir is not a '.$filesystem.' filesystem!');
                 }
                 break;
             default:
         }
         //validate root dir and create if required
-        switch ($this->settings['local']['filesystem'])
+        switch ($filesystem)
         {
             //if using ZFS, we want a mount point
             case 'ZFS':
                 //check if mount point
-                $rootdir_check = $this->Cmd->exe("zfs get -H -o value mountpoint ".$this->settings['local']['rootdir']);
-                if($rootdir_check != $this->settings['local']['rootdir'])
+                $rootdir_check = $this->Cmd->exe("zfs get -H -o value mountpoint ".$rootdir);
+                if($rootdir_check != $rootdir)
                 {
-                    $this->fail("No ZFS mount point " . $this->settings['local']['rootdir'] . " found!");
+                    $this->fail("No ZFS mount point " . $rootdir . " found!");
                 }
                 //validate if dataset name and mountpoint are the same
-                $zfs_info = $this->Cmd->exe("zfs list | grep '".$this->settings['local']['rootdir']."$'");
+                $zfs_info = $this->Cmd->exe("zfs list | grep '".$rootdir."$'");
                 $a = explode(' ', $zfs_info);
                 if('/'.reset($a) != end($a))
                 {
@@ -513,37 +840,49 @@ class Application
                 }
                 break;
             default:
-                if (!file_exists($this->settings['local']['rootdir']))
+                if (!file_exists($rootdir))
                 {
-                    $this->Cmd->exe("mkdir -p " . $this->settings['local']['rootdir']);
+                    $this->Cmd->exe("mkdir -p " . $rootdir);
                     if ($this->Cmd->is_error())
                     {
-                        $this->fail("Could not create directory:  " . $this->settings['local']['rootdir'] . "!");
+                        $this->fail("Could not create directory:  " . $rootdir . "!");
                     }
                 }
         }
         #####################################
-        # VALIDATE HOST DIR
+        # SET HOST DIR
         #####################################
         $this->out('Check host...');
-        $this->settings['local']['hostdir-name'] = ($this->settings['local']['hostdir-name'])? $this->settings['local']['hostdir-name']:$this->settings['remote']['host'];
-        //check if absolute path
-        if (preg_match('/^\//', $this->settings['local']['hostdir-name']))
+        if($this->Config->get('local.hostdir-name'))
+        {
+            $dirname = $this->Config->get('local.hostdir-name');
+        }
+        elseif($this->Config->get('remote.host'))
+        {
+            $dirname = $this->Config->get('remote.host');
+        }
+        else
+        {
+            $this->fail('No hostdir-name [local] configured!');
+        }
+        $this->Config->set('local.hostdir-name', $dirname);
+        //check if no slashes
+        if (preg_match('/^\//', $this->Config->get('local.hostdir-name')))
         {
             $this->fail("hostname may not contain slashes!");
         }
-        $this->settings['local']['hostdir'] = $this->settings['local']['rootdir'] . '/' . $this->settings['local']['hostdir-name'];
+        $this->Config->set('local.hostdir', $this->Config->get('local.rootdir') . '/' . $this->Config->get('local.hostdir-name'));
         //validate host dir and create if required
-        switch ($this->settings['local']['filesystem'])
+        switch ($this->Config->get('local.filesystem'))
         {
             //if using ZFS, we want to check if a filesystem is in place, otherwise, create it
             case 'ZFS':
-                $hostdir_check = $this->Cmd->exe("zfs get -H -o value mountpoint " . $this->settings['local']['hostdir']);
-                if ($hostdir_check != $this->settings['local']['hostdir'])
+                $hostdir_check = $this->Cmd->exe("zfs get -H -o value mountpoint " . $this->Config->get('local.hostdir'));
+                if ($hostdir_check != $this->Config->get('local.hostdir'))
                 {
-                    if ($this->settings['local']['hostdir-create'] == 'yes')
+                    if ($this->Config->get('local.hostdir-create'))
                     {
-                        $zfs_fs = preg_replace('/^\//', '', $this->settings['local']['hostdir']);
+                        $zfs_fs = preg_replace('/^\//', '', $this->Config->get('local.hostdir'));
                         $this->out("ZFS filesystem " . $zfs_fs . " does not exist, creating zfs filesystem..");
                         $this->Cmd->exe("zfs create " . $zfs_fs);
                         if ($this->Cmd->is_error())
@@ -553,11 +892,11 @@ class Application
                     }
                     else
                     {
-                        $this->fail("Directory " . $this->settings['local']['hostdir'] . " does not exist! Not allowed to create it..");
+                        $this->fail("Directory " . $this->Config->get('local.hostdir') . " does not exist! Directive not set to create it (no)..");
                     }
                 }
                 //validate if dataset name and mountpoint are the same
-                $zfs_info = $this->Cmd->exe("zfs list | grep '".$this->settings['local']['hostdir']."$'");
+                $zfs_info = $this->Cmd->exe("zfs list | grep '".$this->Config->get('local.hostdir')."$'");
                 $a = explode(' ', $zfs_info);
                 if ('/' . reset($a) != end($a))
                 {
@@ -566,96 +905,125 @@ class Application
                 break;
             default:
                 //check if dir exists
-                if (!file_exists($this->settings['local']['hostdir']))
+                if (!file_exists($this->Config->get('local.hostdir')))
                 {
-                    if ($this->settings['local']['hostdir-create'] == 'yes')
+                    if ($this->Config->get('local.hostdir-create'))
                     {
-                        $this->out("Directory " . $this->settings['local']['hostdir'] . " does not exist, creating it..");
-                        $this->Cmd->exe("mkdir -p " . $this->settings['local']['hostdir']);
+                        $this->out("Directory " . $this->Config->get('local.hostdir') . " does not exist, creating it..");
+                        $this->Cmd->exe("mkdir -p " . $this->Config->get('local.hostdir'));
                         if ($this->Cmd->is_error())
                         {
-                            $this->fail("Could not create directory:  " . $this->settings['local']['hostdir'] . "!");
+                            $this->fail("Could not create directory:  " . $this->Config->get('local.hostdir') . "!");
                         }
                     }
                     else
                     {
-                        $this->fail("Directory " . $this->settings['local']['hostdir'] . " does not exist! Not allowed to create it..");
+                        $this->fail("Directory " . $this->Config->get('local.hostdir') . " does not exist! Directive not set to create it..");
                     }
                 }
                 break;
         }
         #####################################
-        # VALIDATE RSYNC SETTINGS
+        # SET RSYNC DIR
         #####################################
         //set syncdir
-        switch($this->settings['local']['filesystem'])
+        switch($this->Config->get('local.filesystem'))
         {
             case 'ZFS':
             case 'BTRFS':
-                $rsyncdir = 'rsync.'.strtolower($this->settings['local']['filesystem']);
+                $rsyncdir = 'rsync.'.strtolower($this->Config->get('local.filesystem'));
                 break;
             default:
                 $rsyncdir = 'rsync.dir';
         }
-        $this->settings['local']['rsyncdir'] = $this->settings['local']['hostdir'].'/'.$rsyncdir;
-        //retry options must be integers
-        $options = ['retry-count', 'retry-timeout'];
-        foreach($options as $o)
+        $this->Config->set('local.rsyncdir',  $this->Config->get('local.hostdir').'/'.$rsyncdir);
+        #####################################
+        # CHECK IF RSYNC DIR IS CLEAN
+        #####################################
+        $dir = $this->Config->get('local.rsyncdir').'/files';
+        if(file_exists($dir))
         {
-            if(isset($this->settings['rsync'][$o]))
+            $allowed = array_map('stripslashes', array_values($this->Config->get('included')));
+            $diff = Validator::contains_allowed_files($dir, $allowed);
+            if (count($diff))
             {
-                //must be a number
-                 if(!preg_match("/^[0-9]+$/", $this->settings['rsync'][$o]))
-                 {
-                     $this->fail("Illegal value for '$o' [rsync]. Not an integer!");
-                 }
+                foreach ($diff as $file => $type)
+                {
+                    $this->warn("Directory $dir not clean, $type '$file' is not configured..");
+                }
             }
         }
         #####################################
-        # BASIC DIRECTIVE VALIDATION
+        # CHECK IF META DIR IS CLEAN
         #####################################
-        $validate = [];
-        //required directives - give an error
-        $sections = [];
-        $sections ['local'] = ['rootdir', 'logdir', 'hostdir-name', 'hostdir-create', 'filesystem'];
-        $sections ['remote'] = ['host', 'user'];
-        $sections ['mysql'] = ['enabled'];
-        $validate['error'] = $sections;
-        //absent directives - give a warning
-        $sections = [];
-        $sections ['remote'] = ['pre-backup-script', 'pre-backup-onfail'];
-        $sections ['rsync'] = ['compresslevel', 'hardlinks', 'verbose', 'retry-count', 'retry-timeout'];
-        $sections ['meta'] = ['remote-disk-layout', 'remote-package-list'];
-        $sections ['mysql'] = ['configdirs'];
-        $sections ['log'] = ['local-disk-usage', 'compress'];
-        $validate['warning'] = $sections;
-        foreach($validate as $onfail => $sections)
+        $filebase = strtolower($this->Config->get('local.hostdir-name') . '.' . $this->Settings->get('appname'));
+        $this->Settings->set('meta.filebase', $filebase);
+        //check if meta dir is clean
+        $dir = $this->Config->get('local.rsyncdir').'/meta';
+        if(file_exists($dir))
         {
-            foreach($sections as $section => $directives)
+            $allowed = [];
+            $directives = ['remote-disk-layout' => 'disk-layout.txt', 'remote-package-list' => 'packages.txt'];
+            foreach ($directives as $directive => $file)
             {
-                foreach($directives as $d)
+                if ($this->Config->get(['meta', $directive]))
                 {
-                    if(@!is_array($this->settings[$section]) || @!array_key_exists($d, $this->settings[$section]))
+                    $allowed [] = $filebase . '.' . $file;
+                }
+            }
+            $diff = Validator::contains_allowed_files($dir, $allowed);
+            if (count($diff))
+            {
+                foreach ($diff as $file => $type)
+                {
+                    $this->warn("Directory $dir not clean, $type '$file' is not configured..");
+                }
+            }
+        }
+        #####################################
+        # CHECK IF MYSQL DIR IS CLEAN
+        #####################################
+        //check if mysql dir is clean
+        if(!$this->Config->get('mysql.enabled'))
+        {
+            $dir = $this->Config->get('local.rsyncdir').'/mysql';
+            if(file_exists($dir))
+            {
+                $allowed = [];
+                $diff = Validator::contains_allowed_files($dir, $allowed);
+                if (count($diff))
+                {
+                    foreach ($diff as $file => $type)
                     {
-                        if($onfail == 'error')
-                        {
-                            $this->fail('Directive '.$d.' ['.$section.'] is not configured!');
-                        }
-                        else
-                        {
-                            $this->warn('Directive '.$d.' ['.$section.'] is not configured!');
-                        }
+                        $this->warn("Directory $dir not clean, $type '$file' while MySQL is disabled..");
                     }
                 }
             }
         }
-        ######################################
-        # DUMP ALL SETTINGS
         #####################################
-        $this->out('LIST CONFIGURATION @'.$this->settings['remote']['host'], 'header');
+        # CHECK IF ARCHIVE DIR IS CLEAN
+        #####################################
+        //check if archive dir is clean
+        $dir = $this->Config->get('local.hostdir') . '/archive';
+        if(file_exists($dir))
+        {
+            $allowed = array_keys($this->Config->get('snapshots'));
+            $diff = Validator::contains_allowed_files($dir, $allowed);
+            if (count($diff))
+            {
+                foreach ($diff as $file => $type)
+                {
+                    $this->warn("Directory $dir not clean, $type '$file' is not configured..");
+                }
+            }
+        }
+        ######################################
+        # DUMP ALL CONFIG
+        #####################################
+        $hostname = ($this->Config->get('remote.ssh'))? '@'.$this->Config->get('remote.host'):'(LOCAL)';
+        $this->out('LIST CONFIGURATION '.$hostname, 'header');
         $output = [];
-        ksort($this->settings);
-        foreach ($this->settings as $k => $v)
+        foreach ($this->Config->get() as $k => $v)
         {
             if (is_array($v))
             {
@@ -676,13 +1044,27 @@ class Application
         $this->out(trim(implode("\n", $output)));
     }
 
+    /**
+     * Add a message to messages array
+     * Add a message to colored messages array if required
+     *
+     * @param string $message The message
+     * @param bool $fgcolor Foreground color
+     * @param bool $bgcolor Background color
+     */
     function log($message = '', $fgcolor = false, $bgcolor = false)
     {
         $this->messages [] = $message;
         //output color
-        if($fgcolor) $this->output_colors [count($this->messages) - 1] = [$fgcolor, $bgcolor];
+        if($fgcolor) $this->cmessages [count($this->messages) - 1] = [$fgcolor, $bgcolor];
     }
 
+    /**
+     * Add style to the message
+     *
+     * @param string $message The message
+     * @param string $type The type of style
+     */
     function out($message = '', $type = 'default')
     {
         $content = [];
@@ -771,6 +1153,11 @@ class Application
         $this->log($message, $fgcolor, $bgcolor);
     }
 
+    /**
+     * Abort the application.
+     *
+     * @param string $message The (error) message.
+     */
     function abort($message = '')
     {
         if($message)
@@ -780,10 +1167,15 @@ class Application
         die($message);
     }
 
+    /**
+     * Quit the application.
+     *
+     * @param bool $error Set to true if unsuccessful
+     */
     function quit($error = false)
     {
         //debug output
-        if(isset($this->options['d']))
+        if($this->Options->is_set('d'))
         {
             $this->out("COMMAND STACK", 'header');
             $output = [];
@@ -830,11 +1222,11 @@ class Application
 
         }
         //time script
-        $lapse = date('U') - $this->start_time;
+        $lapse = date('U') - $this->Settings->get('start_time');
         $lapse = gmdate('H:i:s', $lapse);
         $this->log("Script time: $lapse (HH:MM:SS)");
         //final header
-        $this->out("$this->appname v$this->version - SCRIPT ENDED " . date('Y-m-d H:i:s'), 'title');
+        $this->out($this->Settings->get('appname').' v'.$this->Settings->get('version'). " - SCRIPT ENDED " . date('Y-m-d H:i:s'), 'title');
         #####################################
         # OUTPUT
         #####################################
@@ -843,9 +1235,9 @@ class Application
         $i = 0;
         foreach($this->messages as $m)
         {
-            if(@isset($this->output_colors[$i]))
+            if(@isset($this->cmessages[$i]))
             {
-                $content []= $this->colorize($m, $this->output_colors[$i][0], $this->output_colors[$i][1]);
+                $content []= $this->colorize($m, $this->cmessages[$i][0], $this->cmessages[$i][1]);
             }
             else
             {
@@ -857,18 +1249,18 @@ class Application
         # CLEANUP
         #####################################
         //remove LOCK file if exists
-        if ($error != 'LOCKED' && file_exists(@$this->settings['local']['hostdir'] . "/LOCK"))
+        if ($error != 'LOCKED' && file_exists(@$this->Config->get('local.hostdir') . "/LOCK"))
         {
             $content [] = "Remove LOCK file...";
-            $this->Cmd->exe('{RM} ' . $this->settings['local']['hostdir'] . "/LOCK");
+            $this->Cmd->exe('{RM} ' . $this->Config->get('local.hostdir') . "/LOCK");
         }
         #####################################
         # WRITE LOG TO FILES
         #####################################
         //write to log
-        if (is_dir($this->settings['local']['logdir']))
+        if (is_dir($this->Config->get('local.logdir')))
         {
-            if (!empty($this->settings['remote']['host']))
+            if ($this->Config->get('local.hostdir-name'))
             {
                 //output
                 if($error)
@@ -879,10 +1271,10 @@ class Application
                 {
                     $result = (count($this->warnings))? 'warning':'success';
                 }
-                
-                $hostdirname = ($this->settings['local']['hostdir-name'])? $this->settings['local']['hostdir-name']:$this->settings['remote']['host'];
-                $logfile_host = $this->settings['local']['logdir'] . '/' . $hostdirname . '.' . date('Y-m-d_His', $this->start_time) . '.poppins.' . $result. '.log';
-                $logfile_app = $this->settings['local']['logdir'] . '/poppins.log';
+
+                $hostdirname = ($this->Config->get('local.hostdir-name'))? $this->Config->get('local.hostdir-name'):$this->Config->get('remote.host');
+                $logfile_host = $this->Config->get('local.logdir') . '/' . $hostdirname . '.' . date('Y-m-d_His', $this->Settings->get('start_time')) . '.poppins.' . $result. '.log';
+                $logfile_app = $this->Config->get('local.logdir') . '/poppins.log';
                 $content [] = 'Create logfile for host ' . $logfile_host . '...';
                 //create file
                 $this->Cmd->exe("touch " . $logfile_host);
@@ -911,15 +1303,19 @@ class Application
                     $m['lapse'] = $lapse;
                     $m['logfile'] = $logfile_host;
                     //compress host logfile?
-                    if(isset($this->settings['log']['compress']) && $this->settings['log']['compress'])
+                    if($this->Config->get('log.compress'))
                     {
                         $content [] = 'Compress log file...';
                         $this->Cmd->exe("gzip " . $logfile_host);
                         //append suffix in log
                         $m['logfile'] .= '.gz';
                     }
-                    $m['version'] = $this->version;
-                    //$m['error'] = $error;
+                    $m['version'] = $this->Settings->get('version');
+                    // add tag to entry
+                    if($this->Options->is_set('t') && $this->Options->get('t'))
+                    {
+                        $m['tag'] = $this->Options->get('t');
+                    }
                     foreach($m as $k => $v)
                     {
                         $m[$k] = '"'.$v.'"';
@@ -935,7 +1331,7 @@ class Application
             }
             else
             {
-                $content []= 'WARNING! Cannot write to host logfile. Remote host not specified!';
+                $content []= 'WARNING! Cannot write to host logfile. Hostdir not set!';
             }
         }
         else
@@ -951,15 +1347,18 @@ class Application
         $this->abort();
     }
 
+    /**
+     * Quit the application successfully
+     */
     function succeed()
     {
         #####################################
         # REPORT
         #####################################
         //list disk usage
-        if ($this->settings['log']['local-disk-usage'])
+        if ($this->Config->get('log.local-disk-usage'))
         {
-            foreach([$this->settings['local']['hostdir']] as $dir)
+            foreach($this->Config->get('local.hostdir') as $dir)
             {
                 $du = $this->Cmd->exe("du -sh $dir");
                 $this->out("Disk Usage ($dir):");
@@ -969,6 +1368,11 @@ class Application
         $this->quit();
     }
 
+    /**
+     * Add a warning
+     *
+     * @param $message The message
+     */
     function warn($message)
     {
         $this->warnings []= $message;

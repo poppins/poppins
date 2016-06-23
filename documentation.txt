@@ -27,5 +27,8 @@ OPTIONS
     -h, --help
         Print this help page.
 
+    -t {tag}
+        Add a tag to the application log file.
+
     -v
         Print Poppins version.
