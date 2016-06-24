@@ -20,7 +20,7 @@ See example.poppins.ini:
     ; default is 0
     retry-timeout = 10
 * cli options added:
-    * -- color: adds colors to poppins output
+    * --color: adds colors to poppins output
     * -t {tag}: adds an optional tag to poppins log file
 --------------------------------------------------------------------------------
 WHAT HAS CHANGED?
@@ -37,7 +37,15 @@ MINOR CHANGES
 * Colored output. Show pretty colors on output with the --color option.
 * Allow unicode characters in ini file.
 * Warn if host directories (e.g. rsync.dir, archive, mysql) contain unconfigured 
-files/directories. 
+files/directories.
+* Add a tag to a Poppins run, e.g. a hash or timestamp:
+        poppins -c example.poppins.ini -t POPPINS.RUN.$(date +%Y%m%d)
+  Search through your log files, e.g. search warnings or errors:
+        zgrep -l POPPINS.RUN.20160624 /home/poppins/poppins.d/logs/*gz | grep -E 'warning|error' | xargs zcat
+  In cron you can add a timestamp like so:
+        TIMESTAMP="date +%Y%m%d"
+        # m h  dom mon dow   command
+        1 1 * * * /usr/local/bin/poppins -c /home/poppins/poppins.d/conf/example.poppins.ini -t POPPINS.RUN.$($TIMESTAMP)
 --------------------------------------------------------------------------------
 WHAT HAS BEEN FIXED?
 --------------------------------------------------------------------------------
@@ -56,8 +64,6 @@ INSTALLATION
 --------------------------------------------------------------------------------
 Run command:
     hg pull -u
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 RELEASE 0.1
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
