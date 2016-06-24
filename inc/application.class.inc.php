@@ -949,7 +949,7 @@ class Application
             {
                 foreach ($diff as $file => $type)
                 {
-                    $this->warn("Directory $dir not clean, $type '$file' is not configured..");
+                    $this->warn("Directory $dir not clean, unknown $type '$file'..");
                 }
             }
         }
@@ -976,7 +976,7 @@ class Application
             {
                 foreach ($diff as $file => $type)
                 {
-                    $this->warn("Directory $dir not clean, $type '$file' is not configured..");
+                    $this->warn("Directory $dir not clean, unknown $type '$file'..");
                 }
             }
         }
@@ -995,7 +995,7 @@ class Application
                 {
                     foreach ($diff as $file => $type)
                     {
-                        $this->warn("Directory $dir not clean, $type '$file' while MySQL is disabled..");
+                        $this->warn("Directory $dir not clean, found $type '$file' while MySQL is disabled..");
                     }
                 }
             }
@@ -1014,7 +1014,7 @@ class Application
             {
                 foreach ($diff as $file => $type)
                 {
-                    $this->warn("Directory $dir not clean, $type '$file' is not configured..");
+                    $this->warn("Directory $dir not clean, unknown $type '$file'..");
                 }
             }
         }
