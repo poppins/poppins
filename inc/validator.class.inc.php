@@ -51,9 +51,10 @@ class Validator
      *
      * @param $dir Directory
      * @param array $allowed Allowed files and directories
+     * @param boolean $exact_match Search must match string exactly
      * @return array Files or directories that differ
      */
-    static function contains_allowed_files($dir, $allowed = [])
+    static function contains_allowed_files($dir, $allowed = [], $exact_match = true)
     {
         $unexpected = [];
         $scan = scandir($dir);
@@ -64,7 +65,25 @@ class Validator
             {
                 continue;
             }
-            if(!in_array($found, $allowed))
+            //match based on regex
+            if(!$exact_match)
+            {
+                $match = false;
+                foreach($allowed as $a)
+                {
+                    if (preg_match('/^'.$a.'/', $found))
+                    {
+                        $match = true;
+                        break;
+                    }
+                }
+                // no match, fail
+                if(!$match)
+                {
+                    $unexpected [$found] = filetype($dir.'/'.$found);
+                }
+            }
+            elseif(!in_array($found, $allowed))
             {
                 $unexpected [$found] = filetype($dir.'/'.$found);
             }

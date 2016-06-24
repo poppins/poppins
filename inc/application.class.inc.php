@@ -1008,7 +1008,8 @@ class Application
         if(file_exists($dir))
         {
             $allowed = array_keys($this->Config->get('snapshots'));
-            $diff = Validator::contains_allowed_files($dir, $allowed);
+            $exact_match = ($this->Config->get('local.filesystem') == 'ZFS')? false:true;
+            $diff = Validator::contains_allowed_files($dir, $allowed, $exact_match);
             if (count($diff))
             {
                 foreach ($diff as $file => $type)
