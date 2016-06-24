@@ -1221,6 +1221,17 @@ class Application
             $this->out("SCRIPT FAILED!", 'final-error');
 
         }
+        //add tag to log file
+        if ($this->Options->is_set('t') && $this->Options->get('t'))
+        {
+            $tag = $this->Options->get('t');
+
+        }
+        else
+        {
+            $tag = '(untagged)';
+        }
+        $this->log("Run tagged as: $tag");
         //time script
         $lapse = date('U') - $this->Settings->get('start_time');
         $lapse = gmdate('H:i:s', $lapse);
