@@ -657,7 +657,7 @@ class Application
         {
             $this->out('Check remote parameters...');
             //validate user
-            $remote_user  = ( empty($this->Config->get('remote.user'))) ? $this->Cmd->exe('whoami') : $this->Config->get('remote.user');
+            $remote_user  = ($this->Config->get('remote.user'))? $this->Config->get('remote.user'):$this->Cmd->exe('whoami');
             $this->Config->set('remote.user', $remote_user);
             //check remote host
             if (empty($this->Config->get('remote.host')))
