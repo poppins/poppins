@@ -660,7 +660,7 @@ class Application
             $remote_user  = ($this->Config->get('remote.user'))? $this->Config->get('remote.user'):$this->Cmd->exe('whoami');
             $this->Config->set('remote.user', $remote_user);
             //check remote host
-            if (empty($this->Config->get('remote.host')))
+            if ($this->Config->get('remote.host') == '')
             {
                 $this->fail("Remote host is not configured!!");
             }
