@@ -46,6 +46,7 @@ files/directories.
         TIMESTAMP="date +%Y%m%d"
         # m h  dom mon dow   command
         1 1 * * * /usr/local/bin/poppins -c /home/poppins/poppins.d/conf/example.poppins.ini -t POPPINS.RUN.$($TIMESTAMP)
+* Better disk usage reporting
 --------------------------------------------------------------------------------
 WHAT HAS BEEN FIXED?
 --------------------------------------------------------------------------------

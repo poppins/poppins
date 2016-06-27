@@ -1365,16 +1365,62 @@ class Application
     function succeed()
     {
         #####################################
-        # REPORT
+        # DISK USAGE
         #####################################
         //list disk usage
         if ($this->Config->get('log.local-disk-usage'))
         {
-            foreach($this->Config->get('local.hostdir') as $dir)
+            $this->out('Disk Usage', 'header');
+            // disk usage dirs
+            $dirs = [];
+            // $dirs ['rsync directory (total size)'] []= $this->Config->get('local.rsyncdir');
+            $dirs ['/files'] []= $this->Config->get('local.rsyncdir').'/files';
+            if($this->Config->get('mysql.enabled'))
             {
-                $du = $this->Cmd->exe("du -sh $dir");
-                $this->out("Disk Usage ($dir):");
-                $this->out("$du");
+                // total MySQL
+                $path = $this->Config->get('local.rsyncdir').'/mysql';
+                $dirs ['/mysql'] []= $path;
+                // mysqldumps seperately
+                $scan = scandir($path);
+                foreach($scan as $s)
+                {
+                    if(!in_array($s, ['.', '..']))
+                    {
+                        $path1 = $path.'/'.$s;
+                        if(is_dir($path1))
+                        {
+                            $scan1 = scandir($path1);
+                            foreach($scan1 as $s1)
+                            {
+                                if(!in_array($s1, ['.', '..'])) $dirs['mysqldumps'] []= $path1.'/'.$s1;
+                            }
+                        }
+                    }
+                }
+            }
+            // iterate all directories
+            $i = 1;
+            foreach($dirs as $section => $subdirs)
+            {
+                $this->out("Disk usage of $section...");
+                foreach($subdirs as $subdir)
+                {
+                    if (file_exists($subdir))
+                    {
+                        $du = $this->Cmd->exe("du -sh $subdir");
+                        $this->out("$du");
+                    }
+                    else
+                    {
+                        $this->warn('Cannot determine disk usage of ' . $subdir);
+                    }
+                }
+                // space
+                if($i < count($dirs))
+                {
+                    $this->out();
+                }
+                $i++;
             }
         }
         $this->quit();
