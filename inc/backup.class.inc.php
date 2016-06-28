@@ -316,7 +316,7 @@ class Backup
                 case 'Red Hat':
                 case 'CentOS':
                 case 'Fedora':
-                    $packages['yumdb --version'] =  "yumdb search reason user | sort | grep -v 'reason = user' | sed '/^$/d'";
+                    $packages['yumdb --version'] =  "yumdb search reason user | sort | grep -v \'reason = user\' | sed '/^$/d'";
                     $packages['rpm --version'] =  "rpm -qa";
                     break;
                 case 'Arch':
