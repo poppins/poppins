@@ -282,7 +282,8 @@ class Rotator
             foreach ($v as $vv)
             {
                 //check if dir
-                if (is_dir("$archivedir/$k/$vv") && preg_match("/$this->dir_regex\.poppins$/", $vv))
+                $prefix = $this->Config->get('local.hostdir-name');
+                if (is_dir("$archivedir/$k/$vv") && preg_match("/$prefix\.$this->dir_regex\.poppins$/", $vv))
                 {
                     $res[$k] []= $vv;
                 }
@@ -441,7 +442,8 @@ class ZFSRotator extends Rotator
                     if(preg_match('/^'.$k.'/', $s))
                     {
                         $snap = str_replace($k.'-', '', $s);
-                        if(preg_match("/$this->dir_regex\.poppins$/", $snap))
+                        $prefix = $this->Config->get('local.hostdir-name');
+                        if(preg_match("/$prefix\.$this->dir_regex\.poppins$/", $snap))
                         {
                             $res[$k][]= $snap;
                         }
