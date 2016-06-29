@@ -806,7 +806,7 @@ class Application
             $this->out('Check root dir filesystem type...');
             $fs_type = $this->Cmd->exe("df -T $rootdir | tail -1 | tr -s ' ' | cut -d' ' -f2");
             $this->out($fs_type);
-            $allowed_fs_types = ['ext2', 'ext3', 'ext4', 'btrfs', 'zfs', 'xfs', 'ufs', 'jfs', 'nfs', 'gfs', 'ocfs', 'umsdos'];
+            $allowed_fs_types = ['ext2', 'ext3', 'ext4', 'btrfs', 'zfs', 'xfs', 'ufs', 'jfs', 'nfs', 'gfs', 'ocfs'];
             if (!in_array($fs_type, $allowed_fs_types))
             {
                 $this->fail('Filesystem type of root dir not supported! Supported: '.implode('/', $allowed_fs_types));
