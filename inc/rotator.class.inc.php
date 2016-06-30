@@ -205,8 +205,21 @@ class Rotator
         }
         //final housekeeping if needed
         $this->finalize();
-        //done
+        // done
         $this->App->out("OK!", 'simple-success');
+        #####################################
+        # LIST ARCHIVES
+        #####################################
+        $this->App->out('Archives', 'header');
+        $res = $this->scandir();
+        foreach($res as $k =>$v)
+        {
+            $this->App->out($k);
+            foreach($v as $vv)
+            {
+                $this->App->out($vv, 'indent');
+            }
+        }
     }
 
     /**
@@ -282,7 +295,7 @@ class Rotator
             foreach ($v as $vv)
             {
                 //check if dir
-                $prefix = $this->Config->get('local.hostdir-name');
+                $prefix = str_replace('.', '\.', $this->Config->get('local.hostdir-name'));
                 if (is_dir("$archivedir/$k/$vv") && preg_match("/$prefix\.$this->dir_regex\.poppins$/", $vv))
                 {
                     $res[$k] []= $vv;
@@ -442,7 +455,7 @@ class ZFSRotator extends Rotator
                     if(preg_match('/^'.$k.'/', $s))
                     {
                         $snap = str_replace($k.'-', '', $s);
-                        $prefix = $this->Config->get('local.hostdir-name');
+                        $prefix = str_replace('.', '\.', $this->Config->get('local.hostdir-name'));
                         if(preg_match("/$prefix\.$this->dir_regex\.poppins$/", $snap))
                         {
                             $res[$k][]= $snap;
