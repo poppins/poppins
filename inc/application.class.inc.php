@@ -272,9 +272,11 @@ class Application
                 if(in_array("$k::", $override_options))
                 {
                     $p = explode('-', $k);
+                    // section
                     $k1 = $p[0];
                     unset ($p[0]);
-                    $k2 = implode('', $p);
+                    // directive
+                    $k2 = implode('-', $p);
                     $this->Config->set([$k1, $k2], $v);
                 }
             }
