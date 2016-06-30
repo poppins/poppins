@@ -23,7 +23,6 @@
         },
         {
           "name":"snapshot-backend",
-          "default":"default",
           "validate":{"allowed":["default", "zfs", "btrfs"]}
         }
       ]
