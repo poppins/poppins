@@ -22,9 +22,9 @@
           "validate":{"boolean":"error"}
         },
         {
-          "name":"filesystem",
+          "name":"snapshot-backend",
           "default":"default",
-          "validate":{"allowed":["default", "ZFS", "BTRFS"]}
+          "validate":{"allowed":["default", "zfs", "btrfs"]}
         }
       ]
     },

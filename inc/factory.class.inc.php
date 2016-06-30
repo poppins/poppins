@@ -31,14 +31,7 @@ class BackupFactory extends Factory
         $Config = Config::get_instance();
         // build the class
         $classname = self::base;
-        if (in_array($Config->get('local.filesystem'), ['ZFS', 'BTRFS']))
-        {
-            $classname = $Config->get('local.filesystem').$classname;
-        }
-        else
-        {
-            $classname = ucfirst($Config->get('local.filesystem')).$classname;
-        }
+        $classname = ucfirst($Config->get('local.snapshot-backend')).$classname;
         return new $classname($App);
     }
 }
@@ -84,7 +77,7 @@ class RotatorFactory extends Factory
         $Config = Config::get_instance();
         // build the class
         $classname = self::base;
-        $classname = ucfirst($Config->get('local.filesystem')).$classname;
+        $classname = ucfirst($Config->get('local.snapshot-backend')).$classname;
         return new $classname($App);
     }
 }

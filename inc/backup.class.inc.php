@@ -301,6 +301,11 @@ class Backup
                 }
             }
         }
+        else
+        {
+            $this->App->out('Skipping information about disk layout...');
+        }
+        $this->App->out();
         //packages
         if ($this->Config->get('meta.remote-package-list'))
         {
@@ -371,6 +376,10 @@ class Backup
                 $i++;
             }
         }
+        else
+        {
+            $this->App->out('Skipping information about packages...');
+        }
     }
 
     /**
@@ -439,7 +448,7 @@ class Backup
             $o [] = "-z --compress-level=" . $this->Config->get('rsync.compresslevel');
         }
         // rewrite as little blocks as possible. do not set this for default!
-        if (in_array($this->Config->get('local.filesystem'), ['ZFS', 'BTRFS']))
+        if (in_array($this->Config->get('local.snapshot-backend'), ['zfs', 'btrfs']))
         {
             $o [] = "--inplace";
         }
@@ -563,9 +572,9 @@ class Backup
 }
 
 /**
- * Class BTRFSBackup based on BTRFS filesystem (BTRFS snapshots)
+ * Class BtrfsBackup based on btrfs filesystem (btrfs snapshots)
  */
-class BTRFSBackup extends Backup
+class BtrfsBackup extends Backup
 {
 
     /**
@@ -595,9 +604,9 @@ class DefaultBackup extends Backup
 }
 
 /**
- * Class ZFSBackup based on ZFS filesystem (ZFS snapshots)
+ * Class ZfsBackup based on zfs filesystem (zfs snapshots)
  */
-class ZFSBackup extends Backup
+class ZfsBackup extends Backup
 {
 
     /**

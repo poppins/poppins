@@ -794,61 +794,60 @@ class Application
         #####################################
         $this->out('Check rootdir...');
         $rootdir = $this->Config->get('local.rootdir');
-        $filesystem = $this->Config->get('local.filesystem');
+        $snapshots_backend = $this->Config->get('local.snapshot-backend');
         //root dir must exist!
         if (!file_exists($rootdir))
         {
             $this->fail("Root dir '" . $rootdir . "' does not exist!");
         }
-        //check filesystem type
+        //check filesystem
         else
         {
             $this->out('Check root dir filesystem type...');
-            $fs_type = $this->Cmd->exe("df -T $rootdir | tail -1 | tr -s ' ' | cut -d' ' -f2");
-            $this->out($fs_type);
+            $filesystem_type = $this->Cmd->exe("df -T $rootdir | tail -1 | tr -s ' ' | cut -d' ' -f2");
+            $this->out($filesystem_type);
             $allowed_fs_types = ['ext2', 'ext3', 'ext4', 'btrfs', 'zfs', 'xfs', 'ufs', 'jfs', 'nfs', 'gfs', 'ocfs'];
-            if (!in_array($fs_type, $allowed_fs_types))
+            if (!in_array($filesystem_type, $allowed_fs_types))
             {
                 $this->fail('Filesystem type of root dir not supported! Supported: '.implode('/', $allowed_fs_types));
             }
         }
         //check filesystem config
         $this->out('Check filesystem config...');
-        $supported_fs = ['default', 'ZFS', 'BTRFS'];
-        if(!in_array($filesystem, $supported_fs))
+        $supported_snapshot_backends = ['default', 'zfs', 'btrfs'];
+        if(!in_array($snapshots_backend, $supported_snapshot_backends))
         {
-            $this->fail('Local filesystem not supported! Supported: '.implode(",", $supported_fs));
+            $this->fail('Local filesystem not supported! Supported: '.implode(",", $supported_snapshot_backends));
         }
         // validate filesystem
-        switch($filesystem)
+        switch($snapshots_backend)
         {
-            case 'ZFS':
-            case 'BTRFS':
-                $fs = $this->Cmd->exe("{DF} -P -T ".$rootdir." | tail -n +2 | awk '{print $2}'");
-                if($fs != strtolower($filesystem))
+            case 'zfs':
+            case 'btrfs':
+                if($filesystem_type != $snapshots_backend)
                 {
-                    $this->fail('Rootdir is not a '.$filesystem.' filesystem!');
+                    $this->fail('Rootdir is not a '.$snapshots_backend.' filesystem!');
                 }
                 break;
             default:
         }
         //validate root dir and create if required
-        switch ($filesystem)
+        switch ($snapshots_backend)
         {
-            //if using ZFS, we want a mount point
-            case 'ZFS':
+            //if using zfs, we want a mount point
+            case 'zfs':
                 //check if mount point
                 $rootdir_check = $this->Cmd->exe("zfs get -H -o value mountpoint ".$rootdir);
                 if($rootdir_check != $rootdir)
                 {
-                    $this->fail("No ZFS mount point " . $rootdir . " found!");
+                    $this->fail("No zfs mount point " . $rootdir . " found!");
                 }
                 //validate if dataset name and mountpoint are the same
                 $zfs_info = $this->Cmd->exe("zfs list | grep '".$rootdir."$'");
                 $a = explode(' ', $zfs_info);
                 if('/'.reset($a) != end($a))
                 {
-                    $this->fail('ZFS name and mountpoint do not match!');
+                    $this->fail('zfs name and mountpoint do not match!');
                 }
                 break;
             default:
@@ -885,17 +884,17 @@ class Application
         }
         $this->Config->set('local.hostdir', $this->Config->get('local.rootdir') . '/' . $this->Config->get('local.hostdir-name'));
         //validate host dir and create if required
-        switch ($this->Config->get('local.filesystem'))
+        switch ($this->Config->get('local.snapshot-backend'))
         {
-            //if using ZFS, we want to check if a filesystem is in place, otherwise, create it
-            case 'ZFS':
+            //if using zfs, we want to check if a filesystem is in place, otherwise, create it
+            case 'zfs':
                 $hostdir_check = $this->Cmd->exe("zfs get -H -o value mountpoint " . $this->Config->get('local.hostdir'));
                 if ($hostdir_check != $this->Config->get('local.hostdir'))
                 {
                     if ($this->Config->get('local.hostdir-create'))
                     {
                         $zfs_fs = preg_replace('/^\//', '', $this->Config->get('local.hostdir'));
-                        $this->out("ZFS filesystem " . $zfs_fs . " does not exist, creating zfs filesystem..");
+                        $this->out("zfs filesystem " . $zfs_fs . " does not exist, creating zfs filesystem..");
                         $this->Cmd->exe("zfs create " . $zfs_fs);
                         if ($this->Cmd->is_error())
                         {
@@ -912,7 +911,7 @@ class Application
                 $a = explode(' ', $zfs_info);
                 if ('/' . reset($a) != end($a))
                 {
-                    $this->fail('ZFS name and mountpoint do not match!');
+                    $this->fail('zfs name and mountpoint do not match!');
                 }
                 break;
             default:
@@ -939,11 +938,11 @@ class Application
         # SET RSYNC DIR
         #####################################
         //set syncdir
-        switch($this->Config->get('local.filesystem'))
+        switch($this->Config->get('local.snapshot-backend'))
         {
-            case 'ZFS':
-            case 'BTRFS':
-                $rsyncdir = 'rsync.'.strtolower($this->Config->get('local.filesystem'));
+            case 'zfs':
+            case 'btrfs':
+                $rsyncdir = 'rsync.'.strtolower($this->Config->get('local.snapshot-backend'));
                 break;
             default:
                 $rsyncdir = 'rsync.dir';
@@ -1020,7 +1019,7 @@ class Application
         if(file_exists($dir))
         {
             $allowed = array_keys($this->Config->get('snapshots'));
-            $exact_match = ($this->Config->get('local.filesystem') == 'ZFS')? false:true;
+            $exact_match = ($this->Config->get('local.snapshot-backend') == 'zfs')? false:true;
             $diff = Validator::contains_allowed_files($dir, $allowed, $exact_match);
             if (count($diff))
             {
@@ -1109,9 +1108,11 @@ class Application
                 break;
             case 'header':
                 $l = "-----------------------------------------------------------------------------------------";
+                $content [] = '';
                 $content [] = $l;
                 $content [] = strtoupper($message);
                 $content [] = $l;
+                $content [] = '';
                 break;
             case 'indent':
                 $fgcolor = 'cyan';
@@ -1142,7 +1143,7 @@ class Application
                 $content [] = $message;
                 break;
             case 'title':
-                $l = "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%";
+                $l = "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%";
                 $content [] = $l;
                 $content [] = $message;
                 $content [] = $l;

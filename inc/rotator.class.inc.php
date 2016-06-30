@@ -9,7 +9,7 @@
 
 /**
  * Class Rotator contains functions that will handle rotation based on hardlinks,
- * ZFS or BTRFS snapshots
+ * zfs or btrfs snapshots
  */
 class Rotator
 {
@@ -384,30 +384,30 @@ class DefaultRotator extends Rotator
     }
 }
 
-class BTRFSRotator extends Rotator
+class BtrfsRotator extends Rotator
 {
     function add($dir, $parent)
     {
         $cmd = "btrfs subvolume snapshot -r $this->rsyncdir ". $this->archivedir."/$parent/$dir";
-        $this->App->out("Create BTRFS snapshot: $cmd");
+        $this->App->out("Create btrfs snapshot: $cmd");
         return $this->Cmd->exe("$cmd");
     }
     
     function remove($dir, $parent)
     {
         $cmd = "btrfs subvolume delete ". $this->archivedir."/$parent/$dir";
-        $this->App->out("Remove BTRFS snapshot: $cmd");
+        $this->App->out("Remove btrfs snapshot: $cmd");
         return $this->Cmd->exe("$cmd");
     }
 }
 
-class ZFSRotator extends Rotator
+class ZfsRotator extends Rotator
 {
     function add($dir, $parent)
     {
         $rsyncdir = preg_replace('/^\//', '', $this->rsyncdir);
         $cmd = "zfs snapshot $rsyncdir@$parent-$dir";
-        $this->App->out("Create ZFS snapshot: $cmd");
+        $this->App->out("Create zfs snapshot: $cmd");
         return $this->Cmd->exe("$cmd");
     }
     
@@ -416,7 +416,7 @@ class ZFSRotator extends Rotator
         //create a symlink to .zfs
         if(file_exists($this->rsyncdir.'/.zfs/snapshot') && !file_exists($this->Config->get('local.hostdir').'/archive'))
         {
-            $this->App->out("Create an archive dir symlink to ZFS snapshots...");
+            $this->App->out("Create an archive dir symlink to zfs snapshots...");
             $cmd = 'ln -s '.$this->rsyncdir.'/.zfs/snapshot '.$this->Config->get('local.hostdir').'/archive';
             $this->Cmd->exe("$cmd");
 
@@ -427,7 +427,7 @@ class ZFSRotator extends Rotator
     {
         $rsyncdir = preg_replace('/^\//', '', $this->rsyncdir);
         $cmd = "zfs destroy $rsyncdir@$parent-$dir";
-        $this->App->out("Remove ZFS snapshot: $cmd");
+        $this->App->out("Remove zfs snapshot: $cmd");
         return $this->Cmd->exe("$cmd");
     }
     
