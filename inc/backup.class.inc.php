@@ -280,7 +280,7 @@ class Backup
     {
         //variables
         $filebase = $this->Settings->get('meta.filebase');
-        $this->App->out('Remote meta data', 'header');
+        $this->App->out('meta data', 'header');
         //disk layout
         if ($this->Config->get('meta.remote-disk-layout'))
         {

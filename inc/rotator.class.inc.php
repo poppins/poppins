@@ -210,8 +210,8 @@ class Rotator
         #####################################
         # LIST ARCHIVES
         #####################################
-        $this->App->out('Archives', 'header');
-        $res = $this->scandir();
+        $this->App->out('Archives ('.$this->Config->get('local.snapshot-backend').')', 'header');
+        $res = $this->scandir(true);
         foreach($res as $k =>$v)
         {
             $this->App->out($k);
@@ -269,9 +269,10 @@ class Rotator
     /**
      * Function will scan for directories
      *
+     * @param $validate Validate if unknown files or directories
      * @return array The directories
      */
-    function scandir()
+    function scandir($validate = false)
     {
         //variables
         $tmp = [];
@@ -296,9 +297,15 @@ class Rotator
             {
                 //check if dir
                 $prefix = str_replace('.', '\.', $this->Config->get('local.hostdir-name'));
-                if (is_dir("$archivedir/$k/$vv") && preg_match("/$prefix\.$this->dir_regex\.poppins$/", $vv))
+                $found = "$archivedir/$k/$vv";
+                if (is_dir($found) && preg_match("/$prefix\.$this->dir_regex\.poppins$/", $vv))
                 {
                     $res[$k] []= $vv;
+                }
+                elseif(!in_array($vv, ['.', '..']))
+                {
+                    $type = filetype($found);
+                    $this->App->warn("Directory $archivedir/$k unclean, unknown $type $found");
                 }
             }
         }
@@ -369,13 +376,27 @@ class Rotator
 
 class DefaultRotator extends Rotator
 {
+    /**
+     * Creates a command to add a snapshot dir to a parent directory
+     *
+     * @param $dir The snapshot directory
+     * @param $parent The parent directory
+     * @return string The command
+     */
     function add($dir, $parent)
     {
         $cmd = "{CP} -la $this->rsyncdir ". $this->archivedir."/$parent/$dir";
         $this->App->out('Create hardlink copy: '.$this->Cmd->parse($cmd));
         return $this->Cmd->exe("$cmd");
     }
-    
+
+    /**
+     * Creates a command to remove a snapshot from a directory
+     *
+     * @param $dir The snapshot directory
+     * @param $parent  The parent directory
+     * @return string The command
+     */
     function remove($dir, $parent)
     {
         $cmd = "{RM} -rf ". $this->archivedir."/$parent/$dir";
@@ -386,13 +407,27 @@ class DefaultRotator extends Rotator
 
 class BtrfsRotator extends Rotator
 {
+    /**
+     * Creates a command to add a snapshot dir to a parent directory
+     *
+     * @param $dir The snapshot directory
+     * @param $parent The parent directory
+     * @return string The command
+     */
     function add($dir, $parent)
     {
         $cmd = "btrfs subvolume snapshot -r $this->rsyncdir ". $this->archivedir."/$parent/$dir";
         $this->App->out("Create btrfs snapshot: $cmd");
         return $this->Cmd->exe("$cmd");
     }
-    
+
+    /**
+     * Creates a command to remove a snapshot from a directory
+     *
+     * @param $dir The snapshot directory
+     * @param $parent  The parent directory
+     * @return string The command
+     */
     function remove($dir, $parent)
     {
         $cmd = "btrfs subvolume delete ". $this->archivedir."/$parent/$dir";
@@ -403,6 +438,13 @@ class BtrfsRotator extends Rotator
 
 class ZfsRotator extends Rotator
 {
+    /**
+     * Creates a command to add a snapshot dir to a parent directory
+     *
+     * @param $dir The snapshot directory
+     * @param $parent The parent directory
+     * @return string The command
+     */
     function add($dir, $parent)
     {
         $rsyncdir = preg_replace('/^\//', '', $this->rsyncdir);
@@ -410,7 +452,10 @@ class ZfsRotator extends Rotator
         $this->App->out("Create zfs snapshot: $cmd");
         return $this->Cmd->exe("$cmd");
     }
-    
+
+    /**
+     * Wrap up the action
+     */
     function finalize()
     {
         //create a symlink to .zfs
@@ -422,7 +467,14 @@ class ZfsRotator extends Rotator
 
         }
     }
-    
+
+    /**
+     * Creates a command to remove a snapshot from a directory
+     *
+     * @param $dir The snapshot directory
+     * @param $parent  The parent directory
+     * @return string The command
+     */
     function remove($dir, $parent)
     {
         $rsyncdir = preg_replace('/^\//', '', $this->rsyncdir);
@@ -430,13 +482,23 @@ class ZfsRotator extends Rotator
         $this->App->out("Remove zfs snapshot: $cmd");
         return $this->Cmd->exe("$cmd");
     }
-    
+
+    /**
+     * Prepare the rotation
+     * Check archive dir
+     */
     function prepare()
     {
         $this->App->out('No archive directories to create..');
     }
-    
-    function scandir()
+
+    /**
+     * Function will scan for directories
+     *
+     * @param $validate Validate if unknown files or directories
+     * @return array The directories
+     */
+    function scandir($validate = false)
     {
         //variables
         $res = [];
@@ -459,6 +521,11 @@ class ZfsRotator extends Rotator
                         if(preg_match("/$prefix\.$this->dir_regex\.poppins$/", $snap))
                         {
                             $res[$k][]= $snap;
+                        }
+                        elseif(!in_array($s, ['.', '..']))
+                        {
+                            $type = filetype($s);
+                            $this->App->warn("Directory $archivedir/$s unclean, unknown $type $found");
                         }
                     }
                 }

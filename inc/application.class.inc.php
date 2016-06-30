@@ -1112,7 +1112,7 @@ class Application
                 $content [] = $l;
                 $content [] = strtoupper($message);
                 $content [] = $l;
-                $content [] = '';
+//                $content [] = '';
                 break;
             case 'indent':
                 $fgcolor = 'cyan';
