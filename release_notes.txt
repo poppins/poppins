@@ -7,6 +7,14 @@ NEW FEATURES
 --------------------------------------------------------------------------------
 * ini configuration directives need to be added to the config file.
 See example.poppins.ini:
+    ...
+    [local]
+    ; snapshots are created using hardlinks by default
+    ; if available, you may use zfs or btrfs
+    ; filesystem snapshots instead
+    ; values are "default", "btrfs" or "zfs"
+    snapshot-backend = "btrfs"
+    ...
     [remote]
     ; enable remote connection with ssh, default is yes
     ; disable if backing up local directories (e.g. to an external drive)
@@ -26,9 +34,12 @@ See example.poppins.ini:
 WHAT HAS CHANGED?
 --------------------------------------------------------------------------------
 MAJOR CHANGES
+* The "filesystem" directive in the [local] section is removed as it is too
+ambiguous. It is replaced by the "snapshot-backend" directive. Rotation logic is
+not necessarily related to filesystem.
 * Local rsync (without ssh connection) is supported enabling you to schedule a
 backup on your local machine. E.g. using an external drive for backups.
-* Ssh connection attempts and retry timeouts implemented.
+* Ssh connection attempts and retry timeouts implemented.'
 * Stronger validation of ini file. 
     * Strange or potentially dangerous characters (such as *) not allowed. 
     * Quotes in 'yes' and 'no' are deprecated. Do not use quotes in booleans!
