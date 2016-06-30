@@ -315,7 +315,7 @@ class Backup
             {
                 case 'Debian':
                 case 'Ubuntu':
-                    $packages['aptitude --version'] = "aptitude search '~i !~M' -F '%p' --disable-columns | sort -u";
+                    $packages['aptitude --version'] = "aptitude search \"~i !~M\" -F \"%p\" --disable-columns | sort -u";
                     $packages['dpkg --version'] = "dpkg --get-selections";
                     break;
                 case 'Red Hat':
