@@ -524,7 +524,7 @@ class ZfsRotator extends Rotator
                         }
                         elseif(!in_array($s, ['.', '..']) && $validate)
                         {
-                            $this->App->warn("Directory $archivedir/$s unclean, unknown snapshot $s");
+                            $this->App->warn("Directory $archivedir unclean, unknown snapshot $s");
                         }
                     }
                 }
