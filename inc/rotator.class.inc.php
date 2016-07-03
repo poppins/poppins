@@ -71,7 +71,7 @@ class Rotator
         //prepare
         $this->prepare();
         //iniate comparison
-        $this->App->out('Reading archives...');
+        $this->App->out('Scan archives...');
         $arch1 = $arch2 = $this->scandir();
         #####################################
         # SORT DATA 
@@ -211,10 +211,15 @@ class Rotator
         # LIST ARCHIVES
         #####################################
         $this->App->out('Archives ('.$this->Config->get('local.snapshot-backend').')', 'header');
+        $this->App->out('Validate archives...');
         $res = $this->scandir(true);
+        $this->App->out('List archives, most recent first...');
+        $this->App->out();
         foreach($res as $k =>$v)
         {
             $this->App->out($k);
+            // sort reverse order
+            krsort($v);
             foreach($v as $vv)
             {
                 $this->App->out($vv, 'indent');

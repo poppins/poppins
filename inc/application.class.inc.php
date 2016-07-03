@@ -1252,6 +1252,7 @@ class Application
         $lapse = date('U') - $this->Settings->get('start_time');
         $lapse = gmdate('H:i:s', $lapse);
         $this->log("Script time: $lapse (HH:MM:SS)");
+        $this->log();
         //final header
         $this->out($this->Settings->get('appname').' v'.$this->Settings->get('version'). " - SCRIPT ENDED " . date('Y-m-d H:i:s'), 'title');
         #####################################

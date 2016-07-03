@@ -303,7 +303,7 @@ class Backup
         }
         else
         {
-            $this->App->out('Skipping information about disk layout...');
+            $this->App->out('Skip information about disk layout...');
         }
         $this->App->out();
         //packages
@@ -378,7 +378,7 @@ class Backup
         }
         else
         {
-            $this->App->out('Skipping information about packages...');
+            $this->App->out('Skip information about packages...');
         }
     }
 
