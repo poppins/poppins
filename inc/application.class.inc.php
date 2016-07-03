@@ -164,7 +164,7 @@ class Application
         # START
         #####################################
         $this->out($this->Settings->get('appname').' v'.$this->Settings->get('version')." - SCRIPT STARTED " . date('Y-m-d H:i:s', $this->Settings->get('start_time')), 'title');
-        $this->out('local environment', 'header');
+        $this->out('Environment', 'header');
         #####################################
         # LOCAL ENVIRONMENT
         #####################################
@@ -175,13 +175,13 @@ class Application
         {
             $this->abort("Local OS currently not supported!");
         }
-        $this->out($OS);
+        $this->out($OS, 'simple-indent');
          // PHP version
         $this->out('Check PHP version...');
         // full version e.g. 5.5.9-1ubuntu4.17
         $this->Settings->set('php.version.full', PHP_VERSION);
         // display version - debugging purposes
-        $this->out($this->Settings->get('php.version.full'));
+        $this->out($this->Settings->get('php.version.full'), 'simple-indent');
         // version id e.g. 505070
         $this->Settings->set('php.version.id', PHP_VERSION_ID);
         //check version < 5.6.1
@@ -200,11 +200,13 @@ class Application
         $this->out('Check hostname...');
         $hostname = $this->Cmd->exe('hostname');
         $this->Settings->set('local.hostname', $hostname);
-        $this->out($hostname);
+        $this->out($hostname, 'simple-indent');
+        $this->out();
+        $this->out('OK!', 'simple-success');
         #####################################
         # LOAD OPTIONS FROM INI FILE
         #####################################
-        $this->out("configuration file", 'header');
+        $this->out("Parse ini file", 'header');
         //validate config file
         if (!$this->Options->get('c'))
         {
@@ -285,7 +287,7 @@ class Application
         # CONFIGURATION CLEANUP
         #####################################
         //trim spaces
-        $this->out("Check configuration syntax (spaces and trailing slashes not allowed)...");
+        $this->out("Check configuration syntax...");
         foreach ($this->Config->get() as $k => $v)
         {
             //do not validate if included or excluded directories
@@ -636,7 +638,7 @@ class Application
         # SET LOG DIR
         #####################################
         //check log dir early so we can log stuff
-        $this->out('Set logdir...');
+        $this->out('Check logdir...');
         $logdir = $this->Config->get('local.logdir');
         //validate dir, create if required
         if($logdir)
@@ -807,7 +809,7 @@ class Application
         {
             $this->out('Check root dir filesystem type...');
             $filesystem_type = $this->Cmd->exe("df -T $rootdir | tail -1 | tr -s ' ' | cut -d' ' -f2");
-            $this->out($filesystem_type);
+            $this->out($filesystem_type, 'simple-indent');
             $allowed_fs_types = ['ext2', 'ext3', 'ext4', 'btrfs', 'zfs', 'xfs', 'ufs', 'jfs', 'nfs', 'gfs', 'ocfs'];
             if (!in_array($filesystem_type, $allowed_fs_types))
             {
@@ -1031,11 +1033,13 @@ class Application
                 }
             }
         }
+        $this->out();
+        $this->out('OK!', 'simple-success');
         ######################################
         # DUMP ALL CONFIG
         #####################################
         $hostname = ($this->Config->get('remote.ssh'))? '@'.$this->Config->get('remote.host'):'(LOCAL)';
-        $this->out('LIST CONFIGURATION '.$hostname, 'header');
+        $this->out('List configuration '.$hostname, 'header');
         $output = [];
         foreach ($this->Config->get() as $k => $v)
         {
@@ -1056,6 +1060,22 @@ class Application
             }
         }
         $this->out(trim(implode("\n", $output)));
+        $this->out();
+        $this->out('OK!', 'simple-success');
+        #####################################
+        # CREATE LOCK FILE
+        #####################################
+        # check for lock
+        if (file_exists($this->Config->get('local.hostdir') . "/LOCK"))
+        {
+            $this->fail("LOCK file " . $this->Config->get('local.hostdir') . "/LOCK exists!", 'LOCKED');
+        }
+        else
+        {
+            $this->out();
+            $this->out('Create LOCK file...');
+            $this->Cmd->exe("touch " . $this->Config->get('local.hostdir') . "/LOCK");
+        }
     }
 
     /**
@@ -1114,7 +1134,6 @@ class Application
                 $content [] = $l;
                 $content [] = strtoupper($message);
                 $content [] = $l;
-//                $content [] = '';
                 break;
             case 'indent':
                 $fgcolor = 'cyan';
@@ -1131,6 +1150,10 @@ class Application
             case 'simple-error':
                 $fgcolor = 'light_red';
                 $content [] = $message;
+                break;
+            case 'simple-indent':
+                $fgcolor = 'cyan';
+                $content [] = ' '.$message;
                 break;
             case 'simple-info':
                 $fgcolor = 'cyan';
@@ -1193,7 +1216,7 @@ class Application
         //debug output
         if($this->Options->is_set('d'))
         {
-            $this->out("COMMAND STACK", 'header');
+            $this->out("List commands", 'header');
             $output = [];
             foreach($this->Cmd->commands as $c)
             {
@@ -1203,7 +1226,7 @@ class Application
             $this->out(implode("\n", $output));
         }
         //title
-        $this->out('SUMMARY', 'header');
+        $this->out('Summary', 'header');
         //report warnings
         $warnings = count($this->warnings);
         //output all warnings
@@ -1367,7 +1390,7 @@ class Application
             $content []= 'WARNING! Cannot write to logfile. Log directory not created!';
         }
         //be polite
-        $content [] = "Bye...!";
+        $content [] = "Bye...";
         //last newline
         $content [] = "";
         //output

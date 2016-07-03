@@ -29,7 +29,6 @@ $App->init();
 #####################################
 # BACKUPS
 #####################################
-$App->out('Initiate backups', 'header');
 //initiate
 $c = BackupFactory::create($App);
 $c->init();

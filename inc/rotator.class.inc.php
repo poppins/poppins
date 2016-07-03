@@ -67,7 +67,7 @@ class Rotator
      */
     function init()
     {
-        $this->App->out('Rotating snapshots', 'header');
+        $this->App->out('Rotate snapshots', 'header');
         //prepare
         $this->prepare();
         //iniate comparison
@@ -150,7 +150,7 @@ class Rotator
         #####################################
         # COMPARE ARCHIVES TO RESULT
         #####################################
-        $this->App->out("Rotate...");
+        $this->App->out("Rotate snapshots...");
         //add/remove
         $actions = [];
         $actions['add'] = [];
@@ -206,14 +206,15 @@ class Rotator
         //final housekeeping if needed
         $this->finalize();
         // done
+        $this->App->out();
         $this->App->out("OK!", 'simple-success');
         #####################################
         # LIST ARCHIVES
         #####################################
-        $this->App->out('Archives ('.$this->Config->get('local.snapshot-backend').')', 'header');
-        $this->App->out('Validate archives...');
+        $this->App->out('List snapshots ('.$this->Config->get('local.snapshot-backend').')', 'header');
+        $this->App->out('Check archive directory...');
         $res = $this->scandir(true);
-        $this->App->out('List archives, most recent first...');
+        $this->App->out('List snapshots...');
         $this->App->out();
         foreach($res as $k =>$v)
         {

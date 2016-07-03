@@ -59,8 +59,6 @@ class Backup
      */
     function init()
     {
-        //validate (check if LOCK file exists)
-        $this->validate();
         //pre backup
         $this->jobs();
         //create dirs
@@ -223,7 +221,7 @@ class Backup
         # PRE BACKUP JOBS
         #####################################
         // do our thing on the remote end.
-        $this->App->out('PRE BACKUP JOB', 'header');
+        $this->App->out('pre backup script', 'header');
         //check if jobs
         if ($this->Config->get('remote.pre-backup-script'))
         {
@@ -280,7 +278,7 @@ class Backup
     {
         //variables
         $filebase = $this->Settings->get('meta.filebase');
-        $this->App->out('meta data', 'header');
+        $this->App->out('Metadata', 'header');
         //disk layout
         if ($this->Config->get('meta.remote-disk-layout'))
         {
@@ -297,6 +295,7 @@ class Backup
                 else
                 {
                     $this->App->out("Write to file $this->rsyncdir/meta/" . $filebase . ".disk-layout.txt...");
+                    $this->App->out();
                     $this->App->out("OK!", 'simple-success');
                 }
             }
@@ -369,6 +368,7 @@ class Backup
                         $arr = explode(' ',trim($validation));
                         $pkg_mngr = $arr[0];
                         $this->App->out("Using the $pkg_mngr package manager. Write to file $this->rsyncdir/meta/" . $filebase . ".packages.txt...");
+                        $this->App->out();
                         $this->App->out("OK!", 'simple-success');
                         break;
                     }
@@ -419,7 +419,7 @@ class Backup
     function rsync()
     {
         //rsync backups
-        $this->App->out('Rsync directories', 'header');
+        $this->App->out('Sync data', 'header');
         #####################################
         # RSYNC OPTIONS
         #####################################
@@ -547,26 +547,6 @@ class Backup
             }
         }
         $this->App->out("OK!", 'simple-success');
-    }
-
-    /**
-     * Check if LOCK file exists
-     */
-    function validate()
-    {
-        #####################################
-        # CREATE LOCK FILE
-        #####################################
-        # check for lock
-        if (file_exists($this->Config->get('local.hostdir') . "/LOCK"))
-        {
-            $this->App->fail("LOCK file " . $this->Config->get('local.hostdir') . "/LOCK exists!", 'LOCKED');
-        }
-        else
-        {
-            $this->App->out('Create LOCK file...');
-            $this->Cmd->exe("touch " . $this->Config->get('local.hostdir') . "/LOCK");
-        }
     }
 
 }
