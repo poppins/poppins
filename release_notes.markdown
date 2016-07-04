@@ -1,12 +1,12 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-RELEASE 0.2
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+# RELEASE 0.2
+
 DATE: 2016-07-01
---------------------------------------------------------------------------------
-NEW FEATURES
--------------------------------------------------------------------------------
-* Following ini configuration directives need to be added to the config file.
+
+## NEW FEATURES
+
+The following ini configuration directives need to be added to the config file.
 See example.poppins.ini:
+
     ...
     [local]
     ; snapshots are created using hardlinks by default
@@ -26,14 +26,17 @@ See example.poppins.ini:
     retry-count = 0
     ; timeout between retries in seconds
     ; default is 0
-    retry-timeout = 10
-* cli options added:
-    * --color: add colors to cli output
-    * -t {tag}: add an optional tag to poppins log file
---------------------------------------------------------------------------------
-WHAT HAS CHANGED?
---------------------------------------------------------------------------------
-MAJOR CHANGES
+    retry-timeout = 10 </code>
+    
+cli options added:
+
+* --color: add colors to cli output
+* -t {tag}: add an optional tag to poppins log file
+
+## WHAT HAS CHANGED?
+
+### MAJOR CHANGES
+
 * The "filesystem" directive in the [local] section is removed as it is too
 ambiguous. It is replaced by the "snapshot-backend" directive. Rotation logic is
 not necessarily related to filesystem.
@@ -44,41 +47,45 @@ backup on your local machine. E.g. using an external drive for backups.
     * Illegal or potentially dangerous characters (such as *) not allowed.
     * Quotes in 'yes' and 'no' are deprecated. Do not use quotes in booleans.
 
-MINOR CHANGES
+### MINOR CHANGES
+
 * Colored output. Show pretty colors on output with the --color option.
 * Allow unicode characters in ini file.
 * Warn if host directories (e.g. rsync.dir, archive, mysql) contain unknown
 (unconfigured) files/directories.
 * Add a tag to a poppins run, e.g. a hash or timestamp:
+
         poppins -c example.poppins.ini -t POPPINS.RUN.$(date +%Y%m%d)
-  If runs are tagged, you can search through your log files, e.g. search warnings or errors:
-        zgrep -l POPPINS.RUN.20160624 /home/poppins/poppins.d/logs/*gz | grep -E 'warning|error' | xargs zcat
-  In cron you can add a timestamp like so:
-        TIMESTAMP="date +%Y%m%d"
+If runs are tagged, you can search through your log files, e.g. search warnings or errors:
+    zgrep -l POPPINS.RUN.20160624 /home/poppins/poppins.d/logs/*gz | grep -E 'warning|error' | xargs zcat
+In cron you can add a timestamp like so:
+    TIMESTAMP="date +%Y%m%d"
         # m h  dom mon dow   command
         1 1 * * * /usr/local/bin/poppins -c /home/poppins/poppins.d/conf/example.poppins.ini -t POPPINS.RUN.$($TIMESTAMP)
 * Better reporting: disk usage, snapshot list.
---------------------------------------------------------------------------------
-WHAT HAS BEEN FIXED?
---------------------------------------------------------------------------------
+
+## WHAT HAS BEEN FIXED?
+
 * Fixed issues with spaces in filenames
 * Fixed issues with options override
 * Output pre-backup-script if script failed
 * Strong ini file validation (see known issues)
 * Refactoring and other small bugfixing
---------------------------------------------------------------------------------
-KNOWN ISSUES
---------------------------------------------------------------------------------
+
+## KNOWN ISSUES
+
 * Validation of ini files is imperfect because of the lack of type support of 
 the function parse_ini_file(). As of PHP 5.6, INI_SCANNER_TYPED needs to be 
 implemented when PHP 5.6+ is available on Debian and CentOS latest releases.
---------------------------------------------------------------------------------
-INSTALLATION
---------------------------------------------------------------------------------
+
+# INSTALLATION
+
 Run command:
+
     hg pull -u
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-RELEASE 0.1
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+# RELEASE 0.1
+
 DATE: 2015-10-05
+
 (Initial release)
