@@ -66,7 +66,6 @@ class Application
         //colorize the string
         if ($this->Options->is_set('color'))
         {
-            // TODO json
             // foreground
             $fgcolors = ['black' => '0;30','dark_gray' => '1;30','blue' => '0;34','light_blue' => '1;34','green' => '0;32','light_green' => '1;32','cyan' => '0;36',
                          'light_cyan' => '1;36','red' => '0;31','light_red' => '1;31','purple' => '0;35','light_purple' => '1;35','brown' => '0;33','yellow' => '1;33',
@@ -129,7 +128,7 @@ class Application
         $CLI_SHORT_OPTS = ["c:dhvt:"];
         $CLI_LONG_OPTS = ["version", "help", "color"];
         $options = getopt(implode('', $CLI_SHORT_OPTS), $CLI_LONG_OPTS);
-        $this->Options->store($options);
+        $this->Options->update($options);
         if (!count($this->Options->get()))
         {
             $content = file_get_contents(dirname(__FILE__).'/../documentation.txt');
@@ -243,7 +242,7 @@ class Application
             {
                 $this->fail('Error parsing ini file!');
             }
-            $this->Config->store($config);
+            $this->Config->update($config);
             // check cli options of format --foo-bar
             $override_options= [];
             foreach($this->Config->get() as $k => $v)
@@ -267,7 +266,7 @@ class Application
                     $options[$k] = '';
                 }
             }
-            $this->Options->store($options);
+            $this->Options->update($options);
             //override configuration with cli options
             foreach($options as $k => $v)
             {
