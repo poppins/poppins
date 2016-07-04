@@ -38,7 +38,7 @@ The following directives need to be REMOVED:
         ; use ZFS or BTRFS if you want to use shapshot features
         ; for these filesystems. Otherwise, use default.
         filesystem = 'BTRFS'
-        ...: 
+        ...
         
 ### NEW CLI OPTIONS
 
