@@ -28,7 +28,7 @@ See example.poppins.ini:
         retry-count = 0
         ; timeout between retries in seconds
         ; default is 0
-        retry-timeout = 10 </code>
+        retry-timeout = 10
         ...
         
 The following directives need to be REMOVED:
