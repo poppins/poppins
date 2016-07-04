@@ -5,7 +5,7 @@ DATE: 2016-07-01
 --------------------------------------------------------------------------------
 NEW FEATURES
 -------------------------------------------------------------------------------
-* ini configuration directives need to be added to the config file.
+* Following ini configuration directives need to be added to the config file.
 See example.poppins.ini:
     ...
     [local]
@@ -21,15 +21,15 @@ See example.poppins.ini:
     ; host and user directives are disregarded in case ssh is disabled
     ssh = yes
     ; ssh connection retries if desired
-    ; check is applied on first connection attempt only
+    ; check is applied on first connection attempt
     ; default is 0
     retry-count = 0
     ; timeout between retries in seconds
     ; default is 0
     retry-timeout = 10
 * cli options added:
-    * --color: adds colors to poppins output
-    * -t {tag}: adds an optional tag to poppins log file
+    * --color: add colors to cli output
+    * -t {tag}: add an optional tag to poppins log file
 --------------------------------------------------------------------------------
 WHAT HAS CHANGED?
 --------------------------------------------------------------------------------
@@ -42,14 +42,14 @@ backup on your local machine. E.g. using an external drive for backups.
 * Ssh connection attempts and retry timeouts implemented.
 * Stronger validation of ini file. 
     * Illegal or potentially dangerous characters (such as *) not allowed.
-    * Quotes in 'yes' and 'no' are deprecated. Do not use quotes in booleans!
+    * Quotes in 'yes' and 'no' are deprecated. Do not use quotes in booleans.
 
 MINOR CHANGES
 * Colored output. Show pretty colors on output with the --color option.
 * Allow unicode characters in ini file.
 * Warn if host directories (e.g. rsync.dir, archive, mysql) contain unknown
 (unconfigured) files/directories.
-* Add a tag to a Poppins run, e.g. a hash or timestamp:
+* Add a tag to a poppins run, e.g. a hash or timestamp:
         poppins -c example.poppins.ini -t POPPINS.RUN.$(date +%Y%m%d)
   If runs are tagged, you can search through your log files, e.g. search warnings or errors:
         zgrep -l POPPINS.RUN.20160624 /home/poppins/poppins.d/logs/*gz | grep -E 'warning|error' | xargs zcat
@@ -71,7 +71,7 @@ KNOWN ISSUES
 --------------------------------------------------------------------------------
 * Validation of ini files is imperfect because of the lack of type support of 
 the function parse_ini_file(). As of PHP 5.6, INI_SCANNER_TYPED needs to be 
-implemented when PHP 5.6+ is available on Debia and CentOS latest releases.
+implemented when PHP 5.6+ is available on Debian and CentOS latest releases.
 --------------------------------------------------------------------------------
 INSTALLATION
 --------------------------------------------------------------------------------
