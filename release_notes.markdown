@@ -4,35 +4,55 @@ DATE: 2016-07-01
 
 ## NEW FEATURES
 
+### INI FILE
+
 The following ini configuration directives need to be added to the config file.
 See example.poppins.ini:
 
-    ...
-    [local]
-    ; snapshots are created using hardlinks by default
-    ; if available, you may use zfs or btrfs
-    ; filesystem snapshots instead
-    ; values are "default", "btrfs" or "zfs"
-    snapshot-backend = "btrfs"
-    ...
-    [remote]
-    ; enable remote connection with ssh, default is yes
-    ; disable if backing up local directories (e.g. to an external drive)
-    ; host and user directives are disregarded in case ssh is disabled
-    ssh = yes
-    ; ssh connection retries if desired
-    ; check is applied on first connection attempt
-    ; default is 0
-    retry-count = 0
-    ; timeout between retries in seconds
-    ; default is 0
-    retry-timeout = 10 </code>
-    
+        ...
+        [local]
+        ; snapshots are created using hardlinks by default
+        ; if available, you may use zfs or btrfs
+        ; filesystem snapshots instead
+        ; values are "default", "btrfs" or "zfs"
+        snapshot-backend = "btrfs"
+        ...
+        [remote]
+        ; enable remote connection with ssh, default is yes
+        ; disable if backing up local directories (e.g. to an external drive)
+        ; host and user directives are disregarded in case ssh is disabled
+        ssh = yes
+        ; ssh connection retries if desired
+        ; check is applied on first connection attempt
+        ; default is 0
+        retry-count = 0
+        ; timeout between retries in seconds
+        ; default is 0
+        retry-timeout = 10 </code>
+        
+### NEW OPTIONS
+
 cli options added:
 
 * --color: add colors to cli output
 * -t {tag}: add an optional tag to poppins log file
 
+### TAGGING
+
+Add a tag to a poppins run, e.g. a hash or timestamp:
+
+    poppins -c example.poppins.ini -t POPPINS.RUN.$(date +%Y%m%d)
+        
+If runs are tagged, you can search through your log files, e.g. search warnings or errors:
+
+    zgrep -l POPPINS.RUN.20160624 /home/poppins/poppins.d/logs/*gz | grep -E 'warning|error' | xargs zcat
+    
+In cron you can add a timestamp like so:
+
+    TIMESTAMP="date +%Y%m%d"
+        # m h  dom mon dow   command
+        1 1 * * * /usr/local/bin/poppins -c /home/poppins/poppins.d/conf/example.poppins.ini -t POPPINS.RUN.$($TIMESTAMP)
+        
 ## WHAT HAS CHANGED?
 
 ### MAJOR CHANGES
@@ -44,24 +64,13 @@ not necessarily related to filesystem.
 backup on your local machine. E.g. using an external drive for backups.
 * Ssh connection attempts and retry timeouts implemented.
 * Stronger validation of ini file. 
-    * Illegal or potentially dangerous characters (such as *) not allowed.
+    * Illegal or potentially dangerous characters (such as '*') not allowed.
     * Quotes in 'yes' and 'no' are deprecated. Do not use quotes in booleans.
 
 ### MINOR CHANGES
 
-* Colored output. Show pretty colors on output with the --color option.
 * Allow unicode characters in ini file.
-* Warn if host directories (e.g. rsync.dir, archive, mysql) contain unknown
-(unconfigured) files/directories.
-* Add a tag to a poppins run, e.g. a hash or timestamp:
-
-        poppins -c example.poppins.ini -t POPPINS.RUN.$(date +%Y%m%d)
-If runs are tagged, you can search through your log files, e.g. search warnings or errors:
-    zgrep -l POPPINS.RUN.20160624 /home/poppins/poppins.d/logs/*gz | grep -E 'warning|error' | xargs zcat
-In cron you can add a timestamp like so:
-    TIMESTAMP="date +%Y%m%d"
-        # m h  dom mon dow   command
-        1 1 * * * /usr/local/bin/poppins -c /home/poppins/poppins.d/conf/example.poppins.ini -t POPPINS.RUN.$($TIMESTAMP)
+* Warn if host directories (e.g. rsync.dir, archive, mysql) contain unknown (unconfigured) files/directories.
 * Better reporting: disk usage, snapshot list.
 
 ## WHAT HAS BEEN FIXED?
@@ -78,7 +87,7 @@ In cron you can add a timestamp like so:
 the function parse_ini_file(). As of PHP 5.6, INI_SCANNER_TYPED needs to be 
 implemented when PHP 5.6+ is available on Debian and CentOS latest releases.
 
-# INSTALLATION
+## INSTALLATION
 
 Run command:
 
