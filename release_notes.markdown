@@ -32,6 +32,7 @@ See example.poppins.ini:
         ...
         
 The following directives need to be REMOVED:
+
         ...
         ; local filesystem options: default/ZFS/BTRFS
         ; use ZFS or BTRFS if you want to use shapshot features
