@@ -6,7 +6,7 @@ DATE: 2016-07-01
 
 ### INI FILE
 
-The following ini configuration directives need to be added to the config file.
+The following ini configuration directives need to be ADDED to the config file.
 See example.poppins.ini:
 
         ...
@@ -29,17 +29,26 @@ See example.poppins.ini:
         ; timeout between retries in seconds
         ; default is 0
         retry-timeout = 10 </code>
+        ...
         
-### NEW OPTIONS
+The following directives need to be REMOVED:
+        ...
+        ; local filesystem options: default/ZFS/BTRFS
+        ; use ZFS or BTRFS if you want to use shapshot features
+        ; for these filesystems. Otherwise, use default.
+        filesystem = 'BTRFS'
+        ...: 
+        
+### NEW CLI OPTIONS
 
-cli options added:
+The following cli options have been added:
 
-* --color: add colors to cli output
+* -color: add colors to cli output
 * -t {tag}: add an optional tag to poppins log file
 
 ### TAGGING
 
-Add a tag to a poppins run, e.g. a hash or timestamp:
+You may add a tag to a poppins run, e.g. a hash or timestamp:
 
     poppins -c example.poppins.ini -t POPPINS.RUN.$(date +%Y%m%d)
         
@@ -49,7 +58,7 @@ If runs are tagged, you can search through your log files, e.g. search warnings 
     
 In cron you can add a timestamp like so:
 
-    TIMESTAMP="date +%Y%m%d"
+        TIMESTAMP="date +%Y%m%d"
         # m h  dom mon dow   command
         1 1 * * * /usr/local/bin/poppins -c /home/poppins/poppins.d/conf/example.poppins.ini -t POPPINS.RUN.$($TIMESTAMP)
         
@@ -57,29 +66,28 @@ In cron you can add a timestamp like so:
 
 ### MAJOR CHANGES
 
-* The "filesystem" directive in the [local] section is removed as it is too
+* The "filesystem" directive in the [local] section was removed as it is too
 ambiguous. It is replaced by the "snapshot-backend" directive. Rotation logic is
 not necessarily related to filesystem.
-* Local rsync (without ssh connection) is supported enabling you to schedule a
+* Local rsync (no ssh connection) is supported, enabling you to schedule a
 backup on your local machine. E.g. using an external drive for backups.
 * Ssh connection attempts and retry timeouts implemented.
-* Stronger validation of ini file. 
-    * Illegal or potentially dangerous characters (such as '*') not allowed.
+* Strong validation of the ini file was added. 
+    * Illegal or potentially dangerous characters (such as '*') are not allowed.
     * Quotes in 'yes' and 'no' are deprecated. Do not use quotes in booleans.
 
 ### MINOR CHANGES
 
-* Allow unicode characters in ini file.
-* Warn if host directories (e.g. rsync.dir, archive, mysql) contain unknown (unconfigured) files/directories.
-* Better reporting: disk usage, snapshot list.
+* Allow unicode characters in the ini file.
+* Warn if host directories (e.g. rsync dir, archive dir, snapshot dirs, mysql dir) contain unknown (not configured) files/directories.
+* Better reporting: disk usage, snapshot list, ...
 
 ## WHAT HAS BEEN FIXED?
 
-* Fixed issues with spaces in filenames
-* Fixed issues with options override
+* Fixed issues with spaces in file names
+* Fixed issues with options overriding
 * Output pre-backup-script if script failed
-* Strong ini file validation (see known issues)
-* Refactoring and other small bugfixing
+* Refactoring and other small bug fixing
 
 ## KNOWN ISSUES
 
