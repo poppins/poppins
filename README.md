@@ -55,7 +55,7 @@ All configuration in {filename}.poppins.ini. See example.poppins.ini for instruc
 ### Deployment ###
 SYNOPSIS
 
-    poppins -c {configfile} [-d] [-h] [-v] [-t] [--long-options]
+    poppins -c {configfile} [--color] [-d] [-h] [-t {tag}] [-v] [--long-options]
 
 DESCRIPTION
 

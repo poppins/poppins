@@ -44,7 +44,7 @@ The following directives need to be REMOVED:
 
 The following cli options have been added:
 
-* -color: add colors to cli output
+* --color: add colors to cli output
 * -t {tag}: add an optional tag to poppins log file
 
 ### TAGGING

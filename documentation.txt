@@ -4,7 +4,7 @@ NAME
     poppins - backup script with incremental snapshots
 
 SYNOPSIS
-    poppins -c {configfile} [-d] [-h] [-v] [--long-options]
+    poppins -c {configfile} [--color] [-d] [-h] [-t {tag}] [-v] [--long-options]
 
 DESCRIPTION
     Poppins has one required option, "-c", the config file. Good practice is to 
