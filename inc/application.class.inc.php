@@ -425,7 +425,7 @@ class Application
                         if (isset($directive['validate']['allowed']))
                         {
                             $allowed = $directive['validate']['allowed'];
-                            $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not not an allowed value. Use values "'.implode('/', $allowed).'"!';
+                            $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an allowed value. Use values "'.implode('/', $allowed).'"!';
                             if (!in_array($value, $allowed))
                             {
                                 if ($directive['validate']['allowed'] == 'warning')
@@ -443,7 +443,7 @@ class Application
                         #####################################
                         if (isset($directive['validate']['boolean']))
                         {
-                            $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not not a valid boolean. Use values yes/no without quotes!';
+                            $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not a valid boolean. Use values yes/no without quotes!';
                             if (in_array($value, ['yes', 'true']))
                             {
                                 $this->Config->set([$section['name'], $directive['name']], '1');
