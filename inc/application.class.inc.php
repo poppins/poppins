@@ -207,7 +207,7 @@ class Application
         #####################################
         $this->out("Parse ini file", 'header');
         //validate config file
-        if (!$this->Options->get('c'))
+        if (!$this->Options->is_set('c'))
         {
             $this->abort("Option -c {configfile} is required!");
         }
