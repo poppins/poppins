@@ -80,23 +80,56 @@ fi
 #####################################
 # search for orphaned files
 #####################################
+# check if error messages
+if [[ ! -z $(ls $LOGDIR | grep 'error.log' ) ]]
+then
+    echo Search error logs...
+    echo
+    for file in $(ls $LOGDIR | grep 'error.log' )
+    do
+        echo $LOGDIR/$file
+    done
+    echo
+    echo WARNING! ERROR LOGS FOUND!
+    echo
+    if [[ $INTERACTIVE == "true" ]]
+    then
+        echo 'Error logs contain valuable information. Do you want to delete them anyway (y/n)?'
+        read ANSW
+        echo
+        if [ "$ANSW" == "y" ]
+        then
+            echo Delete all error logs...
+            for file in $(ls $LOGDIR | grep 'error.log');
+            do
+                echo Delete file $LOGDIR/$file...
+                rm -r $LOGDIR/$file
+            done
+        else
+            echo Skip error logs...
+        fi
+    else
+        echo Abort...
+        exit 1
+    fi
+fi
+
+
 ARRAY=()
-#for f in $(cut -d' ' -f6 $APPLICATIONLOG)
-for f in $(ls $LOGDIR | grep -v poppins.log)
+echo
+echo Search orphaned log files...
+for f in $(ls $LOGDIR | grep -v error.log | grep -v poppins.log)
 do
     logfile=$(echo $f | tr -d '"')
     # check if backup exists
     snapshot=$(echo $(basename $logfile) | rev | cut -d. -f4- | rev)
     # check if logfile exists
-    if [[ -f $LOGDIR$logfile  ]]
+    if [[ -f $LOGDIR/$logfile ]]
     then
         # check if snapshot still exists
         if [[ -z $(find $ROOTDIR -name $snapshot -print -quit) ]]
         then
-#            echo NO napshot found!
-            ARRAY[$[${#ARRAY[@]}]]=$LOGDIR$logfile
-#        else
-#            echo Snapshot found.
+            ARRAY[$[${#ARRAY[@]}]]=$LOGDIR/$logfile
         fi
     fi
 done
@@ -107,22 +140,24 @@ number_to_delete=${#ARRAY[@]}
 DELETE=false
 if [[ number_to_delete -gt 0 ]]
 then
-    echo Orphaned log files:
     for (( i=0;i<${#ARRAY[@]};i++))
     do
         file=${ARRAY[${i}]}
         echo $file
     done
-    echo $number_to_delete orphaned log files found.
+    echo
+    echo $number_to_delete 'orphaned success|warning log files found!'
+    echo
     if [[ $INTERACTIVE == "true" ]]
     then
         echo 'Do you want to remove these files (y/n)?'
         read ANSW
+        echo
         if [ "$ANSW" == "y" ]
         then
            DELETE=true
         else
-            echo Aborted
+            echo Abort...
             exit
         fi
     else
@@ -140,8 +175,7 @@ then
     for (( i=0;i<${#ARRAY[@]};i++))
     do
         file=${ARRAY[${i}]}
-        echo Deleting file $file...
+        echo Delete file $file...
         rm -r $file
     done
 fi
-echo Done!
