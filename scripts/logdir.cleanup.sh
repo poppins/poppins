@@ -126,8 +126,9 @@ do
     # check if logfile exists
     if [[ -f $LOGDIR/$logfile ]]
     then
+	hostdir="$(grep -m 1 -oP '(?<=hostdir = ).*' $LOGDIR/$logfile)"
         # check if snapshot still exists
-        if [[ -z $(find $ROOTDIR -name $snapshot -print -quit) ]]
+        if [[ ! -d "$hostdir/archive/$snapshot" ]]
         then
             ARRAY[$[${#ARRAY[@]}]]=$LOGDIR/$logfile
         fi
@@ -172,10 +173,5 @@ fi
 #####################################
 if [[ $DELETE == "true" ]]
 then
-    for (( i=0;i<${#ARRAY[@]};i++))
-    do
-        file=${ARRAY[${i}]}
-        echo Delete file $file...
-        rm -r $file
-    done
+    printf "%s\0" "${ARRAY[@]}" | xargs -0 -i rm -v '{}'
 fi
