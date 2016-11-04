@@ -128,10 +128,16 @@ do
     then
 	hostdir="$(grep -m 1 -oP '(?<=hostdir = ).*' $LOGDIR/$logfile)"
         # check if snapshot still exists
-        if [[ ! -d "$hostdir/archive/$snapshot" ]]
-        then
-            ARRAY[$[${#ARRAY[@]}]]=$LOGDIR/$logfile
-        fi
+	#echo -n check dir: $hostdir/archive/*${snapshot}*
+	for dir in $hostdir/archive/*${snapshot}*
+	do
+	    if [[ -d "$dir" ]]
+	    then
+		continue 2
+	    fi
+	done
+	echo adding: $LOGDIR/$logfile
+	ARRAY[$[${#ARRAY[@]}]]=$LOGDIR/$logfile
     fi
 done
 #####################################
