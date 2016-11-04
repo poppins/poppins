@@ -4,7 +4,7 @@
 #####################################
 if [ "$1" == "" ]
 then
-    echo 'Usage:' $0 ' -l {logdir} -r {rootdir} {-y}'
+    echo 'Usage:' $0 ' -l {logdir} {-y}'
     exit
 fi
 
@@ -13,7 +13,7 @@ fi
 #####################################
 INTERACTIVE=true
 
-while getopts l:r:y opt; do
+while getopts l:y opt; do
   case $opt in
       #####################################
       # option l
@@ -25,18 +25,6 @@ while getopts l:r:y opt; do
         if [[ ! -r $APPLICATIONLOG ]]
         then
           echo Illegal log file! Cannot access $APPLICATIONLOG!
-          exit 1
-        fi
-      ;;
-      #####################################
-      # option r
-      #####################################
-      r)
-        ROOTDIR=${OPTARG}
-        # validate
-        if [[ ! -r $ROOTDIR ]]
-        then
-          echo Illegal root dir! Cannot access $ROOTDIR!
           exit 1
         fi
       ;;
@@ -69,12 +57,6 @@ done
 if [[ "$LOGDIR" == "" ]]
 then
   echo No log directory specified!
-  exit 1
-fi
-# validate rootdir
-if [[ "$ROOTDIR" == "" ]]
-then
-  echo No root directory specified!
   exit 1
 fi
 #####################################
@@ -136,7 +118,6 @@ do
 		continue 2
 	    fi
 	done
-	echo adding: $LOGDIR/$logfile
 	ARRAY[$[${#ARRAY[@]}]]=$LOGDIR/$logfile
     fi
 done
