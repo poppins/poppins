@@ -91,8 +91,7 @@ then
             echo Skip error logs...
         fi
     else
-        echo Abort...
-        exit 1
+        echo Not deleting error logs while in non-interactive mode...
     fi
 fi
 
