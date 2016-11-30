@@ -133,23 +133,21 @@ class Application
         {
             $content = file_get_contents(dirname(__FILE__).'/../documentation.txt');
             preg_match('/SYNOPSIS\n(.*?)\n/s', $content, $match);
-            print "Usage: " . trim($match[1]) . "\n";
-            $this->abort();
+            $this->abort("Usage: " . trim($match[1]));
         }
         elseif($this->Options->is_set('h') || $this->Options->is_set('help'))
         {
             print $this->Settings->get('appname').' '.$this->Settings->get('version')."\n\n";
             $content = file_get_contents(dirname(__FILE__).'/../documentation.txt');
             print "$content\n";
-            $this->abort();
+            exit();
         }
         elseif($this->Options->is_set('v') || $this->Options->is_set('version'))
         {
             print $this->Settings->get('appname').' version '.$this->Settings->get('version')."\n";
             $content = file_get_contents(dirname(__FILE__).'/../license.txt');
 
-            print "$content\n";
-            $this->abort();
+            $this->abort($content);
         }
         //check tag
         if ($this->Options->is_set('t'))
@@ -1202,7 +1200,8 @@ class Application
         {
             $message .= "\n";
         }
-        die($message);
+	fwrite(STDERR, $message);
+        die(1);
     }
 
     /**
@@ -1393,8 +1392,7 @@ class Application
         //last newline
         $content [] = "";
         //output
-        print implode("\n", $content);
-        $this->abort();
+        $this->abort(implode("\n", $content));
     }
 
     /**
