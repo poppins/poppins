@@ -1392,7 +1392,7 @@ class Application
         //last newline
         $content [] = "";
         //output
-        $this->abort(implode("\n", $content));
+        exit(implode("\n", $content));
     }
 
     /**
