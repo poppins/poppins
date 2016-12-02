@@ -84,3 +84,29 @@ OPTIONS
 
     -v
         Print Poppins version.
+
+### Cleaning up old log files ###
+
+SYNOPSIS
+
+    scripts/logdir.cleanup.sh  -l {logdir} [ -y ]
+
+DESCRIPTION
+
+This script serves the purpose of cleaning up log old log files. Once old snapshots are rotated away, the log files from the backup jobs that created them are no longer useful. logdir.cleanup.sh will analyze the log files of succeeded backups, and propose to delete those whose snapshots have disappeared from your system. Optionally, it will also let you remove the logs of failed backups.
+
+Take care when removing logs from backups that ended with an ERROR state! They might contain useful information about how or why your backup failed. Since a backup job in ERROR state never has snapshots (Poppins does not create snapshots based on a failed backup), logdir.cleanup.sh has no way of telling which log files are old enough to delete!
+
+EXAMPLES
+
+    logdir.cleanup.sh -l /root/poppins.d/logs 
+    logdir.cleanup.sh -l /var/log/poppins -y
+
+OPTIONS
+
+    -l {logdir}
+         Required: directory where you configured Poppins to save its log files.
+
+    -a
+        Automatic: old log files will be deleted, but logs of failed backup jobs will be left alone.
+
