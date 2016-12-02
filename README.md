@@ -100,7 +100,7 @@ Take care when removing logs from backups that ended with an ERROR state! They m
 EXAMPLES
 
     logdir.cleanup.sh -l /root/poppins.d/logs 
-    logdir.cleanup.sh -l /var/log/poppins -y
+    logdir.cleanup.sh -l /var/log/poppins -a
 
 OPTIONS
 
