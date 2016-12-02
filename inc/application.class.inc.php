@@ -54,6 +54,33 @@ class Application
     }
 
     /**
+     * Abort the execution of the application. No further output or
+     * logs will be written. The application quits on stdout with an
+     * error code 1 as default.
+     *
+     * @param string $message The (error) message.
+     * @param integer $error_code The (error) code.
+     */
+    function abort($message = '', $error_code = 1)
+    {
+        if($message)
+        {
+            $message .= "\n";
+        }
+        // redirect output to out/error
+        switch($error_code)
+        {
+            case 0:
+                fwrite(STDOUT, $message);
+                break;
+            default:
+                fwrite(STDERR, $message);
+                break;
+        }
+        die($error_code);
+    }
+
+    /**
      * Will take a string and add a color to it.
      *
      * @param $string
@@ -94,7 +121,9 @@ class Application
     }
 
     /**
-     * Quit the application unsuccessfully
+     * The application fails while attempting to make backups.
+     * This function records the error and type and will invoke
+     * the final function in which te error will be recorded and logged.
      *
      * @param string $message The (error) message
      * @param string $error Type of error
@@ -147,7 +176,8 @@ class Application
             print $this->Settings->get('appname').' version '.$this->Settings->get('version')."\n";
             $content = file_get_contents(dirname(__FILE__).'/../license.txt');
 
-            $this->abort($content);
+            //abort without error code
+            $this->abort($content, 0);
         }
         //check tag
         if ($this->Options->is_set('t'))
@@ -1190,28 +1220,80 @@ class Application
     }
 
     /**
-     * Abort the application.
+     * Finally quit the application. Once committed to run the backup script,
+     * regardless if backups succeeded or failed, this function is invoked.
+     * Disk usage is reported if desired, a summary is written on stdout and
+     * logged to the appropriate log files.
      *
-     * @param string $message The (error) message.
-     */
-    function abort($message = '')
-    {
-        if($message)
-        {
-            $message .= "\n";
-        }
-	fwrite(STDERR, $message);
-        die(1);
-    }
-
-    /**
-     * Quit the application.
-     *
-     * @param bool $error Set to true if unsuccessful
+     * @param bool $error Set to true if backups unsuccessful.
      */
     function quit($error = false)
     {
-        //debug output
+        #####################################
+        # REPORT DISK USAGE
+        #####################################
+        if(!$error)
+        {
+            //list disk usage
+            if ($this->Config->get('log.local-disk-usage'))
+            {
+                $this->out('Disk Usage', 'header');
+                // disk usage dirs
+                $dirs = [];
+                // $dirs ['rsync directory (total size)'] []= $this->Config->get('local.rsyncdir');
+                $dirs ['/files'] []= $this->Config->get('local.rsyncdir').'/files';
+                if($this->Config->get('mysql.enabled'))
+                {
+                    // total MySQL
+                    $path = $this->Config->get('local.rsyncdir').'/mysql';
+                    $dirs ['/mysql'] []= $path;
+                    // mysqldumps seperately
+                    $scan = scandir($path);
+                    foreach($scan as $s)
+                    {
+                        if(!in_array($s, ['.', '..']))
+                        {
+                            $path1 = $path.'/'.$s;
+                            if(is_dir($path1))
+                            {
+                                $scan1 = scandir($path1);
+                                foreach($scan1 as $s1)
+                                {
+                                    if(!in_array($s1, ['.', '..'])) $dirs['mysqldumps'] []= $path1.'/'.$s1;
+                                }
+                            }
+                        }
+                    }
+                }
+                // iterate all directories
+                $i = 1;
+                foreach($dirs as $section => $subdirs)
+                {
+                    $this->out("Disk usage of $section...");
+                    foreach($subdirs as $subdir)
+                    {
+                        if (file_exists($subdir))
+                        {
+                            $du = $this->Cmd->exe("du -sh $subdir");
+                            $this->out("$du");
+                        }
+                        else
+                        {
+                            $this->warn('Cannot determine disk usage of ' . $subdir);
+                        }
+                    }
+                    // space
+                    if($i < count($dirs))
+                    {
+                        $this->out();
+                    }
+                    $i++;
+                }
+            }
+        }
+        #####################################
+        # LIST ALL COMMANDS
+        #####################################
         if($this->Options->is_set('d'))
         {
             $this->out("List commands", 'header');
@@ -1223,7 +1305,9 @@ class Application
             $output []= "";
             $this->out(implode("\n", $output));
         }
-        //title
+        #####################################
+        # SUMMARY
+        #####################################
         $this->out('Summary', 'header');
         //report warnings
         $warnings = count($this->warnings);
@@ -1258,7 +1342,9 @@ class Application
             $this->out("SCRIPT FAILED!", 'final-error');
 
         }
-        //add tag to log file
+        #####################################
+        # ADD TAG
+        #####################################
         if ($this->Options->is_set('t') && $this->Options->get('t'))
         {
             $tag = $this->Options->get('t');
@@ -1269,7 +1355,9 @@ class Application
             $tag = '(untagged)';
         }
         $this->log("Run tagged as: $tag");
-        //time script
+        #####################################
+        # TIME SCRIPT
+        #####################################
         $lapse = date('U') - $this->Settings->get('start_time');
         $lapse = gmdate('H:i:s', $lapse);
         $this->log("Script time: $lapse (HH:MM:SS)");
@@ -1277,7 +1365,7 @@ class Application
         //final header
         $this->out($this->Settings->get('appname').' v'.$this->Settings->get('version'). " - SCRIPT ENDED " . date('Y-m-d H:i:s'), 'title');
         #####################################
-        # OUTPUT
+        # COLORIZE OUTPUT
         #####################################
         //colorize output
         $content = [];
@@ -1295,7 +1383,7 @@ class Application
             $i++;
         }
         #####################################
-        # CLEANUP
+        # CLEANUP LOCK FILE
         #####################################
         //remove LOCK file if exists
         if ($error != 'LOCKED' && file_exists(@$this->Config->get('local.hostdir') . "/LOCK"))
@@ -1387,79 +1475,15 @@ class Application
         {
             $content []= 'WARNING! Cannot write to logfile. Log directory not created!';
         }
+        #####################################
+        # QUIT
+        #####################################
         //be polite
         $content [] = "Bye...";
         //last newline
         $content [] = "";
         //output
         exit(implode("\n", $content));
-    }
-
-    /**
-     * Quit the application successfully
-     */
-    function succeed()
-    {
-        #####################################
-        # DISK USAGE
-        #####################################
-        //list disk usage
-        if ($this->Config->get('log.local-disk-usage'))
-        {
-            $this->out('Disk Usage', 'header');
-            // disk usage dirs
-            $dirs = [];
-            // $dirs ['rsync directory (total size)'] []= $this->Config->get('local.rsyncdir');
-            $dirs ['/files'] []= $this->Config->get('local.rsyncdir').'/files';
-            if($this->Config->get('mysql.enabled'))
-            {
-                // total MySQL
-                $path = $this->Config->get('local.rsyncdir').'/mysql';
-                $dirs ['/mysql'] []= $path;
-                // mysqldumps seperately
-                $scan = scandir($path);
-                foreach($scan as $s)
-                {
-                    if(!in_array($s, ['.', '..']))
-                    {
-                        $path1 = $path.'/'.$s;
-                        if(is_dir($path1))
-                        {
-                            $scan1 = scandir($path1);
-                            foreach($scan1 as $s1)
-                            {
-                                if(!in_array($s1, ['.', '..'])) $dirs['mysqldumps'] []= $path1.'/'.$s1;
-                            }
-                        }
-                    }
-                }
-            }
-            // iterate all directories
-            $i = 1;
-            foreach($dirs as $section => $subdirs)
-            {
-                $this->out("Disk usage of $section...");
-                foreach($subdirs as $subdir)
-                {
-                    if (file_exists($subdir))
-                    {
-                        $du = $this->Cmd->exe("du -sh $subdir");
-                        $this->out("$du");
-                    }
-                    else
-                    {
-                        $this->warn('Cannot determine disk usage of ' . $subdir);
-                    }
-                }
-                // space
-                if($i < count($dirs))
-                {
-                    $this->out();
-                }
-                $i++;
-            }
-        }
-        $this->quit();
     }
 
     /**
