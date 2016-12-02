@@ -89,7 +89,7 @@ OPTIONS
 
 SYNOPSIS
 
-    scripts/logdir.cleanup.sh  -l {logdir} [ -y ]
+    scripts/logdir.cleanup.sh  -l {logdir} [ -a ]
 
 DESCRIPTION
 
