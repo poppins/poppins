@@ -4,7 +4,7 @@
 #####################################
 if [ "$1" == "" ]
 then
-    echo 'Usage:' $0 ' -l {logdir} {-y}'
+    echo 'Usage:' $0 ' -l {logdir} {-a}'
     exit
 fi
 
@@ -13,7 +13,7 @@ fi
 #####################################
 INTERACTIVE=true
 
-while getopts l:y opt; do
+while getopts l:a opt; do
   case $opt in
       #####################################
       # option l
@@ -29,9 +29,9 @@ while getopts l:y opt; do
         fi
       ;;
       #####################################
-      # option y
+      # option a
       #####################################
-      y)
+      a)
         INTERACTIVE=false
       ;;
       #####################################
