@@ -11,7 +11,7 @@ Written by Bruno Dooms, Frank Van Damme
 
 ### Summary ###
 * Quick summary: Poppins - backup script with incremental snapshots. 
-* Version: Puppet version 0.1
+* Version: Poppins version 0.2 beta
 
 ### Install ###
 Step 1. Make sure following packages are installed on the backup server: 
