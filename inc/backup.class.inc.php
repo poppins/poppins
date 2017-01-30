@@ -262,6 +262,8 @@ class Backup
             else
             {
                 $this->App->out('Remote job done... (' . date('Y-m-d H:i:s') . ')');
+                $this->App->out();
+                $this->App->out("OK!", 'simple-success');
             }
         }
         else
