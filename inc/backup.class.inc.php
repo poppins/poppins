@@ -59,8 +59,6 @@ class Backup
      */
     function init()
     {
-        //pre backup
-        $this->jobs();
         //create dirs
         $this->prepare();
         //remote system info
@@ -213,26 +211,27 @@ class Backup
     }
 
     /**
-     * Execute remote jobs/scripts before backups
+     * Execute remote jobs/scripts before/after backups
+     * @param string $type Pre or Post backup job
      */
-    function jobs()
+    function jobs($type = 'pre')
     {
         #####################################
         # PRE BACKUP JOBS
         #####################################
         // do our thing on the remote end.
-        $this->App->out('pre backup script', 'header');
+        $this->App->out($type.' backup script', 'header');
         //check if jobs
-        if ($this->Config->get('remote.pre-backup-script'))
+        if ($this->Config->get('remote.'.$type.'-backup-script'))
         {
             $this->App->out('Remote script configured, validating...');
-            $script = $this->Config->get('remote.pre-backup-script');
+            $script = $this->Config->get('remote.'.$type.'-backup-script');
             //test if the script exists
             $this->Cmd->exe("'test -x $script'", true);
             if ($this->Cmd->is_error())
             {
                 $message = 'Remote script is not an executable script!';
-                if ($this->Config->get('remote.pre-backup-onfail') == 'abort')
+                if ($this->Config->get('remote.'.$type.'-backup-onfail') == 'abort')
                 {
                     $this->App->fail($message);
                 }
@@ -251,7 +250,7 @@ class Backup
             if ($this->Cmd->is_error())
             {
                 $message = 'Remote script did not run successfully!';
-                if ($this->Config->get('remote.pre-backup-onfail') == 'abort')
+                if ($this->Config->get('remote.'.$type.'-backup-onfail') == 'abort')
                 {
                     $this->App->fail($message);
                 }
@@ -267,7 +266,7 @@ class Backup
         }
         else
         {
-            $this->App->out('No pre backup script defined...');
+            $this->App->out('No '.$type.' backup script defined...');
         }
     }
 
@@ -388,6 +387,10 @@ class Backup
     function prepare()
     {
         #####################################
+        # PRE BACKUP JOB
+        #####################################
+        $this->jobs('pre');
+        #####################################
         # SYNC DIR
         #####################################
         if (!file_exists($this->rsyncdir))
@@ -456,6 +459,8 @@ class Backup
         #####################################
         # RSYNC DIRECTORIES
         #####################################
+        //errors
+        $FATAL_ERRORS = [];
         foreach ($this->Config->get('included') as $source => $target)
         {
             //exclude dirs
@@ -543,10 +548,33 @@ class Backup
             {
                 $message = $this->get_rsync_status($this->Cmd->exit_status);
                 $message = (empty($message)) ? '' : ': "' . $message . '".';
-                $this->App->fail("Rsync of $sourcedir directory failed! Aborting! Exit status " . $this->Cmd->exit_status . $message);
+                $output = "Rsync of $sourcedir directory failed! Aborting! Exit status " . $this->Cmd->exit_status . $message;
+                $this->App->warn($output);
+                $FATAL_ERRORS [] = $output;
             }
         }
-        $this->App->out("OK!", 'simple-success');
+        //check fatal error
+        if(count($FATAL_ERRORS))
+        {
+            // even if the backup job failed, execute the post-script!
+            if($this->Config->get('remote.backup-onfail') == 'abort')
+            {
+                // do not run post-backup script
+                $this->App->warn("Will not run post-backup script!");
+            }
+            else
+            {
+                // run post-backup scripts
+                $this->jobs('post');
+            }
+            $this->App->fail('One or more rsync jobs have failed!', 'simple-error');
+        }
+        else
+        {
+            $this->App->out("OK!", 'simple-success');
+            // run post-backup scripts
+            $this->jobs('post');
+        }
     }
 
 }

@@ -58,6 +58,16 @@
           "validate":{"allowed":["abort", "continue"]}
         },
         {
+          "name":"backup-onfail",
+          "default":"abort",
+          "validate":{"allowed":["abort", "continue"]}
+        },
+        {
+          "name":"post-backup-script",
+          "default":"",
+          "validate":{"absolutepath?":"error"}
+        },
+        {
           "name":"retry-count",
           "default":0,
           "validate":{"integer":"error"}
