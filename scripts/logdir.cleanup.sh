@@ -107,7 +107,7 @@ do
     # check if logfile exists
     if [[ -f $LOGDIR/$logfile ]]
     then
-	hostdir="$(grep -m 1 -oP '(?<=hostdir = ).*' $LOGDIR/$logfile)"
+	hostdir="$(zgrep -m 1 -oP '(?<=hostdir = ).*' $LOGDIR/$logfile)"
         # check if snapshot still exists
 	#echo -n check dir: $hostdir/archive/*${snapshot}*
 	for dir in $hostdir/archive/*${snapshot}*
