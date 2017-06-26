@@ -1121,6 +1121,17 @@ class Application
     }
 
     /**
+     * Add a notice
+     *
+     * @param $message The message
+     */
+    function notice($message)
+    {
+        $this->notices []= $message;
+        $this->out($message, $type = 'notice');
+    }
+
+    /**
      * Add style to the message
      *
      * @param string $message The message
@@ -1199,6 +1210,16 @@ class Application
                 $content [] = $l;
                 $content [] = $message;
                 $content [] = $l;
+                break;
+            case 'notice':
+                $fgcolor = 'brown';
+                $l1 = '| | | | | | | | | | | | | | | | | | NOTICE | | | | | | | | | | | | | | | | | | | | | | | |';
+                $l2 = '| | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | ';
+                $content [] = '';
+                $content [] = $l1;
+                $content [] = wordwrap($message, 85);
+                $content [] = $l2;
+                $content [] = '';
                 break;
             case 'warning':
                 $fgcolor = 'brown';
