@@ -171,7 +171,7 @@ class Backup
                     $contents = $this->Cmd->exe("'cd $dir;cat .my.cnf*'", true);
                     if (in_array($contents, $cached))
                     {
-                        $this->App->warn("Found duplicate mysql config file $dir/$configfile...");
+                        $this->App->notice("Found duplicate mysql config file $dir/$configfile...");
                         continue;
                     }
                     else

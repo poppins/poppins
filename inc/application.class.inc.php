@@ -251,6 +251,9 @@ class Application
         }
         else
         {
+            $this->out('Check ini file...');
+            $configfile_full_path = $this->Cmd->exe('readlink -f '.$configfile);
+            $this->out(' '.$configfile_full_path);
             //check for illegal comments in ini file
             $lines = file($configfile);
             $i = 1;
@@ -607,7 +610,7 @@ class Application
                         if (isset($directive['default']))
                         {
                             $this->Config->set([$section['name'], $directive['name']], $directive['default']);
-                            $this->warn($message.' Using default value ('.$directive['default'].').');
+                            $this->notice($message.' Using default value ('.$directive['default'].').');
                         }
                         else
                         {
@@ -991,7 +994,7 @@ class Application
             {
                 foreach ($diff as $file => $type)
                 {
-                    $this->warn("Directory $dir not clean, unknown $type '$file'..");
+                    $this->notice("Directory $dir not clean, unknown $type '$file'..");
                 }
             }
         }
@@ -1018,7 +1021,7 @@ class Application
             {
                 foreach ($diff as $file => $type)
                 {
-                    $this->warn("Directory $dir not clean, unknown $type '$file'..");
+                    $this->notice("Directory $dir not clean, unknown $type '$file'..");
                 }
             }
         }
@@ -1037,7 +1040,7 @@ class Application
                 {
                     foreach ($diff as $file => $type)
                     {
-                        $this->warn("Directory $dir not clean, found $type '$file' while MySQL is disabled..");
+                        $this->notice("Directory $dir not clean, found $type '$file' while MySQL is disabled..");
                     }
                 }
             }
@@ -1056,7 +1059,7 @@ class Application
             {
                 foreach ($diff as $file => $type)
                 {
-                    $this->warn("Directory $dir not clean, unknown $type '$file'..");
+                    $this->notice("Directory $dir not clean, unknown $type '$file'..");
                 }
             }
         }
@@ -1181,6 +1184,10 @@ class Application
                 $fgcolor = 'light_red';
                 $content [] = "-----------> " . $message;
                 break;
+            case 'indent-notice':
+                $fgcolor = 'blue';
+                $content [] = "-----------> " . $message;
+                break;
             case 'indent-warning':
                 $fgcolor = 'brown';
                 $content [] = "-----------> " . $message;
@@ -1195,6 +1202,10 @@ class Application
                 break;
             case 'simple-info':
                 $fgcolor = 'cyan';
+                $content [] = $message;
+                break;
+            case 'simple-notice':
+                $fgcolor = 'blue';
                 $content [] = $message;
                 break;
             case 'simple-warning':
@@ -1212,9 +1223,9 @@ class Application
                 $content [] = $l;
                 break;
             case 'notice':
-                $fgcolor = 'brown';
-                $l1 = '| | | | | | | | | | | | | | | | | | NOTICE | | | | | | | | | | | | | | | | | | | | | | | |';
-                $l2 = '| | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | | ';
+                $fgcolor = 'blue';
+                $l1 = '++++++++++++++++++++++++++++++++++++ NOTICE ++++++++++++++++++++++++++++++++++++++++++++++';
+                $l2 = '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++';
                 $content [] = '';
                 $content [] = $l1;
                 $content [] = wordwrap($message, 85);
@@ -1330,6 +1341,18 @@ class Application
         # SUMMARY
         #####################################
         $this->out('Summary', 'header');
+        //report notices
+        $notices = count($this->notices);
+        //output all notices
+        if($notices)
+        {
+            $this->out("NOTICES (".$notices.")", 'simple-notice');
+            foreach($this->notices as $n)
+            {
+                $this->out($n, 'indent-notice');
+            }
+            $this->out();
+        }
         //report warnings
         $warnings = count($this->warnings);
         //output all warnings
