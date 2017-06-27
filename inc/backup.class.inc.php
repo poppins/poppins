@@ -430,9 +430,46 @@ class Backup
         #####################################
         if (!$this->Config->get('rsync.cross-filesystem-boundaries'))
         {
-            $output = $this->Cmd->exe("'mount'", true);
-
+            $mounts = [];
+            $output = $this->Cmd->exe("'cat /proc/mounts'", true);
+            $output = explode("\n", $output);
+            foreach($output as $o)
+            {
+                if (preg_match('/^\//', $o))
+                {
+                    $p = explode(' ', $o);
+                    $mounts []= $p[1];
+                }
+            }
+            $excluded = [];
+            foreach ($this->Config->get('excluded') as $k => $v)
+            {
+                $excluded []=  $k.'/'.$v;
+            }
+            $included = array_keys($this->Config->get('included'));
+            // check if mounts are in backup paths
+            foreach($mounts as $m)
+            {
+                # the mount is not specified in included or excluded
+                if(!in_array($m, $included) && !in_array($m, $excluded))
+                {
+                    $parent_found = 0;
+                    foreach ($included as $i)
+                    {
+                        if (0 === strpos($m, $i))
+                        {
+                            $parent_found = 1;
+                        }
+                    }
+                    if($parent_found)
+                    {
+                        $this->App->warn('Will not traverse filesystems! Mounted filesystem detected: "'.$m.'""');
+                    }
+                }
+            }
         }
+
+
         #####################################
         # RSYNC OPTIONS
         #####################################
