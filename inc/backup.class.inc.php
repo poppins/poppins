@@ -459,7 +459,7 @@ class Backup
                     {
                         if (0 === strpos($m, $i))
                         {
-                            if (0 !== strpos($m, $excluded_paths[$i]))
+                            if (!array_key_exists ($i, $excluded_paths) || 0 !== strpos($m, $excluded_paths[$i]))
                             {
                                 $crossed_path = $i;
                             }
@@ -467,7 +467,7 @@ class Backup
                     }
                     if($crossed_path)
                     {
-                        $this->App->warn('Will not traverse filesystems! Mounted filesystem detected in path "'.$crossed_path.'": "'.$m.'""');
+                        $this->App->warn('Mounted filesystem "'.$m.'" found in path "'.$crossed_path.'". Will not traverse filesystems!');
                     }
                 }
             }
