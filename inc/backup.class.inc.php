@@ -467,7 +467,7 @@ class Backup
                     }
                     if($crossed_path)
                     {
-                        $this->App->warn('Mounted filesystem "'.$m.'" found in path "'.$crossed_path.'". Will not traverse filesystems!');
+                        $this->App->warn('Mounted filesystem "'.$m.'" found in path "'.$crossed_path.'". Will not cross filesystem boundaries...');
                     }
                 }
             }
