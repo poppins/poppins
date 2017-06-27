@@ -453,26 +453,30 @@ class Backup
             }
             $included = array_keys($this->Config->get('included'));
             // check if mounts are in backup paths
-            $mounts []= '/home/brdooms/Test/POPPINS-TESTDIR/bla/mnt';
+            // $mounts []= '/home/brdooms/Test/POPPINS-TESTDIR/bla/mnt'; # debug
             foreach($mounts as $m)
             {
                 # the mount is not specified in included
                 if(!in_array($m, $included))
                 {
+                    # initiate crossed_path
                     $crossed_path = false;
                     foreach ($included as $i)
                     {
+                        # check if mount is found in included dirs
                         if (0 === strpos($m, $i))
                         {
+                            # check if mount is excluded
                             if (!array_key_exists ($i, $excluded_paths))
                             {
                                 $crossed_path = $i;
                             }
                             else
                             {
+                                # check all excluded paths
                                 foreach($excluded_paths[$i] as $p)
                                 {
-                                    //echo "path: $p\n";
+                                    # compare the paths with mounts
                                     if(0 === strpos($m, $p))
                                     {
                                         $crossed_path = false;
@@ -486,6 +490,7 @@ class Backup
                             }
                         }
                     }
+                    # crossed filesystem found
                     if($crossed_path)
                     {
                         $this->App->warn('Mount point "'.$m.'" found in path "'.$crossed_path.'". Will not cross filesystem boundaries!');
