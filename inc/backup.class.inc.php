@@ -445,7 +445,7 @@ class Backup
             $excluded_paths = [];
             foreach ($excluded as $k => $v)
             {
-                $excluded_paths []=  rtrim($k, '/').'/'.$v;
+                $excluded_paths [$k]=  rtrim($k, '/').'/'.$v;
             }
             $included = array_keys($this->Config->get('included'));
             var_dump($mounts);
