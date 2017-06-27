@@ -451,6 +451,7 @@ class Backup
             var_dump($mounts);
             var_dump($included);
             var_dump($excluded);
+            var_dump($excluded_paths);
             // check if mounts are in backup paths
             foreach($mounts as $m)
             {
