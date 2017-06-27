@@ -141,7 +141,7 @@ class Backup
             $this->Cmd->exe("'cd $dir' 2>&1", true);
             if ($this->Cmd->is_error())
             {
-                $this->App->warn('Cannot access remote dir ' . $dir . '...');
+                $this->App->warn('Cannot access remote MySQL configdir ' . $dir . '...');
             }
             else
             {
@@ -467,7 +467,7 @@ class Backup
                     }
                     if($crossed_path)
                     {
-                        $this->App->warn('Mounted filesystem "'.$m.'" found in path "'.$crossed_path.'". Will not cross filesystem boundaries...');
+                        $this->App->warn('Mounted filesystem "'.$m.'" found in path "'.$crossed_path.'". Will not cross filesystem boundaries!);
                     }
                 }
             }
