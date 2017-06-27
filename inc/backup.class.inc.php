@@ -426,6 +426,14 @@ class Backup
         //rsync backups
         $this->App->out('Sync data', 'header');
         #####################################
+        # CHECK FOR MOUNTED FILESYSTEMS
+        #####################################
+        if (!$this->Config->get('rsync.cross-filesystem-boundaries'))
+        {
+            $output = $this->Cmd->exe("'mount'", true);
+
+        }
+        #####################################
         # RSYNC OPTIONS
         #####################################
         //options
@@ -443,6 +451,10 @@ class Backup
         if ($this->Config->get('rsync.verbose'))
         {
             $o [] = "-v";
+        }
+        if (!$this->Config->get('rsync.cross-filesystem-boundaries'))
+        {
+            $o [] = "-x";
         }
         if ($this->Config->get('rsync.hardlinks'))
         {
@@ -492,7 +504,7 @@ class Backup
             $sourcedir = stripslashes($sourcedir);
             $targetdir = stripslashes($targetdir);
             $remote_connection = ($this->Config->get('remote.ssh'))? $this->Config->get('remote.user') . "@" . $this->Config->get('remote.host') .':':'';
-            $cmd = "rsync $rsync_options -xas $excluded " .$remote_connection. "\"$sourcedir\" '$targetdir' 2>&1";
+            $cmd = "rsync $rsync_options -as $excluded " .$remote_connection. "\"$sourcedir\" '$targetdir' 2>&1";
             $this->App->out($cmd);
             //obviously try rsync at least once :)
             $attempts = 1;

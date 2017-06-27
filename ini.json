@@ -127,6 +127,11 @@
           "validate":{"integer":"error"}
         },
         {
+          "name":"cross-filesystem-boundaries",
+          "default":false,
+          "validate":{"boolean":"error"}
+        },
+        {
           "name":"hardlinks",
           "default":false,
           "validate":{"boolean":"error"}

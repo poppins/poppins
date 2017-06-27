@@ -610,7 +610,16 @@ class Application
                         if (isset($directive['default']))
                         {
                             $this->Config->set([$section['name'], $directive['name']], $directive['default']);
-                            $this->notice($message.' Using default value ('.$directive['default'].').');
+                            //convert boolean to yes/no
+                            if(is_bool($directive['default']))
+                            {
+                                $default = ($directive['default'])? 'yes':'no';
+                            }
+                            else
+                            {
+                                $default = (empty($directive['default']))? 0:$directive['default'];
+                            }
+                            $this->notice($message.' Using default value ('.$default.').');
                         }
                         else
                         {
@@ -630,6 +639,14 @@ class Application
             if ($k != $k1)
             {
                 $this->fail("You must escape white space in [included] section!");
+            }
+        }
+        //validate path of excluded section
+        foreach ($this->Config->get('excluded') as $k => $v)
+        {
+            if (preg_match('/^\./', $v) || preg_match('/^\//', $v))
+            {
+                $this->fail("You must use a relative path in the [excluded] section! '$v' not supported!");
             }
         }
         //validate spaces in values of included/excluded section
