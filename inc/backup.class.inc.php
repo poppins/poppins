@@ -448,6 +448,9 @@ class Backup
                 $excluded_paths []=  rtrim($k, '/').'/'.$v;
             }
             $included = array_keys($this->Config->get('included'));
+            var_dumo($mounts);
+            var_dumo($included);
+            var_dumo($excluded);
             // check if mounts are in backup paths
             foreach($mounts as $m)
             {
