@@ -1404,6 +1404,27 @@ class Application
 
         }
         #####################################
+        # EXIT STATUS
+        #####################################
+        // final state
+        if($error)
+        {
+            $exit_status = 'error';
+        }
+        elseif(count($this->warnings))
+        {
+            $exit_status = 'warning';
+        }
+        elseif(count($this->notices))
+        {
+            $exit_status = 'notice';
+        }
+        else
+        {
+            $exit_status = 'success';
+        }
+        $this->out('Exit status: "'.strtoupper($exit_status).'"');
+        #####################################
         # ADD TAG
         #####################################
         if ($this->Options->is_set('t') && $this->Options->get('t'))
@@ -1460,18 +1481,9 @@ class Application
         {
             if ($this->Config->get('local.hostdir-name'))
             {
-                //output
-                if($error)
-                {
-                    $result = 'error';
-                }
-                else
-                {
-                    $result = (count($this->warnings))? 'warning':'success';
-                }
-
+                // create log file
                 $hostdirname = ($this->Config->get('local.hostdir-name'))? $this->Config->get('local.hostdir-name'):$this->Config->get('remote.host');
-                $logfile_host = $this->Config->get('local.logdir') . '/' . $hostdirname . '.' . date('Y-m-d_His', $this->Settings->get('start_time')) . '.poppins.' . $result. '.log';
+                $logfile_host = $this->Config->get('local.logdir') . '/' . $hostdirname . '.' . date('Y-m-d_His', $this->Settings->get('start_time')) . '.poppins.' . $exit_status. '.log';
                 $logfile_app = $this->Config->get('local.logdir') . '/poppins.log';
                 $content [] = 'Create logfile for host ' . $logfile_host . '...';
                 //create file
@@ -1497,7 +1509,7 @@ class Application
                     $m = [];
                     $m['timestamp'] = date('Y-m-d H:i:s');
                     $m['host'] = $hostdirname;
-                    $m['result'] = strtoupper($result);
+                    $m['result'] = strtoupper($exit_status);
                     $m['lapse'] = $lapse;
                     $m['logfile'] = $logfile_host;
                     //compress host logfile?
@@ -1519,7 +1531,7 @@ class Application
                         $m[$k] = '"'.$v.'"';
                     }
                     $message = implode(' ', array_values($m))."\n";
-                    $content [] = 'Add "'.$result.'" to logfile ' . $logfile_app . '...';
+                    $content [] = 'Add "'.$exit_status.'" to logfile ' . $logfile_app . '...';
                     $success = file_put_contents($logfile_app, $message, FILE_APPEND | LOCK_EX);
                     if (!$success)
                     {
