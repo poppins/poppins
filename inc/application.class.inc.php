@@ -632,6 +632,17 @@ class Application
         #####################################
         # VALIDATE INCLUDED/EXCLUDED
         #####################################
+        //check if empty
+        foreach(['included', 'excluded'] as $section)
+        {
+            foreach ($this->Config->get($section) as $k => $v)
+            {
+                if (empty(trim($v)))
+                {
+                    $this->fail("Value may not be empty in [$section] section!");
+                }
+            }
+        }
         //validate spaces in keys of included section
         foreach ($this->Config->get('included') as $k => $v)
         {
@@ -647,7 +658,11 @@ class Application
             $exploded = explode(',', $v);
             foreach($exploded as $e)
             {
-                if (preg_match('/^\./', $e) || preg_match('/^\//', $e))
+                if(empty(trim($e)))
+                {
+                    $this->fail("Paths in the [excluded] section may not be empty! '$v' not supported!");
+                }
+                elseif (preg_match('/^\./', $e) || preg_match('/^\//', $e))
                 {
                     $this->fail("You must use a relative path in the [excluded] section! '$v' not supported!");
                 }

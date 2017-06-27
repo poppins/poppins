@@ -453,7 +453,6 @@ class Backup
             }
             $included = array_keys($this->Config->get('included'));
             // check if mounts are in backup paths
-            // $mounts []= '/home/brdooms/Test/POPPINS-TESTDIR/bla/mnt'; # debug
             foreach($mounts as $m)
             {
                 # the mount is not specified in included
