@@ -448,30 +448,26 @@ class Backup
                 $excluded_paths [$k]=  rtrim($k, '/').'/'.$v;
             }
             $included = array_keys($this->Config->get('included'));
-            var_dump($mounts);
-            var_dump($included);
-            var_dump($excluded);
-            var_dump($excluded_paths);
             // check if mounts are in backup paths
             foreach($mounts as $m)
             {
                 # the mount is not specified in included
                 if(!in_array($m, $included))
                 {
-                    $cross = false;
+                    $crossed_path = false;
                     foreach ($included as $i)
                     {
                         if (0 === strpos($m, $i))
                         {
                             if (0 !== strpos($m, $excluded_paths[$i]))
                             {
-                                $cross = true;
+                                $crossed_path = $i;
                             }
                         }
                     }
-                    if($cross)
+                    if($crossed_path)
                     {
-                        $this->App->warn('Will not traverse filesystems! Mounted filesystem detected: "'.$m.'""');
+                        $this->App->warn('Will not traverse filesystems! Mounted filesystem detected in path "'.$crossed_path.'": "'.$m.'""');
                     }
                 }
             }
