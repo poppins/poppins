@@ -643,6 +643,21 @@ class Application
                 }
             }
         }
+        //check trailing slashes
+        foreach(['included', 'excluded'] as $section)
+        {
+            foreach ($this->Config->get($section) as $k => $v)
+            {
+                if (preg_match('/\/$/', $k))
+                {
+                    $this->fail("Directive '".$k."' in [$section] section may not contain a trailing slash!");
+                }
+                elseif (preg_match('/\/$/', $v))
+                {
+                    $this->fail("Value '".$v."' in [$section] section may not contain a trailing slash!");
+                }
+            }
+        }
         //validate spaces in keys of included section
         foreach ($this->Config->get('included') as $k => $v)
         {
@@ -665,6 +680,10 @@ class Application
                 elseif (preg_match('/^\./', $e) || preg_match('/^\//', $e))
                 {
                     $this->fail("You must use a relative path in the [excluded] section! '$v' not supported!");
+                }
+                elseif (preg_match('/\/$/', $e))
+                {
+                    $this->fail("Value '".$e."' in [exluded] section may not contain a trailing slash!");
                 }
             }
         }

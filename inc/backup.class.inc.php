@@ -448,7 +448,7 @@ class Backup
                 $exploded = explode(',', $v);
                 foreach($exploded as $e)
                 {
-                    $excluded_paths[$k][]=  rtrim($k, '/').'/'.$e;
+                    $excluded_paths[$k][]=  rtrim($k, '/').'/'.rtrim($e, '/');
                 }
             }
             $included = array_keys($this->Config->get('included'));
