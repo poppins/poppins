@@ -644,9 +644,13 @@ class Application
         //validate path of excluded section
         foreach ($this->Config->get('excluded') as $k => $v)
         {
-            if (preg_match('/^\./', $v) || preg_match('/^\//', $v))
+            $exploded = explode(',', $v);
+            foreach($exploded as $e)
             {
-                $this->fail("You must use a relative path in the [excluded] section! '$v' not supported!");
+                if (preg_match('/^\./', $e) || preg_match('/^\//', $e))
+                {
+                    $this->fail("You must use a relative path in the [excluded] section! '$v' not supported!");
+                }
             }
         }
         //validate spaces in values of included/excluded section

@@ -445,10 +445,15 @@ class Backup
             $excluded_paths = [];
             foreach ($excluded as $k => $v)
             {
-                $excluded_paths [$k]=  rtrim($k, '/').'/'.$v;
+                $exploded = explode(',', $v);
+                foreach($exploded as $e)
+                {
+                    $excluded_paths[$k][]=  rtrim($k, '/').'/'.$e;
+                }
             }
             $included = array_keys($this->Config->get('included'));
             // check if mounts are in backup paths
+            $mounts []= '/home/brdooms/Test/POPPINS-TESTDIR/bla/mnt';
             foreach($mounts as $m)
             {
                 # the mount is not specified in included
@@ -459,9 +464,25 @@ class Backup
                     {
                         if (0 === strpos($m, $i))
                         {
-                            if (!array_key_exists ($i, $excluded_paths) || 0 !== strpos($m, $excluded_paths[$i]))
+                            if (!array_key_exists ($i, $excluded_paths))
                             {
                                 $crossed_path = $i;
+                            }
+                            else
+                            {
+                                foreach($excluded_paths[$i] as $p)
+                                {
+                                    //echo "path: $p\n";
+                                    if(0 === strpos($m, $p))
+                                    {
+                                        $crossed_path = false;
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        $crossed_path = $i;
+                                    }
+                                }
                             }
                         }
                     }
