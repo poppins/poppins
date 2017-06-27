@@ -459,7 +459,7 @@ class Backup
                     {
                         if (0 === strpos($m, $i))
                         {
-                            if (0 !== strpos($excluded_paths[$i], $m))
+                            if (0 !== strpos($m, $excluded_paths[$i]))
                             {
                                 $cross = true;
                             }
