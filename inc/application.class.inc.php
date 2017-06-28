@@ -648,11 +648,11 @@ class Application
         {
             foreach ($this->Config->get($section) as $k => $v)
             {
-                if (preg_match('/.+\/$/', $k))
+                if (preg_match('/.+\/$/', trim($k)))
                 {
                     $this->fail("Directive '".$k."' in [$section] section may not contain a trailing slash!");
                 }
-                elseif (preg_match('/\/$/', $v))
+                elseif (preg_match('/.+\/$/', trim($v)))
                 {
                     $this->fail("Value '".$v."' in [$section] section may not contain a trailing slash!");
                 }
