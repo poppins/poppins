@@ -677,7 +677,7 @@ class Application
                 {
                     $this->fail("Paths in the [excluded] section may not be empty! '$v' not supported!");
                 }
-                elseif (preg_match('/^\./', $e) || preg_match('/^\//', $e))
+                elseif (preg_match('/^\.?\//', $e))
                 {
                     $this->fail("You must use a relative path in the [excluded] section! '$v' not supported!");
                 }
