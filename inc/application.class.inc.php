@@ -358,6 +358,14 @@ class Application
             $this->fail("No directories configured for backup nor MySQL configured. Nothing to do...");
         }
         #####################################
+        # CHECK REMOTE HOST
+        #####################################
+        //check remote host - no need to get any further if not configured
+        if ($this->Config->get('remote.host') == '')
+        {
+            $this->fail("Remote host is not configured!");
+        }
+        #####################################
         # VALIDATE INI FILE
         #####################################
         $json_file = dirname(__FILE__).'/../ini.json';
@@ -748,11 +756,6 @@ class Application
             //validate user
             $remote_user  = ($this->Config->get('remote.user'))? $this->Config->get('remote.user'):$this->Cmd->exe('whoami');
             $this->Config->set('remote.user', $remote_user);
-            //check remote host
-            if ($this->Config->get('remote.host') == '')
-            {
-                $this->fail("Remote host is not configured!!");
-            }
             //first ssh attempt
             $this->out('Check ssh connection...');
             //obviously try ssh at least once :)
@@ -952,7 +955,7 @@ class Application
         #####################################
         # SET HOST DIR
         #####################################
-        $this->out('Check host...');
+        $this->out('Set hostdir...');
         if($this->Config->get('local.hostdir-name'))
         {
             $dirname = $this->Config->get('local.hostdir-name');
@@ -963,7 +966,7 @@ class Application
         }
         else
         {
-            $this->fail('No hostdir-name [local] configured!');
+            $this->fail('Cannot create hostdir! hostdir-name [local] or host [remote] not configured!');
         }
         $this->Config->set('local.hostdir-name', $dirname);
         //check if no slashes
@@ -971,6 +974,10 @@ class Application
         {
             $this->fail("hostname may not contain slashes!");
         }
+        #####################################
+        # SETUP LOCAL DIRS
+        #####################################
+        $this->out('Setup local directories...');
         $this->Config->set('local.hostdir', $this->Config->get('local.rootdir') . '/' . $this->Config->get('local.hostdir-name'));
         //validate host dir and create if required
         switch ($this->Config->get('local.snapshot-backend'))
@@ -1517,11 +1524,11 @@ class Application
         //write to log
         if (is_dir($this->Config->get('local.logdir')))
         {
-            if ($this->Config->get('local.hostdir-name'))
+            if ($this->Config->get('remote.host'))
             {
                 // create log file
-                $hostdirname = ($this->Config->get('local.hostdir-name'))? $this->Config->get('local.hostdir-name'):$this->Config->get('remote.host');
-                $logfile_host = $this->Config->get('local.logdir') . '/' . $hostdirname . '.' . date('Y-m-d_His', $this->Settings->get('start_time')) . '.poppins.' . $exit_status. '.log';
+                $host = ($this->Config->get('local.hostdir-name'))? $this->Config->get('local.hostdir-name'):$this->Config->get('remote.host');
+                $logfile_host = $this->Config->get('local.logdir') . '/' . $host . '.' . date('Y-m-d_His', $this->Settings->get('start_time')) . '.poppins.' . $exit_status. '.log';
                 $logfile_app = $this->Config->get('local.logdir') . '/poppins.log';
                 $content [] = 'Create logfile for host ' . $logfile_host . '...';
                 //create file
@@ -1546,7 +1553,7 @@ class Application
                     }
                     $m = [];
                     $m['timestamp'] = date('Y-m-d H:i:s');
-                    $m['host'] = $hostdirname;
+                    $m['host'] = $host;
                     $m['result'] = strtoupper($exit_status);
                     $m['lapse'] = $lapse;
                     $m['logfile'] = $logfile_host;
@@ -1579,7 +1586,7 @@ class Application
             }
             else
             {
-                $content []= 'WARNING! Cannot write to host logfile. Hostdir not set!';
+                $content []= 'WARNING! Cannot write to host logfile. Remote host is not configured!';
             }
         }
         else
