@@ -34,6 +34,8 @@ class Application
     private $errors = [];
     //Warnings
     private $warnings = [];
+    //Notices
+    private $notices = [];
 
     /**
      * Application constructor.
