@@ -28,11 +28,8 @@ See example.poppins.ini:
 
 ### MAJOR CHANGES
 
-* Directive "cross-filesystem-boundaries" is added to the rsync section. A warning is triggered when trying to cross 
-mounted filesystem boundaries if this option is set to "no", which is the default. You must explicitly exclude these 
-directories or set the option to "yes".
-* Notices are introduced. Less important messages (dir unclean, incomplete configuration, duplicate mysql config file) 
-will be considered notices rather than warnings.
+* Directive "cross-filesystem-boundaries" is added to the rsync section. A warning is triggered when trying to cross mounted filesystem boundaries if this option is set to "no", which is the default. You must explicitly exclude these directories or set the option to "yes".
+* Notices are introduced. Less important messages (dir unclean, incomplete configuration, duplicate mysql config file) will be considered notices rather than warnings.
 * Post backup script added. May or not be run depending on a successful rsync run.
 
 ### MINOR CHANGES
@@ -128,11 +125,8 @@ In cron you can add a timestamp like so:
 
 ### MAJOR CHANGES
 
-* The "filesystem" directive in the [local] section was removed as it is too
-ambiguous. It is replaced by the "snapshot-backend" directive. Rotation logic is
-not necessarily related to filesystem.
-* Local rsync (no ssh connection) is supported, enabling you to schedule a
-backup on your local machine. E.g. using an external drive for backups.
+* The "filesystem" directive in the [local] section was removed as it is too ambiguous. It is replaced by the "snapshot-backend" directive. Rotation logic is not necessarily related to filesystem.
+* Local rsync (no ssh connection) is supported, enabling you to schedule a backup on your local machine. E.g. using an external drive for backups.
 * Ssh connection attempts and retry timeouts implemented.
 * Strong validation of the ini file was added. 
     * Illegal or potentially dangerous characters (such as '*') are not allowed.
