@@ -428,6 +428,7 @@ class Backup
         #####################################
         # CHECK FOR MOUNTED FILESYSTEMS
         #####################################
+        $this->App->out('Check mounted remote filesystems...');
         if (!$this->Config->get('rsync.cross-filesystem-boundaries'))
         {
             $mounts = [];
@@ -441,6 +442,7 @@ class Backup
                     $mounts []= $p[1];
                 }
             }
+            $this->App->out(implode(", ", $mounts), 'simple-indent');
             $excluded = $this->Config->get('excluded');
             $excluded_paths = [];
             foreach ($excluded as $k => $v)
@@ -455,11 +457,11 @@ class Backup
             // check if mounts are in backup paths
             foreach($mounts as $m)
             {
+                # initiate crossed_path
+                $crossed_path = false;
                 # the mount is not specified in included
                 if(!in_array($m, $included))
                 {
-                    # initiate crossed_path
-                    $crossed_path = false;
                     foreach ($included as $i)
                     {
                         # check if mount is found in included dirs
@@ -497,11 +499,11 @@ class Backup
                 }
             }
         }
-
-
         #####################################
         # RSYNC OPTIONS
         #####################################
+        $this->App->out('Run rsync commands...');
+        $this->App->out();
         //options
         $o = [];
         $o [] = "--delete-excluded --delete --numeric-ids";
