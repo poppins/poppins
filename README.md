@@ -40,8 +40,8 @@ Step 6. Make sure following packages are installed on remote machine:
 
 Step 7. Establish a passwordless ssh login to the client using ssh-keygen & ssh-copy-id.
 
-### MySQL ###
-If using MySQL backups, credentials must be provided in the .my.cnf file. See config.
+### mysql ###
+If using mysql backups, credentials must be provided in the .my.cnf file. See config.
 
 ### Upgrade ###
 Navigate to the poppins source directory and pull the code with the hg command: 

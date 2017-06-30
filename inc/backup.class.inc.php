@@ -10,7 +10,7 @@
 
 /**
  * Class Backup contains functions used to backup files and directories,
- * metadata and MySQL databses.
+ * metadata and mysql databses.
  */
 class Backup
 {
@@ -112,7 +112,7 @@ class Backup
     }
 
     /**
-     * Backup remote MySQL databases
+     * Backup remote mysql databases
      */
     function mysql()
     {
@@ -141,7 +141,7 @@ class Backup
             $this->Cmd->exe("'cd $dir' 2>&1", true);
             if ($this->Cmd->is_error())
             {
-                $this->App->warn('Cannot access remote MySQL configdir ' . $dir . '...');
+                $this->App->warn('Cannot access remote mysql configdir ' . $dir . '...');
             }
             else
             {
@@ -202,7 +202,7 @@ class Backup
                         }
                         else
                         {
-                            $this->App->fail("MySQL backup failed!");
+                            $this->App->fail("mysql backup failed!");
                         }
                     }
                 }

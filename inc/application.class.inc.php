@@ -357,7 +357,7 @@ class Application
         //check if there is anything to do
         if(!count($this->Config->get('included')) && !$this->Config->get('mysql.enabled'))
         {
-            $this->fail("No directories configured for backup nor MySQL configured. Nothing to do...");
+            $this->fail("No directories configured for backup nor mysql configured. Nothing to do...");
         }
         #####################################
         # CHECK REMOTE HOST
@@ -450,7 +450,7 @@ class Application
                                         //check characters
                                         if (!Validator::contains_allowed_characters($p))
                                         {
-                                            $this->fail("Illegal character found in MySQL configdir path '$value' in directive " . $directive['name'] . " [" . $section['name'] . "]!");
+                                            $this->fail("Illegal character found in mysql configdir path '$value' in directive " . $directive['name'] . " [" . $section['name'] . "]!");
                                         }
                                     }
                                 }
@@ -1104,7 +1104,7 @@ class Application
                 {
                     foreach ($diff as $file => $type)
                     {
-                        $this->notice("Directory $dir not clean, found $type '$file' while MySQL is disabled..");
+                        $this->notice("Directory $dir not clean, found $type '$file' while mysql is disabled..");
                     }
                 }
             }
@@ -1340,7 +1340,7 @@ class Application
                 $dirs ['/files'] []= $this->Config->get('local.rsyncdir').'/files';
                 if($this->Config->get('mysql.enabled'))
                 {
-                    // total MySQL
+                    // total mysql
                     $path = $this->Config->get('local.rsyncdir').'/mysql';
                     $dirs ['/mysql'] []= $path;
                     // mysqldumps seperately
