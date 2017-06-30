@@ -311,7 +311,7 @@ class Rotator
                 elseif(!in_array($vv, ['.', '..']) && $validate)
                 {
                     $type = filetype($found);
-                    $this->App->warn("Directory $archivedir/$k unclean, unknown $type $found");
+                    $this->App->notice("Directory $archivedir/$k unclean, unknown $type $found");
                 }
             }
         }
@@ -530,7 +530,7 @@ class ZfsRotator extends Rotator
                         }
                         elseif(!in_array($s, ['.', '..']) && $validate)
                         {
-                            $this->App->warn("Directory $archivedir unclean, unknown snapshot $s");
+                            $this->App->notice("Directory $archivedir unclean, unknown snapshot $s");
                         }
                     }
                 }

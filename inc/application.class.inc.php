@@ -34,6 +34,8 @@ class Application
     private $errors = [];
     //Warnings
     private $warnings = [];
+    //Notices
+    private $notices = [];
 
     /**
      * Application constructor.
@@ -251,6 +253,9 @@ class Application
         }
         else
         {
+            $this->out('Check ini file...');
+            $configfile_full_path = $this->Cmd->exe('readlink -f '.$configfile);
+            $this->out(' '.$configfile_full_path);
             //check for illegal comments in ini file
             $lines = file($configfile);
             $i = 1;
@@ -353,6 +358,14 @@ class Application
         if(!count($this->Config->get('included')) && !$this->Config->get('mysql.enabled'))
         {
             $this->fail("No directories configured for backup nor MySQL configured. Nothing to do...");
+        }
+        #####################################
+        # CHECK REMOTE HOST
+        #####################################
+        //check remote host - no need to get any further if not configured
+        if ($this->Config->get('remote.host') == '')
+        {
+            $this->fail("Remote host is not configured!");
         }
         #####################################
         # VALIDATE INI FILE
@@ -607,7 +620,16 @@ class Application
                         if (isset($directive['default']))
                         {
                             $this->Config->set([$section['name'], $directive['name']], $directive['default']);
-                            $this->warn($message.' Using default value ('.$directive['default'].').');
+                            //convert boolean to yes/no
+                            if(is_bool($directive['default']))
+                            {
+                                $default = ($directive['default'])? 'yes':'no';
+                            }
+                            else
+                            {
+                                $default = (empty($directive['default']))? 0:$directive['default'];
+                            }
+                            $this->notice($message.' Using default value ('.$default.').');
                         }
                         else
                         {
@@ -620,6 +642,32 @@ class Application
         #####################################
         # VALIDATE INCLUDED/EXCLUDED
         #####################################
+        //check if empty
+        foreach(['included', 'excluded'] as $section)
+        {
+            foreach ($this->Config->get($section) as $k => $v)
+            {
+                if (empty(trim($v)))
+                {
+                    $this->fail("Value may not be empty in [$section] section!");
+                }
+            }
+        }
+        //check trailing slashes
+        foreach(['included', 'excluded'] as $section)
+        {
+            foreach ($this->Config->get($section) as $k => $v)
+            {
+                if (preg_match('/.+\/$/', trim($k)))
+                {
+                    $this->fail("Directive '".$k."' in [$section] section may not contain a trailing slash!");
+                }
+                elseif (preg_match('/.+\/$/', trim($v)))
+                {
+                    $this->fail("Value '".$v."' in [$section] section may not contain a trailing slash!");
+                }
+            }
+        }
         //validate spaces in keys of included section
         foreach ($this->Config->get('included') as $k => $v)
         {
@@ -627,6 +675,26 @@ class Application
             if ($k != $k1)
             {
                 $this->fail("You must escape white space in [included] section!");
+            }
+        }
+        //validate path of excluded section
+        foreach ($this->Config->get('excluded') as $k => $v)
+        {
+            $exploded = explode(',', $v);
+            foreach($exploded as $e)
+            {
+                if(empty(trim($e)))
+                {
+                    $this->fail("Paths in the [excluded] section may not be empty! '$v' not supported!");
+                }
+                elseif (preg_match('/^\.?\//', $e))
+                {
+                    $this->fail("You must use a relative path in the [excluded] section! '$v' not supported!");
+                }
+                elseif (preg_match('/\/$/', $e))
+                {
+                    $this->fail("Value '".$e."' in [exluded] section may not contain a trailing slash!");
+                }
             }
         }
         //validate spaces in values of included/excluded section
@@ -690,11 +758,6 @@ class Application
             //validate user
             $remote_user  = ($this->Config->get('remote.user'))? $this->Config->get('remote.user'):$this->Cmd->exe('whoami');
             $this->Config->set('remote.user', $remote_user);
-            //check remote host
-            if ($this->Config->get('remote.host') == '')
-            {
-                $this->fail("Remote host is not configured!!");
-            }
             //first ssh attempt
             $this->out('Check ssh connection...');
             //obviously try ssh at least once :)
@@ -894,7 +957,7 @@ class Application
         #####################################
         # SET HOST DIR
         #####################################
-        $this->out('Check host...');
+        $this->out('Set hostdir...');
         if($this->Config->get('local.hostdir-name'))
         {
             $dirname = $this->Config->get('local.hostdir-name');
@@ -905,7 +968,7 @@ class Application
         }
         else
         {
-            $this->fail('No hostdir-name [local] configured!');
+            $this->fail('Cannot create hostdir! hostdir-name [local] or host [remote] not configured!');
         }
         $this->Config->set('local.hostdir-name', $dirname);
         //check if no slashes
@@ -913,6 +976,10 @@ class Application
         {
             $this->fail("hostname may not contain slashes!");
         }
+        #####################################
+        # SETUP LOCAL DIRS
+        #####################################
+        $this->out('Setup local directories...');
         $this->Config->set('local.hostdir', $this->Config->get('local.rootdir') . '/' . $this->Config->get('local.hostdir-name'));
         //validate host dir and create if required
         switch ($this->Config->get('local.snapshot-backend'))
@@ -991,7 +1058,7 @@ class Application
             {
                 foreach ($diff as $file => $type)
                 {
-                    $this->warn("Directory $dir not clean, unknown $type '$file'..");
+                    $this->notice("Directory $dir not clean, unknown $type '$file'..");
                 }
             }
         }
@@ -1018,7 +1085,7 @@ class Application
             {
                 foreach ($diff as $file => $type)
                 {
-                    $this->warn("Directory $dir not clean, unknown $type '$file'..");
+                    $this->notice("Directory $dir not clean, unknown $type '$file'..");
                 }
             }
         }
@@ -1037,7 +1104,7 @@ class Application
                 {
                     foreach ($diff as $file => $type)
                     {
-                        $this->warn("Directory $dir not clean, found $type '$file' while MySQL is disabled..");
+                        $this->notice("Directory $dir not clean, found $type '$file' while MySQL is disabled..");
                     }
                 }
             }
@@ -1056,7 +1123,7 @@ class Application
             {
                 foreach ($diff as $file => $type)
                 {
-                    $this->warn("Directory $dir not clean, unknown $type '$file'..");
+                    $this->notice("Directory $dir not clean, unknown $type '$file'..");
                 }
             }
         }
@@ -1121,6 +1188,17 @@ class Application
     }
 
     /**
+     * Add a notice
+     *
+     * @param $message The message
+     */
+    function notice($message)
+    {
+        $this->notices []= $message;
+        $this->out($message, $type = 'notice');
+    }
+
+    /**
      * Add style to the message
      *
      * @param string $message The message
@@ -1170,6 +1248,10 @@ class Application
                 $fgcolor = 'light_red';
                 $content [] = "-----------> " . $message;
                 break;
+            case 'indent-notice':
+                $fgcolor = 'blue';
+                $content [] = "-----------> " . $message;
+                break;
             case 'indent-warning':
                 $fgcolor = 'brown';
                 $content [] = "-----------> " . $message;
@@ -1186,6 +1268,10 @@ class Application
                 $fgcolor = 'cyan';
                 $content [] = $message;
                 break;
+            case 'simple-notice':
+                $fgcolor = 'blue';
+                $content [] = $message;
+                break;
             case 'simple-warning':
                 $fgcolor = 'brown';
                 $content [] = $message;
@@ -1199,6 +1285,16 @@ class Application
                 $content [] = $l;
                 $content [] = $message;
                 $content [] = $l;
+                break;
+            case 'notice':
+                $fgcolor = 'blue';
+                $l1 = '++++++++++++++++++++++++++++++++++++ NOTICE ++++++++++++++++++++++++++++++++++++++++++++++';
+                $l2 = '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++';
+                $content [] = '';
+                $content [] = $l1;
+                $content [] = wordwrap($message, 85);
+                $content [] = $l2;
+                $content [] = '';
                 break;
             case 'warning':
                 $fgcolor = 'brown';
@@ -1309,6 +1405,18 @@ class Application
         # SUMMARY
         #####################################
         $this->out('Summary', 'header');
+        //report notices
+        $notices = count($this->notices);
+        //output all notices
+        if($notices)
+        {
+            $this->out("NOTICES (".$notices.")", 'simple-notice');
+            foreach($this->notices as $n)
+            {
+                $this->out($n, 'indent-notice');
+            }
+            $this->out();
+        }
         //report warnings
         $warnings = count($this->warnings);
         //output all warnings
@@ -1342,6 +1450,27 @@ class Application
             $this->out("SCRIPT FAILED!", 'final-error');
 
         }
+        #####################################
+        # EXIT STATUS
+        #####################################
+        // final state
+        if($error)
+        {
+            $exit_status = 'error';
+        }
+        elseif(count($this->warnings))
+        {
+            $exit_status = 'warning';
+        }
+        elseif(count($this->notices))
+        {
+            $exit_status = 'notice';
+        }
+        else
+        {
+            $exit_status = 'success';
+        }
+        $this->out('Exit status: "'.strtoupper($exit_status).'"');
         #####################################
         # ADD TAG
         #####################################
@@ -1397,20 +1526,11 @@ class Application
         //write to log
         if (is_dir($this->Config->get('local.logdir')))
         {
-            if ($this->Config->get('local.hostdir-name'))
+            if ($this->Config->get('remote.host'))
             {
-                //output
-                if($error)
-                {
-                    $result = 'error';
-                }
-                else
-                {
-                    $result = (count($this->warnings))? 'warning':'success';
-                }
-
-                $hostdirname = ($this->Config->get('local.hostdir-name'))? $this->Config->get('local.hostdir-name'):$this->Config->get('remote.host');
-                $logfile_host = $this->Config->get('local.logdir') . '/' . $hostdirname . '.' . date('Y-m-d_His', $this->Settings->get('start_time')) . '.poppins.' . $result. '.log';
+                // create log file
+                $host = ($this->Config->get('local.hostdir-name'))? $this->Config->get('local.hostdir-name'):$this->Config->get('remote.host');
+                $logfile_host = $this->Config->get('local.logdir') . '/' . $host . '.' . date('Y-m-d_His', $this->Settings->get('start_time')) . '.poppins.' . $exit_status. '.log';
                 $logfile_app = $this->Config->get('local.logdir') . '/poppins.log';
                 $content [] = 'Create logfile for host ' . $logfile_host . '...';
                 //create file
@@ -1435,8 +1555,8 @@ class Application
                     }
                     $m = [];
                     $m['timestamp'] = date('Y-m-d H:i:s');
-                    $m['host'] = $hostdirname;
-                    $m['result'] = strtoupper($result);
+                    $m['host'] = $host;
+                    $m['result'] = strtoupper($exit_status);
                     $m['lapse'] = $lapse;
                     $m['logfile'] = $logfile_host;
                     //compress host logfile?
@@ -1458,7 +1578,7 @@ class Application
                         $m[$k] = '"'.$v.'"';
                     }
                     $message = implode(' ', array_values($m))."\n";
-                    $content [] = 'Add "'.$result.'" to logfile ' . $logfile_app . '...';
+                    $content [] = 'Add "'.$exit_status.'" to logfile ' . $logfile_app . '...';
                     $success = file_put_contents($logfile_app, $message, FILE_APPEND | LOCK_EX);
                     if (!$success)
                     {
@@ -1468,7 +1588,7 @@ class Application
             }
             else
             {
-                $content []= 'WARNING! Cannot write to host logfile. Hostdir not set!';
+                $content []= 'WARNING! Cannot write to host logfile. Remote host is not configured!';
             }
         }
         else

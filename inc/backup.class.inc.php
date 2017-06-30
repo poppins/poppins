@@ -141,7 +141,7 @@ class Backup
             $this->Cmd->exe("'cd $dir' 2>&1", true);
             if ($this->Cmd->is_error())
             {
-                $this->App->warn('Cannot access remote dir ' . $dir . '...');
+                $this->App->warn('Cannot access remote MySQL configdir ' . $dir . '...');
             }
             else
             {
@@ -171,7 +171,7 @@ class Backup
                     $contents = $this->Cmd->exe("'cd $dir;cat .my.cnf*'", true);
                     if (in_array($contents, $cached))
                     {
-                        $this->App->warn("Found duplicate mysql config file $dir/$configfile...");
+                        $this->App->notice("Found duplicate mysql config file $dir/$configfile...");
                         continue;
                     }
                     else
@@ -426,8 +426,84 @@ class Backup
         //rsync backups
         $this->App->out('Sync data', 'header');
         #####################################
+        # CHECK FOR MOUNTED FILESYSTEMS
+        #####################################
+        $this->App->out('Check mounted remote filesystems...');
+        if (!$this->Config->get('rsync.cross-filesystem-boundaries'))
+        {
+            $mounts = [];
+            $output = $this->Cmd->exe("'cat /proc/mounts'", true);
+            $output = explode("\n", $output);
+            foreach($output as $o)
+            {
+                if (preg_match('/^\//', $o))
+                {
+                    $p = explode(' ', $o);
+                    $mounts []= $p[1];
+                }
+            }
+            $this->App->out(implode(", ", $mounts), 'simple-indent');
+            $excluded = $this->Config->get('excluded');
+            $excluded_paths = [];
+            foreach ($excluded as $k => $v)
+            {
+                $exploded = explode(',', $v);
+                foreach($exploded as $e)
+                {
+                    $excluded_paths[$k][]=  rtrim($k, '/').'/'.rtrim($e, '/');
+                }
+            }
+            $included = array_keys($this->Config->get('included'));
+            // check if mounts are in backup paths
+            foreach($mounts as $m)
+            {
+                # initiate crossed_path
+                $crossed_path = false;
+                # the mount is not specified in included
+                if(!in_array($m, $included))
+                {
+                    foreach ($included as $i)
+                    {
+                        # check if mount is found in included dirs
+                        if (0 === strpos($m, $i))
+                        {
+                            # check if mount is excluded
+                            if (!array_key_exists ($i, $excluded_paths))
+                            {
+                                $crossed_path = $i;
+                            }
+                            else
+                            {
+                                # check all excluded paths
+                                foreach($excluded_paths[$i] as $p)
+                                {
+                                    # compare the paths with mounts
+                                    if(0 === strpos($m, $p))
+                                    {
+                                        $crossed_path = false;
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        $crossed_path = $i;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    # crossed filesystem found
+                    if($crossed_path)
+                    {
+                        $this->App->warn('Mount point "'.$m.'" found in path "'.$crossed_path.'". Will not cross filesystem boundaries!');
+                    }
+                }
+            }
+        }
+        #####################################
         # RSYNC OPTIONS
         #####################################
+        $this->App->out('Run rsync commands...');
+        $this->App->out();
         //options
         $o = [];
         $o [] = "--delete-excluded --delete --numeric-ids";
@@ -443,6 +519,10 @@ class Backup
         if ($this->Config->get('rsync.verbose'))
         {
             $o [] = "-v";
+        }
+        if (!$this->Config->get('rsync.cross-filesystem-boundaries'))
+        {
+            $o [] = "-x";
         }
         if ($this->Config->get('rsync.hardlinks'))
         {
@@ -492,7 +572,7 @@ class Backup
             $sourcedir = stripslashes($sourcedir);
             $targetdir = stripslashes($targetdir);
             $remote_connection = ($this->Config->get('remote.ssh'))? $this->Config->get('remote.user') . "@" . $this->Config->get('remote.host') .':':'';
-            $cmd = "rsync $rsync_options -xas $excluded " .$remote_connection. "\"$sourcedir\" '$targetdir' 2>&1";
+            $cmd = "rsync $rsync_options -as $excluded " .$remote_connection. "\"$sourcedir\" '$targetdir' 2>&1";
             $this->App->out($cmd);
             //obviously try rsync at least once :)
             $attempts = 1;
