@@ -775,12 +775,14 @@ class Application
             }
             $i = 1;
             $success = false;
+            $user = $this->Config->get('remote.user');
+            $host = $this->Config->get('remote.host');
             while ($i <= $attempts)
             {
                 $this->Cmd->exe("'echo OK'", true);
                 if ($this->Cmd->is_error())
                 {
-                    $this->warn("SSH connection failed!");
+                    $this->warn("SSH login attempt $user@$host failed!");
                     if ($i != $attempts)
                     {
                         $this->out("Will retry ssh attempt " . ($i + 1) . " of $attempts in $timeout second(s)...\n");
@@ -795,11 +797,9 @@ class Application
                 }
             }
             //check if successful
-            $user = $this->Config->get('remote.user');
-            $host = $this->Config->get('remote.host');
             if (!$success)
             {
-                $this->fail("SSH login attempt $user@$host failed! \nGenerate a key with ssh-keygen and ssh-copy-id to set up a passwordless ssh connection?");
+                $this->fail("SSH connection $user@$host failed! Generate a key with ssh-keygen and ssh-copy-id to set up a passwordless ssh connection?");
             }
         }
         //get remote os
