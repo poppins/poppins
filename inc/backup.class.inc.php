@@ -598,7 +598,7 @@ class Backup
                 {
                     $message = $this->get_rsync_status($this->Cmd->exit_status);
                     $message = (empty($message)) ? '' : ': "' . $message . '".';
-                    $this->App->warn("Rsync of $sourcedir directory exited with a non-zero status! Non fatal, will continue. Exit status: " . $this->Cmd->exit_status . $message);
+                    $this->App->notice("Rsync of $sourcedir directory exited with a non-zero status! Non fatal, will continue. Exit status: " . $this->Cmd->exit_status . $message);
                     $success = true;
                     break;
                 }
