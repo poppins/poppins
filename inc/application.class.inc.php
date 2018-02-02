@@ -254,7 +254,9 @@ class Application
         else
         {
             $this->out('Check ini file...');
-            $configfile_full_path = $this->Cmd->exe('readlink -f '.$configfile);
+            #echo $configfile."\n";
+            $configfile_full_path = $this->Cmd->exe('readlink -nf '.$configfile);
+            #die($configfile_full_path);
             $this->out(' '.$configfile_full_path);
             //check for illegal comments in ini file
             $lines = file($configfile);
@@ -271,9 +273,11 @@ class Application
             $config = parse_ini_file($configfile, 1);
             // TODO PHP > 5.6
             // $config = parse_ini_file($configfile, 1, INI_SCANNER_TYPED);
+            // if an error occured, this variable will be false
             if(!$config)
             {
-                $this->fail('Error parsing ini file!');
+                $error = error_get_last();
+                $this->fail('Error parsing ini file! Syntax? Message: '.$error['message']);
             }
             $this->Config->update($config);
             // check cli options of format --foo-bar
