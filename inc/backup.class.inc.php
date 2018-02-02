@@ -246,7 +246,7 @@ class Backup
                             {
                                 $matched = [];
                                 // no regex is used
-                                if(!preg_match('/^{.+}$/', $pattern))
+                                if(!preg_match('/^\/.+\/$/', $pattern))
                                 {
                                     if(in_array($pattern, $_databases['found']))
                                     {
@@ -256,9 +256,7 @@ class Backup
                                 // regex is used
                                 else
                                 {
-                                    $pattern = trim($pattern, '{}');
-                                    d($pattern);
-                                    $matched = preg_grep('/'.$pattern.'/', $_databases['found']);
+                                    $matched = preg_grep($pattern, $_databases['found']);
                                     d($matched);
                                 }
                                 if (!count($matched))
@@ -347,7 +345,7 @@ class Backup
                                     $this->App->fail('Cannot process '.$include_type.' table pattern: "'.$config.'". Database not included.');
                                 }
                                 // no regex is used
-                                if(!preg_match('/^.+\.{.+}$/', $config))
+                                if(!preg_match('/^.+\.\/.+\/$/', $config))
                                 {
                                     // match the table
                                     preg_match('/([^\.]+)$/', $config, $match);
@@ -361,9 +359,9 @@ class Backup
                                 else
                                 {
                                     // match the table pattern
-                                    preg_match('/{(.+)}$/', $config, $match);
-                                    $pattern = trim($match[0], '{}');
-                                    $matched = preg_grep('/'.$pattern.'/i', $_tables['found'][$db]);
+                                    preg_match('/\/(.+)\/$/', $config, $match);
+                                    $pattern = $match[0];
+                                    $matched = preg_grep($pattern, $_tables['found'][$db]);
                                 }
                                 // nothing found
                                 if (!count($matched))

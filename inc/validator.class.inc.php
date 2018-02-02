@@ -101,4 +101,15 @@ class Validator
     {
         return (empty($string) || preg_match("#^[A-Za-z0-9/\\\\ \-\._\+\pL]+$#u", $string))? true:false;
     }
+
+    /**
+     * Check if string is an absolute path
+     *
+     * @param $path The string to be validated
+     * @return bool Valid or not?
+     */
+    static function contains_trailing_slash($path)
+    {
+        return (preg_match('/[^\/]$/', $path))? true:false;
+    }
 }

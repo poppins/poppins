@@ -347,10 +347,11 @@ class Application
                         $this->warn('Config values may not contain spaces. Value for '.$kk.' ['.$k.'] is trimmed!');
                         $this->Config->set([$k, $kk], $vv1);
                     }
-                    //No trailing slashes
-                    if (preg_match('/\/$/', $vv))
+                    //No trailing slashes for certain sections
+                    $blacklist = ['local', 'included', 'excluded'];
+                    if (in_array($k, $blacklist) && preg_match('/\/$/', $vv))
                     {
-                        $this->fail("No trailing slashes allowed in config file! $kk = $vv...");
+                        //$this->fail("No trailing slashes allowed in config file! $kk = $vv...");
                     }
                 }
             }
@@ -570,6 +571,26 @@ class Application
                             {
                                 $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an absolute path!';
                                 if ($directive['validate']['absolutepath?'] == 'warning')
+                                {
+                                    $this->warn($message);
+                                }
+                                else
+                                {
+                                    $this->fail($message);
+                                }
+                            }
+                        }
+                        //TODO implement
+                        #####################################
+                        # NO TRAILING SLASH
+                        #####################################
+                        //exactly one absolute path
+                        if (isset($directive['validate']['notrailingslash']))
+                        {
+                            if (Validator::contains_trailing_slash($value))
+                            {
+                                $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] may not have a trailing slash!';
+                                if ($directive['validate']['absolutepath'] == 'warning')
                                 {
                                     $this->warn($message);
                                 }

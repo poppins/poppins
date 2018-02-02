@@ -5,7 +5,7 @@
       "directives":[
         {
           "name":"rootdir",
-          "validate":{"absolutepath":"error"}
+          "validate":{"absolutepath":"error","notrailingslash":"error"}
         },
         {
           "name":"logdir",
