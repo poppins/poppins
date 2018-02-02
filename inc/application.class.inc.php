@@ -580,17 +580,17 @@ class Application
                                 }
                             }
                         }
-                        //TODO implement
                         #####################################
                         # NO TRAILING SLASH
                         #####################################
                         //exactly one absolute path
-                        if (isset($directive['validate']['notrailingslash']))
+                        if (isset($directive['validate']['no_trailing_slash']))
                         {
                             if (Validator::contains_trailing_slash($value))
                             {
+                                echo 'testssss';
                                 $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] may not have a trailing slash!';
-                                if ($directive['validate']['absolutepath'] == 'warning')
+                                if ($directive['validate']['no_trailing_slash'] == 'warning')
                                 {
                                     $this->warn($message);
                                 }
@@ -683,11 +683,11 @@ class Application
         {
             foreach ($this->Config->get($section) as $k => $v)
             {
-                if (preg_match('/.+\/$/', trim($k)))
+                if (Validator::contains_trailing_slash(trim($k)))
                 {
                     $this->fail("Directive '".$k."' in [$section] section may not contain a trailing slash!");
                 }
-                elseif (preg_match('/.+\/$/', trim($v)))
+                elseif (Validator::contains_trailing_slash(trim($v)))
                 {
                     $this->fail("Value '".$v."' in [$section] section may not contain a trailing slash!");
                 }

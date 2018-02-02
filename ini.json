@@ -5,11 +5,11 @@
       "directives":[
         {
           "name":"rootdir",
-          "validate":{"absolutepath":"error","notrailingslash":"error"}
+          "validate":{"absolutepath":"error","no_trailing_slash":"error"}
         },
         {
           "name":"logdir",
-          "validate":{"absolutepath":"error"}
+          "validate":{"absolutepath":"error","no_trailing_slash":"error"}
         },
         {
           "name":"hostdir-name",

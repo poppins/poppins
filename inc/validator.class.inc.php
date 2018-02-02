@@ -103,13 +103,13 @@ class Validator
     }
 
     /**
-     * Check if string is an absolute path
+     * Check if string contains trailing slash
      *
      * @param $path The string to be validated
      * @return bool Valid or not?
      */
     static function contains_trailing_slash($path)
     {
-        return (preg_match('/[^\/]$/', $path))? true:false;
+        return (preg_match('/.+\/$/', $path))? true:false;
     }
 }
