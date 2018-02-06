@@ -52,7 +52,7 @@ class Application
         $this->Options = Options::get_instance();
 
         // App specific settings
-        $this->Settings = Settings::get_instance();
+        $this->Session = Session::get_instance();
     }
 
     /**
@@ -168,14 +168,14 @@ class Application
         }
         elseif($this->Options->is_set('h') || $this->Options->is_set('help'))
         {
-            print $this->Settings->get('appname').' '.$this->Settings->get('version')."\n\n";
+            print $this->Session->get('appname').' '.$this->Session->get('version')."\n\n";
             $content = file_get_contents(dirname(__FILE__).'/../documentation.txt');
             print "$content\n";
             exit();
         }
         elseif($this->Options->is_set('v') || $this->Options->is_set('version'))
         {
-            print $this->Settings->get('appname').' version '.$this->Settings->get('version')."\n";
+            print $this->Session->get('appname').' version '.$this->Session->get('version')."\n";
             $content = file_get_contents(dirname(__FILE__).'/../license.txt');
 
             //abort without error code
@@ -192,7 +192,7 @@ class Application
         #####################################
         # START
         #####################################
-        $this->out($this->Settings->get('appname').' v'.$this->Settings->get('version')." - SCRIPT STARTED " . date('Y-m-d H:i:s', $this->Settings->get('start_time')), 'title');
+        $this->out($this->Session->get('appname').' v'.$this->Session->get('version')." - SCRIPT STARTED " . date('Y-m-d H:i:s', $this->Session->get('start_time')), 'title');
         $this->out('Environment', 'header');
         #####################################
         # LOCAL ENVIRONMENT
@@ -208,14 +208,14 @@ class Application
          // PHP version
         $this->out('Check PHP version...');
         // full version e.g. 5.5.9-1ubuntu4.17
-        $this->Settings->set('php.version.full', PHP_VERSION);
+        $this->Session->set('php.version.full', PHP_VERSION);
         // display version - debugging purposes
-        $this->out($this->Settings->get('php.version.full'), 'simple-indent');
+        $this->out($this->Session->get('php.version.full'), 'simple-indent');
         // version id e.g. 505070
-        $this->Settings->set('php.version.id', PHP_VERSION_ID);
+        $this->Session->set('php.version.id', PHP_VERSION_ID);
         //check version < 5.6.1
         //  TODO implement deprecated - see parse_ini_file($configfile, 1, INI_SCANNER_TYPED);
-        if($this->Settings->get('php.version.id') < 506010)
+        if($this->Session->get('php.version.id') < 506010)
         {
             //$this->fail('PHP version 5.6.1 or higher required!');
         }
@@ -228,7 +228,7 @@ class Application
         // hostname
         $this->out('Check hostname...');
         $hostname = $this->Cmd->exe('hostname');
-        $this->Settings->set('local.hostname', $hostname);
+        $this->Session->set('local.hostname', $hostname);
         $this->out($hostname, 'simple-indent');
         $this->out();
         $this->out('OK!', 'simple-success');
@@ -603,32 +603,33 @@ class Application
                         #####################################
                         # MULTIPLE MYSQL PATHS
                         #####################################
-                        if (isset($directive['validate']['mysqlpaths']))
+                        if($this->Config->get('mysql.enabled'))
                         {
-                            //set to home if empty
-                            if(empty($value))
+                            if (isset($directive['validate']['mysqlpaths']))
                             {
-                                $this->Config->set([$section['name'], $directive['name']], $directive['default']);
-                            }
-                            else
-                            {
-                                $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] contains an illegal path!';
-                                $paths = explode(',', $value);
-                                if(!count($paths))
+                                //set to home if empty
+                                if (empty($value))
                                 {
-                                    $paths = [$value];
-                                }
-                                foreach($paths as $path)
+                                    $this->Config->set([$section['name'], $directive['name']], $directive['default']);
+                                } else
                                 {
-                                    if($path != '~' && !Validator::is_absolute_path($path) && (!Validator::is_relative_home_path($path)))
+                                    $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] contains an illegal path!';
+                                    $paths = explode(',', $value);
+                                    if (!count($paths))
                                     {
-                                        if ($directive['validate']['mysqlpaths'] == 'warning')
+                                        $paths = [$value];
+                                    }
+                                    foreach ($paths as $path)
+                                    {
+                                        if ($path != '~' && !Validator::is_absolute_path($path) && (!Validator::is_relative_home_path($path)))
                                         {
-                                            $this->warn($message);
-                                        }
-                                        else
-                                        {
-                                            $this->fail($message);
+                                            if ($directive['validate']['mysqlpaths'] == 'warning')
+                                            {
+                                                $this->warn($message);
+                                            } else
+                                            {
+                                                $this->fail($message);
+                                            }
                                         }
                                     }
                                 }
@@ -749,7 +750,7 @@ class Application
         foreach($this->Config->get('snapshots') as $k => $v)
         {
             //check syntax of key
-            if($k != 'incremental' && !preg_match('/^[0-9]+-(' .  implode("|", $this->Settings->get('intervals')).')$/', $k))
+            if($k != 'incremental' && !preg_match('/^[0-9]+-(' .  implode("|", $this->Session->get('intervals')).')$/', $k))
             {
                 $this->fail("Error in snapshot configuration, $k not supported!");
             }
@@ -1090,8 +1091,8 @@ class Application
         #####################################
         # CHECK IF META DIR IS CLEAN
         #####################################
-        $filebase = strtolower($this->Config->get('local.hostdir-name') . '.' . $this->Settings->get('appname'));
-        $this->Settings->set('meta.filebase', $filebase);
+        $filebase = strtolower($this->Config->get('local.hostdir-name') . '.' . $this->Session->get('appname'));
+        $this->Session->set('meta.filebase', $filebase);
         //check if meta dir is clean
         $dir = $this->Config->get('local.rsyncdir').'/meta';
         if(file_exists($dir))
@@ -1118,6 +1119,7 @@ class Application
         # CHECK IF MYSQL DIR IS CLEAN
         #####################################
         //check if mysql dir is clean
+        //TODO why??
         if(!$this->Config->get('mysql.enabled'))
         {
             $dir = $this->Config->get('local.rsyncdir').'/mysql';
@@ -1152,6 +1154,111 @@ class Application
                 }
             }
         }
+        #####################################
+        # SETUP MYSQL CONFIG & DIRS
+        #####################################
+        if($this->Config->get('mysql.enabled'))
+        {
+            #####################################
+            # SEARCH CONFIG FILES IN DIRS
+            #####################################
+            $config_dirs = [];
+            if ($this->Config->get('mysql.configdirs'))
+            {
+                $config_dirs = explode(',', $this->Config->get('mysql.configdirs'));
+            }
+            // default is home dir
+            else
+            {
+                $config_dirs [] = '~';
+            }
+            // iterate config dirs
+            $config_files = [];
+            //iterate dirs
+            foreach ($config_dirs as $config_dir)
+            {
+                $this->Cmd->exe("'cd $config_dir' 2>&1", true);
+                if ($this->Cmd->is_error())
+                {
+                    $this->warn('Cannot access remote mysql configdir ' . $config_dir . '...');
+                }
+                else
+                {
+                    $output = $this->Cmd->exe("'ls $config_dir/.my.cnf* 2>/dev/null'", true);
+                }
+                //check output
+                if ($output)
+                {
+                    $config_files = array_merge($config_files, explode("\n", $output));
+                }
+                else
+                {
+                    $this->warn('Cannot find mysql config files in remote dir ' . $config_dir . '...');
+                }
+            }
+            // noting to do, exit
+            if (!count($config_files))
+            {
+                $this->App->fail('Cannot find any mysql config files...');
+            }
+            else
+            {
+                $this->Session->set('mysql.configfiles', $config_files);
+            }
+            #####################################
+            # MY.CONF CONFIG FILE DIRS
+            #####################################
+            $config_file_cache = [];
+            //TODO wat als ik verschillende dirs gebruik met daarin steeds .my.cnf en die dan default noem???
+            foreach($config_files as $config_file)
+            {
+                //instance - use special name or set default
+                $instance = preg_replace('/^.+my\.cnf(\.)?/', '', $config_file);
+                $instance = ($instance) ? $instance : 'default';
+                //ignore if file is the same
+                $contents = $this->Cmd->exe("'cat $config_file'", true);
+                if (in_array($contents, $config_file_cache))
+                {
+                    $this->notice("Found duplicate mysql config file $config_file...");
+                    continue;
+                }
+                else
+                {
+                    $config_file_cache [] = $contents;
+                }
+                #####################################
+                # SETUP MYSQLDUMP DIR
+                #####################################
+                $rsyncdir = $this->Config->get('local.rsyncdir');
+                $mysqldump_dir = "$rsyncdir/mysql/$instance";
+                // check if dir exists
+                if (!is_dir($mysqldump_dir))
+                {
+                    $this->out("Create directory $mysqldump_dir...");
+                    $this->Cmd->exe("mkdir -p $mysqldump_dir");
+                } // empty the dir
+                else
+                {
+                    $this->out("Empty directory $mysqldump_dir...");
+                    // ignore error in case of empty dir: || true
+                    $this->Cmd->exe("rm -f $mysqldump_dir/*");
+                }
+            }
+            #####################################
+            # INCLUDED/EXCLUDED TABLES/DATABASES
+            #####################################
+            foreach (['included', 'excluded'] as $include_type)
+            {
+                foreach (['databases', 'tables'] as $object)
+                {
+                    if($this->Config->is_set('mysql.'.$include_type.'-'.$object) && count($this->Session->get('mysql.configs') > 1))
+                    {
+                        $this->fail("Cannot configure $include_type-$object while using multiple mysql config files!");
+                    }
+                }
+            }
+        }
+        dd();
         $this->out();
         $this->out('OK!', 'simple-success');
         ######################################
@@ -1512,12 +1619,12 @@ class Application
         #####################################
         # TIME SCRIPT
         #####################################
-        $lapse = date('U') - $this->Settings->get('start_time');
+        $lapse = date('U') - $this->Session->get('start_time');
         $lapse = gmdate('H:i:s', $lapse);
         $this->log("Script time: $lapse (HH:MM:SS)");
         $this->log();
         //final header
-        $this->out($this->Settings->get('appname').' v'.$this->Settings->get('version'). " - SCRIPT ENDED " . date('Y-m-d H:i:s'), 'title');
+        $this->out($this->Session->get('appname').' v'.$this->Session->get('version'). " - SCRIPT ENDED " . date('Y-m-d H:i:s'), 'title');
         #####################################
         # COLORIZE OUTPUT
         #####################################
@@ -1555,7 +1662,7 @@ class Application
             {
                 // create log file
                 $host = ($this->Config->get('local.hostdir-name'))? $this->Config->get('local.hostdir-name'):$this->Config->get('remote.host');
-                $logfile_host = $this->Config->get('local.logdir') . '/' . $host . '.' . date('Y-m-d_His', $this->Settings->get('start_time')) . '.poppins.' . $exit_status. '.log';
+                $logfile_host = $this->Config->get('local.logdir') . '/' . $host . '.' . date('Y-m-d_His', $this->Session->get('start_time')) . '.poppins.' . $exit_status. '.log';
                 $logfile_app = $this->Config->get('local.logdir') . '/poppins.log';
                 $content [] = 'Create logfile for host ' . $logfile_host . '...';
                 //create file
@@ -1592,7 +1699,7 @@ class Application
                         //append suffix in log
                         $m['logfile'] .= '.gz';
                     }
-                    $m['version'] = $this->Settings->get('version');
+                    $m['version'] = $this->Session->get('version');
                     // add tag to entry
                     if($this->Options->is_set('t') && $this->Options->get('t'))
                     {

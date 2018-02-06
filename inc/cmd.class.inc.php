@@ -47,7 +47,7 @@ class Cmd
         $this->Options = Options::get_instance();
 
         // App specific settings
-        $this->Settings = Settings::get_instance();
+        $this->Session = Session::get_instance();
 
     }
 

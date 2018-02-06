@@ -1,6 +1,6 @@
 <?php
 /**
- * File settings.class.inc.php
+ * File session.class.inc.php
  *
  * @package    Poppins
  * @license    http://www.gnu.org/licenses/gpl-3.0.en.html  GNU Public License
@@ -11,6 +11,6 @@
 require_once(dirname(__FILE__).'/store.class.inc.php');
 
 /**
- * Class Settings contains application configuration
+ * Class Sessions contains application session variables
  */
-class Settings extends Store{}
+class Session extends Store{}
