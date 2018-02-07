@@ -1119,7 +1119,7 @@ class Application
         # CHECK IF MYSQL DIR IS CLEAN
         #####################################
         //check if mysql dir is clean
-        //TODO why??
+        //TODO implement?
         if(!$this->Config->get('mysql.enabled'))
         {
             $dir = $this->Config->get('local.rsyncdir').'/mysql';
@@ -1201,25 +1201,31 @@ class Application
             {
                 $this->App->fail('Cannot find any mysql config files...');
             }
-            else
-            {
-                $this->Session->set('mysql.configfiles', $config_files);
-            }
             #####################################
             # MY.CONF CONFIG FILE DIRS
             #####################################
             $config_file_cache = [];
-            //TODO wat als ik verschillende dirs gebruik met daarin steeds .my.cnf en die dan default noem???
             foreach($config_files as $config_file)
             {
+                //check if the config file is named correctly
+                if (!preg_match('/^.+my\.cnf(\.)*/', $config_file))
+                {
+                    $this->fail('Database config file does not match pattern ".my.cnf*": '.$config_file);
+                }
                 //instance - use special name or set default
-                $instance = preg_replace('/^.+my\.cnf(\.)?/', '', $config_file);
+                $instance = preg_replace('/^.+my\.cnf(\.)*/', '', $config_file);
+                // set default dir
                 $instance = ($instance) ? $instance : 'default';
                 //ignore if file is the same
                 $contents = $this->Cmd->exe("'cat $config_file'", true);
                 if (in_array($contents, $config_file_cache))
                 {
+                    // notice to user
                     $this->notice("Found duplicate mysql config file $config_file...");
+                    // unset this file from the config array
+                    $key = array_search($config_file, $config_files);
+                    unset($config_files[$key]);
+                    // continue the loop
                     continue;
                 }
                 else
@@ -1244,16 +1250,22 @@ class Application
                     $this->Cmd->exe("rm -f $mysqldump_dir/*");
                 }
             }
+            //store the array in the session
+            $this->Session->set('mysql.configfiles', $config_files);
             #####################################
-            # INCLUDED/EXCLUDED TABLES/DATABASES
+            # VALIDATE INCLUDED/EXCLUDED
             #####################################
-            foreach (['included', 'excluded'] as $include_type)
+            // check if more than 1 config file found
+            if(count($this->Session->get('mysql.configfiles')) > 1)
             {
-                foreach (['databases', 'tables'] as $object)
+                foreach (['included', 'excluded'] as $include_type)
                 {
-                    if($this->Config->is_set('mysql.'.$include_type.'-'.$object) && count($this->Session->get('mysql.configs') > 1))
+                    foreach (['databases', 'tables'] as $object)
                     {
-                        $this->fail("Cannot configure $include_type-$object while using multiple mysql config files!");
+                        if ($this->Config->is_set('mysql.' . $include_type . '-' . $object))
+                        {
+                            $this->fail("Cannot configure $include_type-$object while using multiple mysql config files!");
+                        }
                     }
                 }
             }
