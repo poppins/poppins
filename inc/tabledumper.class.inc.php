@@ -12,9 +12,26 @@ require_once dirname(__FILE__).'/dumper.class.inc.php';
 /**
  * Class TableDumper contains functions that generate mysqldump commands
  */
-abstract class TableDumper extends Dumper
+class TableDumper extends Dumper
 {
 
-    
+    protected $item_type = 'tables';
+
+    function discover_items()
+    {
+        $databases = $this->Cmd->exe("'$this->mysql_exec --skip-column-names -e \"show databases\" | grep -v \"^information_schema$\"'", true);
+
+        $tables = [];
+
+        foreach (explode("\n", $databases) as $db)
+        {
+            $tables_tmp = $this->Cmd->exe("'$this->mysql_exec --skip-column-names -e \"use $db; show tables;\"'", true);
+
+            $tables = array_merge($tables, explode("\n", $tables_tmp));
+        }
+
+        return $tables;
+
+    }
 
 }

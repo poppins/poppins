@@ -1270,7 +1270,6 @@ class Application
                 }
             }
         }
-        dd();
         $this->out();
         $this->out('OK!', 'simple-success');
         ######################################

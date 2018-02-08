@@ -66,7 +66,7 @@ class Backup
         //mysql
         if ($this->Config->get('mysql.enabled'))
         {
-            $this->dump();
+            $this->databases();
         }
         //rsync
         $this->rsync();
@@ -114,7 +114,7 @@ class Backup
     /**
      * Backup remote mysql databases
      */
-    function dump()
+    function databases()
     {
         #####################################
         # MYSQL BACKUPS
@@ -131,13 +131,14 @@ class Backup
                 $dumper = new $classname($this->App, $config_file);
                 $mysqldump_commands = array_merge($mysqldump_commands, $dumper->get());
             }
+            dd($mysqldump_commands);
             #####################################
             # EXECUTE MYSQLDUMP COMMANDS
             #####################################
             foreach ($mysqldump_commands as $key => $cmd)
             {
-//                        echo "\n".$cmd."\n\n";
-//                        continue;
+                echo "\n".$cmd."\n\n";
+                continue;
                 $this->Cmd->exe($cmd, true);
                 if (!$this->Cmd->is_error())
                 {

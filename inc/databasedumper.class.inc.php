@@ -12,9 +12,19 @@ require_once dirname(__FILE__).'/dumper.class.inc.php';
 /**
  * Class DatabaseDumper contains functions that generate mysqldump commands
  */
-abstract class DatabaseDumper extends Dumper
+class DatabaseDumper extends Dumper
 {
 
-    
+    protected $item_type = 'databases';
+
+    /*
+     * Get all the databases
+     */
+    function discover_items()
+    {
+        $databases = $this->Cmd->exe("'$this->mysql_exec --skip-column-names -e \"show databases\" | grep -v \"^information_schema$\"'", true);
+
+        return explode("\n", $databases);
+    }
 
 }
