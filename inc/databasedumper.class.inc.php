@@ -17,12 +17,77 @@ class DatabaseDumper extends Dumper
 
     protected $item_type = 'databases';
 
+    /**
+     * Create the statements
+     * @param $databases
+     */
+    function create_statements($databases)
+    {
+        $statements = [];
+        //ignore tables
+        if($this->Config->is_set('mysql.ignore-tables'))
+        {
+            $tables_ignore = [];
+            //check if these items exist
+            $exists_check = true;
+            // get patterns
+            $patterns = explode(',', $this->Config->get('mysql.ignore-tables'));
+            foreach ($patterns as $pattern)
+            {
+                // discover all the tables
+                $table_dumper = new TableDumper($this->App, $this->config_file);
+                $tables_discovered = $table_dumper->discover_items();
+                // match according to pattern
+                $matched = $table_dumper->get_items_matched($tables_discovered, $pattern);
+                if(count($matched))
+                {
+                    // add all items to the array
+                    foreach ($matched as $m)
+                    {
+                        array_push($tables_ignore, $m);
+                    }
+                }
+                else
+                {
+                    $exists_check = false;
+                }
+            }
+            // one or more tables does not exist
+            if (!$exists_check)
+            {
+                $this->App->fail('Ignore tables pattern "' . $pattern . '" not found!');
+            }
+        }
+
+        // ignore tables
+        $tables_ignore_cmd = [];
+        if(count($tables_ignore))
+        {
+            foreach ($tables_ignore as $table)
+            {
+                $tables_ignore_cmd [] = '--ignore-table='.$table;
+            }
+        }
+        $tables_ignore_cmd = implode(' ', $tables_ignore_cmd);
+        // create statement
+        if ($this->Config->get('mysql.create-database'))
+        {
+            $this->mysqldump_options .= ' --databases';
+        }
+        foreach($databases as $db)
+        {
+            $statements [$db] = "'$this->mysqldump_executable $tables_ignore_cmd $this->mysqldump_options $db' $this->gzip_pipe_cmd > $this->mysqldump_dir/$db.sql$this->gzip_extension_cmd";
+        }
+        // return the statements
+        return $statements;
+    }
+
     /*
      * Get all the databases
      */
     function discover_items()
     {
-        $databases = $this->Cmd->exe("'$this->mysql_exec --skip-column-names -e \"show databases\" | grep -v \"^information_schema$\"'", true);
+        $databases = $this->Cmd->exe("'$this->mysql_executable --skip-column-names -e \"show databases\" | grep -v \"^information_schema$\"'", true);
 
         return explode("\n", $databases);
     }

@@ -68,6 +68,12 @@ class Rotator
     function init()
     {
         $this->App->out('Rotate snapshots', 'header');
+        //dry run?
+        if($this->Options->is_set('n'))
+        {
+            $this->App->out('DRY RUN!');
+            return;
+        }
         //prepare
         $this->prepare();
         //iniate comparison

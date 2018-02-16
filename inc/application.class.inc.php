@@ -156,7 +156,7 @@ class Application
         #####################################
         # HELP
         #####################################
-        $CLI_SHORT_OPTS = ["c:dhvt:"];
+        $CLI_SHORT_OPTS = ["c:dhnvt:"];
         $CLI_LONG_OPTS = ["version", "help", "color"];
         $options = getopt(implode('', $CLI_SHORT_OPTS), $CLI_LONG_OPTS);
         $this->Options->update($options);
@@ -193,6 +193,12 @@ class Application
         # START
         #####################################
         $this->out($this->Session->get('appname').' v'.$this->Session->get('version')." - SCRIPT STARTED " . date('Y-m-d H:i:s', $this->Session->get('start_time')), 'title');
+        // dry run
+        if($this->Options->is_set('n'))
+        {
+            $this->warn('DRY RUN!!');
+        }
+        // environment
         $this->out('Environment', 'header');
         #####################################
         # LOCAL ENVIRONMENT
@@ -1249,6 +1255,8 @@ class Application
                     // ignore error in case of empty dir: || true
                     $this->Cmd->exe("rm -f $mysqldump_dir/*");
                 }
+                // load in session
+                $this->Session->set('mysql.dumpdir.'.$instance, $mysqldump_dir);
             }
             //store the array in the session
             $this->Session->set('mysql.configfiles', $config_files);
@@ -1266,6 +1274,24 @@ class Application
                         {
                             $this->fail("Cannot configure $include_type-$object while using multiple mysql config files!");
                         }
+                    }
+                }
+            }
+            #####################################
+            # VALIDATE MYSQL OUTPUT
+            #####################################
+            if(!$this->Config->is_set('mysql.output'))
+            {
+                $this->Config->set('mysql.output', 'databases');
+            }
+            else
+            {
+                $mysql_output = explode(',', $this->Config->get('mysql.output'));
+                foreach ($mysql_output as $o)
+                {
+                    if(!in_array($o, ['database', 'table', 'csv']))
+                    {
+                        $this->fail('Illegal value for mysql output: "'.$o.'"');
                     }
                 }
             }

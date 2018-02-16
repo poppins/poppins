@@ -120,33 +120,48 @@ class Backup
         # MYSQL BACKUPS
         #####################################
         $this->App->out('Mysql backups', 'header');
+        // dry run?
+        if($this->Options->is_set('n'))
+        {
+            $this->App->out('DRY RUN!');
+            $this->App->out();
+        }
+        // output types
+        $mysql_output = explode(',',$this->Config->get('mysql.output'));
         //iterate config files
         foreach ($this->Session->get('mysql.configfiles') as $config_file)
         {
             $mysqldump_commands = [];
             //get database and tabledump commands
-            foreach(['database','table'] as $object)
+            foreach($mysql_output as $object)
             {
+                $this->App->out("Run MySQL $object backups for $config_file...");
                 $classname = ucfirst($object).'Dumper';
                 $dumper = new $classname($this->App, $config_file);
-                $mysqldump_commands = array_merge($mysqldump_commands, $dumper->get());
+                $mysqldump_commands = array_merge($mysqldump_commands, $dumper->get_commands());
             }
-            dd($mysqldump_commands);
+            $this->App->out();
             #####################################
             # EXECUTE MYSQLDUMP COMMANDS
             #####################################
             foreach ($mysqldump_commands as $key => $cmd)
             {
-                echo "\n".$cmd."\n\n";
-                continue;
-                $this->Cmd->exe($cmd, true);
-                if (!$this->Cmd->is_error())
+                // dry run
+                if($this->Options->is_set('n'))
                 {
-                    $this->App->out("$key... OK.", 'indent');
+                    $this->App->out($cmd);
                 }
                 else
                 {
-                    $this->App->fail("mysql backup failed! Command: " . $cmd);
+                    $this->Cmd->exe($cmd, true);
+                    if (!$this->Cmd->is_error())
+                    {
+                        $this->App->out("$key... OK.", 'indent');
+                    }
+                    else
+                    {
+                        $this->App->fail("mysql backup failed! Command: " . $cmd);
+                    }
                 }
             }
         }
@@ -163,6 +178,12 @@ class Backup
         #####################################
         // do our thing on the remote end.
         $this->App->out($type.' backup script', 'header');
+        // dry run?
+        if($this->Options->is_set('n'))
+        {
+            $this->App->out('DRY RUN!');
+            return;
+        }
         //check if jobs
         if ($this->Config->get('remote.'.$type.'-backup-script'))
         {
@@ -222,6 +243,12 @@ class Backup
         //variables
         $filebase = $this->Session->get('meta.filebase');
         $this->App->out('Metadata', 'header');
+        // dry run?
+        if($this->Options->is_set('n'))
+        {
+            $this->App->out('DRY RUN!');
+            return;
+        }
         //disk layout
         if ($this->Config->get('meta.remote-disk-layout'))
         {
@@ -367,6 +394,12 @@ class Backup
     {
         //rsync backups
         $this->App->out('Sync data', 'header');
+        // dry run?
+        if($this->Options->is_set('n'))
+        {
+            $this->App->out('DRY RUN!');
+            $this->App->out();
+        }
         #####################################
         # CHECK FOR MOUNTED FILESYSTEMS
         #####################################
@@ -441,6 +474,7 @@ class Backup
                 }
             }
         }
+        $this->App->out();
         #####################################
         # RSYNC OPTIONS
         #####################################
@@ -458,6 +492,10 @@ class Backup
         }
 
         // general options
+        if($this->Options->is_set('n'))
+        {
+            $o [] = "--dry-run";
+        }
         if ($this->Config->get('rsync.verbose'))
         {
             $o [] = "-v";

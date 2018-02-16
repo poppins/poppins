@@ -15,9 +15,15 @@ abstract class Dumper
     // items to backup: tables or databases
     protected $items;
 
-    protected $mysqldump_exec;
+    protected $gzip_pipe_cmd;
+    protected $gzip_extension_cmd;
 
-    protected $mysql_exec;
+    protected $mysqldump_compress;
+    protected $mysqldump_dir;
+    protected $mysqldump_executable;
+    protected $mysqldump_options;
+
+    protected $mysql_executable;
 
     // if the arrays must be sliced or not
     protected $slice = false;
@@ -44,32 +50,48 @@ abstract class Dumper
         // App specific settings
         $this->Session = Session::get_instance();
 
-        // executables
-        $this->mysqldump_exec = "mysqldump --defaults-file=$config_file";
-        $this->mysql_exec = "mysql --defaults-file=$config_file";
+        // executables & options
+        $this->mysql_executable = "mysql --defaults-file=$config_file";
+        $this->mysqldump_executable = "mysqldump --defaults-file=$config_file";
+        $this->mysqldump_options = '--routines --single-transaction --quick';
+
+        // compress the dumps
+        $this->mysqldump_compress = ($this->Config->is_set('mysql.compress'))? $this->Config->get('mysql.compress'):true;
+
+        // create instance dir
+        $instance = preg_replace('/^.+my\.cnf(\.)?/', '', $config_file);
+        $instance = (empty($instance)) ? 'default':$instance ;
+        $this->mysqldump_dir = $this->Session->get('mysql.dumpdir.'.$instance);
+
+        // gzip
+        $this->gzip_pipe_cmd = ($this->mysqldump_compress)? '| gzip':'';
+        $this->gzip_extension_cmd = ($this->mysqldump_compress)? '.gz':'';
+
+        // slice types
+        $this->slice_types = ['included','excluded'];
     }
 
-    function get()
-    {
-        $this->App->out("Backup $this->item_type from $this->config_file");
+    abstract function create_statements($items);
 
+    function get_items_to_backup()
+    {
         // retrieve all items
         $items_discovered = $this->discover_items();
 
-        if(!count($items_discovered))
+        if (!count($items_discovered))
         {
-            $this->App->fail('No '.$this->item_type.' found!');
+            $this->App->fail('No ' . $this->item_type . ' found!');
         }
 
         // check if there is a need for slicing
         $items_config = [];
-        foreach($this->slice_types as $slice_type)
+        foreach ($this->slice_types as $slice_type)
         {
-            if($this->Config->is_set("mysql.$slice_type-$this->item_type"))
+            if ($this->Config->is_set("mysql.$slice_type-$this->item_type"))
             {
-                $pattern = $this->Config->get('mysql.' . $slice_type . '-'.$this->item_type);
+                $pattern = $this->Config->get('mysql.' . $slice_type . '-' . $this->item_type);
                 // check if directive is not an empty string
-                if(!empty($pattern))
+                if (!empty($pattern))
                 {
                     $items_config[$slice_type] = explode(',', $pattern);
                     // set slice flag
@@ -77,82 +99,121 @@ abstract class Dumper
                 }
             }
         }
-
         // slice the items if needed
-        if($this->slice)
+        if ($this->slice)
         {
-            //check if these items exist
-            $exists_check = true;
             $items_matched = [];
-            foreach ($items_config as $slice_type => $pattern)
+            // excluded, included
+            foreach($this->slice_types as $slice_type)
             {
-                // match items on regex
-                if(preg_match('/^\/.+\/$/', $pattern))
+                // check if slice type is set
+                if (!isset($items_config[$slice_type]))
                 {
-                    $regex_matched = preg_grep($pattern, $items_discovered);
-                    d($regex_matched);
-                    // not found
-                    if (!count($regex_matched))
+                    continue;
+                }
+                //check if these items exist
+                $exists_check = true;
+                foreach ($items_config[$slice_type] as $pattern)
+                {
+                    // match items
+                    $matched = $this->get_items_matched($items_discovered, $pattern);
+                    // no matches found
+                    if(count($matched))
                     {
-                        $message = ucfirst($slice_type) . ' '.$this->item_type.' regex pattern "' . $pattern . '" not found!';
-                        // warn first, fail later
-                        $this->App->warn($message);
-                        $exists_check = false;
-                    }
-                    else
-                    {
-                        // add matched items
-                        foreach($regex_matched as $m)
+                        // check if the array exists, create if needed
+                        if (!isset($items_matched[$slice_type]))
+                        {
+                            $items_matched[$slice_type] = [];
+                        }
+                        // add all items to the array
+                        foreach ($matched as $m)
                         {
                             array_push($items_matched[$slice_type], $m);
                         }
                     }
-                }
-                // match items on string
-                else
-                {
-                    // not found
-                    if(!in_array($pattern, $items_discovered))
-                    {
-                        $message = ucfirst($slice_type) . ' '.$this->item_type.' matched pattern "' . $pattern . '" not found!';
-                        // warn first, fail later
-                        $this->App->warn($message);
-                        $exists_check = false;
-                    }
                     else
                     {
-                        $items_matched[$slice_type] []= $pattern;
+                        // if empty array found, fail later
+                        $exists_check = false;
+                        dd($matched);
                     }
                 }
+                // one or more databases does not exist
+                if (!$exists_check)
+                {
+                    $this->App->fail('Included or excluded ' . $this->item_type . ' not found!');
+                }
             }
-            // one or more databases does not exist
-            if (!$exists_check)
-            {
-                $this->App->fail('Include/exclude '.$this->item_type.' not found!');
-            }
+        }
 
-            $items_backup = $items_matched['included'];
+        // get the items to backup
+        if(isset($items_matched['included']))
+        {
+            $items_to_backup = $items_matched['included'];
         }
         else
         {
-            $items_backup = $items_discovered;
+            $items_to_backup = $items_discovered;
         }
 
         // exclude items
-        if (count($items_matched['excluded']))
+        if (isset($items_matched['excluded']) && count($items_matched['excluded']))
         {
             // remove the excluded items from the array
             foreach ($items_matched['excluded'] as $exclude)
             {
-                if (($key = array_search($exclude, $items_backup)) !== false)
+                if (($key = array_search($exclude, $items_to_backup)) !== false)
                 {
-                    unset($items_backup[$key]);
+                    unset($items_to_backup[$key]);
                 }
             }
         }
-
-        dd($items_backup);
-
+        // return all the items
+        return $items_to_backup;
     }
 
+    function get_commands()
+    {
+        $items_to_backup = $this->get_items_to_backup();
+
+        return $this->create_statements($items_to_backup);
+    }
+
+    /**
+     * @param $items
+     * @param $pattern
+     */
+    function get_items_matched($items, $pattern)
+    {
+        // initiate
+        $matched = [];
+        // match items on regex
+        if (preg_match('/^\/.*\/$/', $pattern))
+        {
+            $matched = preg_grep($pattern, $items);
+            // not found
+            if (!count($matched))
+            {
+                $message = ucfirst($this->item_type). ' regex pattern "' . $pattern . '" not found!';
+                // warn first, fail later
+                $this->App->warn($message);
+            }
+        }
+        // match items on string
+        else
+        {
+            // not found
+            if (!in_array($pattern, $items))
+            {
+                $message = ucfirst($this->item_type) . ' string "' . $pattern . '" not found!';
+                // warn first, fail later
+                $this->App->warn($message);
+            }
+            else
+            {
+                $matched = [$pattern];
+            }
+        }
+        return $matched;
+    }
 }

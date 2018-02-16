@@ -10,11 +10,13 @@
 require_once dirname(__FILE__).'/dumper.class.inc.php';
 require_once dirname(__FILE__).'/candiscovertable.trait.inc.php';
 
+
 /**
- * Class TableDumper contains functions that generate mysqldump commands
+ * Class CsvDumper contains functions that generate mysqldump commands
  */
-class TableDumper extends Dumper
+class CsvDumper extends Dumper
 {
+
     use CanDiscoverTables;
 
     protected $item_type = 'tables';
@@ -25,9 +27,8 @@ class TableDumper extends Dumper
         // create statements
         foreach($tables as $table)
         {
-            $statements [$table.' (sql)']= "'$this->mysqldump_executable $this->mysqldump_options $table' $this->gzip_pipe_cmd > $this->mysqldump_dir/$table.sql$this->gzip_extension_cmd";
+            $statements [$table.' (csv)']= "'$this->mysql_executable -B -e \"SELECT * FROM $table\"' $this->gzip_pipe_cmd > $this->mysqldump_dir/$table.csv$this->gzip_extension_cmd";
         }
         return $statements;
     }
-
 }
