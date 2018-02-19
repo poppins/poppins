@@ -25,7 +25,10 @@ class TableDumper extends Dumper
         // create statements
         foreach($tables as $table)
         {
-            $statements [$table.' (sql)']= "'$this->mysqldump_executable $this->mysqldump_options $table' $this->gzip_pipe_cmd > $this->mysqldump_dir/$table.sql$this->gzip_extension_cmd";
+            //remove the dot notation
+            $database_table = preg_replace('/\./', ' ', $table);
+
+            $statements [$table.' (sql)']= "'$this->mysqldump_executable $this->mysqldump_options $database_table' $this->gzip_pipe_cmd > $this->mysqldump_dir/$table.sql$this->gzip_extension_cmd";
         }
         return $statements;
     }

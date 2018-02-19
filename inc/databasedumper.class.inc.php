@@ -87,9 +87,21 @@ class DatabaseDumper extends Dumper
      */
     function discover_items()
     {
+        //return the cache
+        if($this->Session->is_set('cache.discovered-databases.'.$this->config_file))
+        {
+            return $this->Session->get('cache.discovered-databases.'.$this->config_file);
+        }
+
         $databases = $this->Cmd->exe("'$this->mysql_executable --skip-column-names -e \"show databases\" | grep -v \"^information_schema$\"'", true);
 
-        return explode("\n", $databases);
+        // create array
+        $databases = explode("\n", $databases);
+
+        // cache the results
+        $this->Session->set('cache.discovered-databases.'.$this->config_file, $databases);
+
+        return $databases;
     }
 
 }

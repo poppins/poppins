@@ -10,11 +10,13 @@ trait CanDiscoverTables
             return $this->Session->get('cache.discovered-tables.'.$this->config_file);
         }
 
-        $databases = $this->Cmd->exe("'$this->mysql_executable --skip-column-names -e \"show databases\" | grep -v \"^information_schema$\"'", true);
+        // discover all the databases
+        $database_dumper = new DatabaseDumper($this->App, $this->config_file);
+        $databases_discovered = $database_dumper->discover_items();
 
         $tables = [];
 
-        foreach (explode("\n", $databases) as $db)
+        foreach ($databases_discovered as $db)
         {
             $tables_tmp = $this->Cmd->exe("'$this->mysql_executable --skip-column-names -e \"use $db; show tables;\"'", true);
 
