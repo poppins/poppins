@@ -74,9 +74,12 @@ class DatabaseDumper extends Dumper
         {
             $this->mysqldump_options .= ' --databases';
         }
+        // dump prefix
+        $prefix = 'db';
+        // loop through databases
         foreach($databases as $db)
         {
-            $statements [$db] = "'$this->mysqldump_executable $tables_ignore_cmd $this->mysqldump_options $db' $this->gzip_pipe_cmd > $this->mysqldump_dir/$db.sql$this->gzip_extension_cmd";
+            $statements [$db] = "'$this->mysqldump_executable $tables_ignore_cmd $this->mysqldump_options $db' $this->gzip_pipe_cmd > $this->mysqldump_dir/$prefix.$db.sql$this->gzip_extension_cmd";
         }
         // return the statements
         return $statements;

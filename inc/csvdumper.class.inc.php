@@ -24,10 +24,12 @@ class CsvDumper extends Dumper
     function create_statements($tables)
     {
         $statements = [];
+        // dump prefix
+        $prefix = 'csv';
         // create statements
         foreach($tables as $table)
         {
-            $statements [$table.' (csv)']= "'$this->mysql_executable -B -e \"SELECT * FROM $table\"' $this->gzip_pipe_cmd > $this->mysqldump_dir/$table.csv$this->gzip_extension_cmd";
+            $statements [$table.' - csv']= "'$this->mysql_executable -B -e \"SELECT * FROM $table\"' $this->gzip_pipe_cmd > $this->mysqldump_dir/$prefix.$table.txt$this->gzip_extension_cmd";
         }
         return $statements;
     }
