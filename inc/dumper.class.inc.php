@@ -135,7 +135,6 @@ abstract class Dumper
                     {
                         // if empty array found, fail later
                         $exists_check = false;
-                        dd($matched);
                     }
                 }
                 // one or more databases does not exist

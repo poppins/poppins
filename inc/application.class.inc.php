@@ -418,33 +418,64 @@ class Application
                     {
                         continue;
                     }
-                    //initiate message
-                    $message = '';
+                    //check if section and directive is set
                     if($this->Config->is_set([$section['name'], $directive['name']]))
                     {
                         // set value
                         $value = $this->Config->get([$section['name'], $directive['name']]);
                         #####################################
-                        # ALLOWED CHARACTERS
+                        # WEIRD CHARACTERS
                         #####################################
-                        if (!Validator::contains_allowed_characters($value))
+                        // allow database patterns and regex
+                        if(isset($directive['validate']['databases_include_type']))
+                        {
+                            $patterns = explode(',', $value);
+                            foreach($patterns as $pattern)
+                            {
+                                if (!preg_match('/^\/.+\/$/', $pattern) && !preg_match('/^[^\/\.]+$/', $pattern))
+                                {
+                                    $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] has illegal database value: "' . $pattern . '"';
+                                    $this->fail($message);
+                                }
+                            }
+                        }
+                        // allow table patterns and regex
+                        elseif(isset($directive['validate']['tables_include_type']))
+                        {
+                            $patterns = (preg_match('/,/', $value))? explode(',', $value):[$value];
+                            //possibly single value
+                            foreach($patterns as $pattern)
+                            {
+                                if (!preg_match('/^\/.+\/$/', $pattern) && !preg_match('/^[^\.]+\.[^\.]+$/', $pattern))
+                                {
+                                    $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] has illegal table value: "' . $pattern . '"';
+                                    $this->fail($message);
+                                }
+                            }
+                        }
+                        // other weird characters
+                        elseif (!Validator::contains_allowed_characters($value))
                         {
                             //check bad characters - #&;`|*?~<>^()[]{}$\, \x0A and \xFF. ' and " are escaped
                             $escaped = escapeshellcmd($value);
+                            // weird characters found
                             if ($value != $escaped)
                             {
+                                #####################################
+                                # allow tilda
+                                #####################################
                                 //allow tilde in home paths!
-                                $allow_homepath = false;
-                                $allowed_homepaths = ['homepath', 'absolutepath|homepath', 'mysqlpaths'];
-                                foreach($allowed_homepaths as $h)
+                                $validate_tilda_path = false;
+                                $possible_tilda_paths = ['home_path', 'absolute_path|home_path', 'mysql_paths'];
+                                foreach($possible_tilda_paths as $path)
                                 {
-                                    if(isset($directive['validate'][$h]))
+                                    if(isset($directive['validate'][$path]))
                                     {
-                                        $allow_homepath = true;
-                                        break;
+                                        $validate_tilda_path = true; break;
                                     }
                                 }
-                                if ($allow_homepath)
+                                // validate special path
+                                if ($validate_tilda_path)
                                 {
                                     $paths = explode(',', $value);
                                     foreach ($paths as $p)
@@ -467,7 +498,7 @@ class Application
                                 }
                                 else
                                 {
-                                    $this->fail("Illegal character found in string '$value' in directive " . $directive['name'] . " [" . $section['name'] . "]!");
+                                    $this->fail("Illegal path character found in string '$value' in directive " . $directive['name'] . " [" . $section['name'] . "]!");
                                 }
                             }
                         }
@@ -480,12 +511,20 @@ class Application
                             $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an allowed value. Use values "'.implode('/', $allowed).'"!';
                             if (!in_array($value, $allowed))
                             {
-                                if ($directive['validate']['allowed'] == 'warning')
+                                $this->fail($message);
+                            }
+                        }
+                        #####################################
+                        # LIST
+                        #####################################
+                        if (isset($directive['validate']['list']))
+                        {
+                            $list = $directive['validate']['list'];
+                            foreach(explode(',', $value) as $v)
+                            {
+                                if (!in_array($v, $list))
                                 {
-                                    $this->warn($message);
-                                }
-                                else
-                                {
+                                    $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an allowed list value: "'.$v.'". Use values "'.implode('/', $list).'"!';
                                     $this->fail($message);
                                 }
                             }
@@ -533,12 +572,12 @@ class Application
                         # ABSOLUTE OR RELATIVE HOME PATH
                         #####################################
                         //exactly one absolute path
-                        if (isset($directive['validate']['absolutepath|homepath']))
+                        if (isset($directive['validate']['absolute_path|home_path']))
                         {
                             if (!Validator::is_absolute_path($value) && (!Validator::is_relative_home_path($value)))
                             {
                                 $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an absolute/home path!';
-                                if ($directive['validate']['absolutepath|homepath'] == 'warning')
+                                if ($directive['validate']['absolute_path|home_path'] == 'warning')
                                 {
                                     $this->warn($message);
                                 }
@@ -552,12 +591,12 @@ class Application
                         # 1 ABSOLUTE PATH
                         #####################################
                         //exactly one absolute path
-                        if (isset($directive['validate']['absolutepath']))
+                        if (isset($directive['validate']['absolute_path']))
                         {
                             if (!Validator::is_absolute_path($value))
                             {
                                 $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an absolute path!';
-                                if ($directive['validate']['absolutepath'] == 'warning')
+                                if ($directive['validate']['absolute_path'] == 'warning')
                                 {
                                     $this->warn($message);
                                 }
@@ -571,12 +610,12 @@ class Application
                         # 1 ABSOLUTE PATH OR EMPTY
                         #####################################
                         //exactly one absolute path
-                        if (isset($directive['validate']['absolutepath?']))
+                        if (isset($directive['validate']['absolute_path?']))
                         {
                             if (!empty($value) && !Validator::is_absolute_path($value))
                             {
                                 $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an absolute path!';
-                                if ($directive['validate']['absolutepath?'] == 'warning')
+                                if ($directive['validate']['absolute_path?'] == 'warning')
                                 {
                                     $this->warn($message);
                                 }
@@ -594,7 +633,6 @@ class Application
                         {
                             if (Validator::contains_trailing_slash($value))
                             {
-                                echo 'testssss';
                                 $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] may not have a trailing slash!';
                                 if ($directive['validate']['no_trailing_slash'] == 'warning')
                                 {
@@ -607,17 +645,21 @@ class Application
                             }
                         }
                         #####################################
-                        # MULTIPLE MYSQL PATHS
+                        # MYSQL
                         #####################################
                         if($this->Config->get('mysql.enabled'))
                         {
-                            if (isset($directive['validate']['mysqlpaths']))
+                            #####################################
+                            # MULTIPLE MYSQL PATHS
+                            #####################################
+                            if (isset($directive['validate']['mysql_paths']))
                             {
                                 //set to home if empty
                                 if (empty($value))
                                 {
                                     $this->Config->set([$section['name'], $directive['name']], $directive['default']);
-                                } else
+                                }
+                                else
                                 {
                                     $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] contains an illegal path!';
                                     $paths = explode(',', $value);
@@ -629,7 +671,7 @@ class Application
                                     {
                                         if ($path != '~' && !Validator::is_absolute_path($path) && (!Validator::is_relative_home_path($path)))
                                         {
-                                            if ($directive['validate']['mysqlpaths'] == 'warning')
+                                            if ($directive['validate']['mysql_paths'] == 'warning')
                                             {
                                                 $this->warn($message);
                                             } else
@@ -639,6 +681,14 @@ class Application
                                         }
                                     }
                                 }
+                            }
+                            #####################################
+                            # include types
+                            #####################################
+                            //exactly one absolute path
+                            if (isset($directive['validate']['mysql_include_types']))
+                            {
+
                             }
                         }
                     }

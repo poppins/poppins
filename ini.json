@@ -5,11 +5,11 @@
       "directives":[
         {
           "name":"rootdir",
-          "validate":{"absolutepath":"error","no_trailing_slash":"error"}
+          "validate":{"absolute_path":"error","no_trailing_slash":"error"}
         },
         {
           "name":"logdir",
-          "validate":{"absolutepath":"error","no_trailing_slash":"error"}
+          "validate":{"absolute_path":"error","no_trailing_slash":"error"}
         },
         {
           "name":"hostdir-name",
@@ -50,7 +50,7 @@
         {
           "name":"pre-backup-script",
           "default":"",
-          "validate":{"absolutepath?":"error"}
+          "validate":{"absolute_path?":"error"}
         },
         {
           "name":"pre-backup-onfail",
@@ -65,7 +65,7 @@
         {
           "name":"post-backup-script",
           "default":"",
-          "validate":{"absolutepath?":"error"}
+          "validate":{"absolute_path?":"error"}
         },
         {
           "name":"retry-count",
@@ -165,7 +165,55 @@
           "name":"configdirs",
           "depends":"mysql.enabled",
           "default":"~",
-          "validate":{"mysqlpaths":"error"}
+          "validate":{"mysql_paths":"error"}
+        },
+        {
+          "name":"included-databases",
+          "depends":"mysql.enabled",
+          "default":false,
+          "validate":{"databases_include_type":"error"}
+        },
+        {
+          "name":"excluded-databases",
+          "depends":"mysql.enabled",
+          "default":false,
+          "validate":{"databases_include_type":"error"}
+        },
+        {
+          "name":"ignore-tables",
+          "depends":"mysql.enabled",
+          "default":false,
+          "validate":{"tables_include_type":"error"}
+        },
+        {
+          "name":"included-tables",
+          "depends":"mysql.enabled",
+          "default":false,
+          "validate":{"tables_include_type":"error"}
+        },
+        {
+          "name":"excluded-tables",
+          "depends":"mysql.enabled",
+          "default":false,
+          "validate":{"tables_include_type":"error"}
+        },
+        {
+          "name":"output",
+          "depends":"mysql.enabled",
+          "default":"databases",
+          "validate":{"list":["database", "table", "csv"]}
+        },
+        {
+          "name":"create-database",
+          "depends":"mysql.enabled",
+          "default":true,
+          "validate":{"boolean":"error"}
+        },
+        {
+          "name":"compress",
+          "depends":"mysql.enabled",
+          "default":true,
+          "validate":{"boolean":"error"}
         }
       ]
     }
