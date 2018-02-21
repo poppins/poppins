@@ -25,7 +25,11 @@ trait CanDiscoverTables
             // put in final array
             foreach($tables_tmp as $table)
             {
-                $tables []= $db.'.'.$table;
+                //empty database is possible
+                if (!empty($table))
+                {
+                    $tables []= $db.'.'.$table;
+                }
             }
         }
 
