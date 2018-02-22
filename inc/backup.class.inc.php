@@ -159,6 +159,8 @@ class Backup
                 $this->App->out("Execute MySQL statements...");
             }
             $this->App->out();
+            // mark time
+            $this->Session->set('chrono.mysql.start',date('U'));
             // loop thru all the commands
             foreach ($mysqldump_commands as $key => $cmd)
             {
@@ -180,6 +182,8 @@ class Backup
                     }
                 }
             }
+            // mark time
+            $this->Session->set('chrono.mysql.stop',date('U'));
         }
     }
 
@@ -219,6 +223,8 @@ class Backup
                     $this->App->warn($message);
                 }
             }
+            // mark time
+            $this->Session->set('chrono.'.$type.'-backup-script.start', date('U'));
             //run remote command
             $this->App->out('Running remote script...');
             $output = $this->Cmd->exe("'$script 2>&1'", true);
@@ -243,6 +249,8 @@ class Backup
                 $this->App->out('Remote job done... (' . date('Y-m-d H:i:s') . ')');
                 $this->App->out();
                 $this->App->out("OK!", 'simple-success');
+                // mark time
+                $this->Session->set('chrono.'.$type.'-backup-script.stop', date('U'));
             }
         }
         else
@@ -537,10 +545,11 @@ class Backup
         #####################################
         # RSYNC DIRECTORIES
         #####################################
-        //errors
-        $FATAL_ERRORS = [];
+        // mark time
         foreach ($this->Config->get('included') as $source => $target)
         {
+            // we need to encode this string because the path may contain dots
+            $this->Session->set(['chrono', 'rsync "'.$source .'"', 'start'], date('U'));
             //exclude dirs
             $excluded = [];
             if ($this->Config->get(['excluded', $source]))
@@ -634,6 +643,7 @@ class Backup
             else
             {
                 $this->App->out("OK!", 'simple-success');
+                $this->Session->set(['chrono', 'rsync "'.$source .'"', 'stop'], date('U'));
             }
         }
     }

@@ -192,7 +192,7 @@ class Application
         #####################################
         # START
         #####################################
-        $this->out($this->Session->get('appname').' v'.$this->Session->get('version')." - SCRIPT STARTED " . date('Y-m-d H:i:s', $this->Session->get('start_time')), 'title');
+        $this->out($this->Session->get('appname').' v'.$this->Session->get('version')." - SCRIPT STARTED " . date('Y-m-d H:i:s', $this->Session->get('chrono.session.start')), 'title');
         // dry run
         if($this->Options->is_set('n'))
         {
@@ -1662,7 +1662,14 @@ class Application
         //log message
         if(!$error)
         {
-            $this->out("SCRIPT RAN SUCCESSFULLY!", 'final-success');
+            if($this->Options->is_set('n'))
+            {
+                $this->out("DRY RUN RAN SUCCESSFULLY!", 'final-success');
+            }
+        else
+            {
+                $this->out("SCRIPT RAN SUCCESSFULLY!", 'final-success');
+            }
         }
         else
         {
@@ -1702,14 +1709,33 @@ class Application
         {
             $tag = '(untagged)';
         }
-        $this->log("Run tagged as: $tag");
+        $this->out("Session tagged as: $tag");
         #####################################
-        # TIME SCRIPT
+        # TIMING
         #####################################
-        $lapse = date('U') - $this->Session->get('start_time');
-        $lapse = gmdate('H:i:s', $lapse);
-        $this->log("Script time: $lapse (HH:MM:SS)");
-        $this->log();
+        $this->out('Schedule', 'header');
+        // mark time
+        $this->Session->set('chrono.session.stop', date('U'));
+        // output all times
+        foreach($this->Session->get('chrono') as $type => $times)
+        {
+            // skip if no end time
+            if(!$this->Session->is_set(['chrono', $type, 'stop']))
+            {
+                continue;
+            }
+            // title
+            $this->out($type);
+            // create message
+            $message = [];
+            foreach(['start', 'stop'] as $s)
+            {
+                $message []= $s.': '.date('Y-m-d H:i:s', $this->Session->get(['chrono', $type, $s]));
+            }
+            $message []= 'elapsed (HH:MM:SS): '.gmdate('H:i:s', ($this->Session->get(['chrono', $type, 'stop']) - $this->Session->get(['chrono', $type, 'start'])));
+            $this->out(implode(', ', $message), 'simple-indent');
+            $this->out();
+        }
         //final header
         $this->out($this->Session->get('appname').' v'.$this->Session->get('version'). " - SCRIPT ENDED " . date('Y-m-d H:i:s'), 'title');
         #####################################
@@ -1749,7 +1775,7 @@ class Application
             {
                 // create log file
                 $host = ($this->Config->get('local.hostdir-name'))? $this->Config->get('local.hostdir-name'):$this->Config->get('remote.host');
-                $logfile_host = $this->Config->get('local.logdir') . '/' . $host . '.' . date('Y-m-d_His', $this->Session->get('start_time')) . '.poppins.' . $exit_status. '.log';
+                $logfile_host = $this->Config->get('local.logdir') . '/' . $host . '.' . date('Y-m-d_His', $this->Session->get('chrono.session.start')) . '.poppins.' . $exit_status. '.log';
                 $logfile_app = $this->Config->get('local.logdir') . '/poppins.log';
                 $content [] = 'Create logfile for host ' . $logfile_host . '...';
                 //create file

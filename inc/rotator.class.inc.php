@@ -47,7 +47,7 @@ class Rotator
         $this->Session = Session::get_instance();
 
         //create datestamp
-        $this->Session->set('rsync.cdatestamp', date('Y-m-d_His', $this->Session->get('start_time')));
+        $this->Session->set('rsync.cdatestamp', date('Y-m-d_His', $this->Session->get('chrono.session.start')));
 
         //directories
         $this->archivedir = $this->Config->get('local.hostdir') . '/archive';
@@ -74,6 +74,8 @@ class Rotator
             $this->App->out('DRY RUN!');
             return;
         }
+        // mark time
+        $this->Session->set('chrono.rotation.start', date('U'));
         //prepare
         $this->prepare();
         //iniate comparison
@@ -232,6 +234,8 @@ class Rotator
                 $this->App->out($vv, 'indent');
             }
         }
+        // mark time
+        $this->Session->set('chrono.rotation.stop', date('U'));
     }
 
     /**

@@ -14,7 +14,7 @@ $Session = Session::get_instance();
 // app name
 $Session->set('appname', 'Poppins');
 // set start time
-$Session->set('start_time', date('U'));
+$Session->set('chrono.session.start', date('U'));
 // version
 $mercurial_version = shell_exec('cd "'.dirname(__FILE__).'";hg parent --template "{rev}" 2>/dev/null');
 $full_version = ($mercurial_version)? $_poppins_version.'.'.$mercurial_version:$_poppins_version;
