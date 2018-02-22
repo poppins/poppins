@@ -26,8 +26,9 @@ class Backup
     // Settings class - application specific settings
     protected $Settings;
 
-    //rsyncdir
+    //rsync
     protected $rsyncdir;
+    protected $rsync_success = false;
 
     /**
      * Backup constructor.
@@ -59,17 +60,19 @@ class Backup
      */
     function init()
     {
-        //create dirs
+        // create dirs and pre backup job
         $this->prepare();
-        //remote system info
+        // remote system info
         $this->meta();
-        //mysql
+        // mysql
         if ($this->Config->get('mysql.enabled'))
         {
             $this->databases();
         }
-        //rsync
+        // rsync
         $this->rsync();
+        // post backup job
+        $this->wrap_up();
     }
 
     /**
@@ -135,15 +138,28 @@ class Backup
             //get database and tabledump commands
             foreach($mysql_output as $object)
             {
-                $this->App->out("Run MySQL $object backups for $config_file...");
+                $this->App->out("Prepare MySQL $object statements for $config_file...");
                 $classname = ucfirst($object).'Dumper';
                 $dumper = new $classname($this->App, $config_file);
                 $mysqldump_commands = array_merge($mysqldump_commands, $dumper->get_commands());
             }
             $this->App->out();
+            $this->App->out('OK!');
+            $this->App->out();
             #####################################
             # EXECUTE MYSQLDUMP COMMANDS
             #####################################
+            // dry run
+            if($this->Options->is_set('n'))
+            {
+                $this->App->out("List MySQL statements (dry run)...");
+            }
+            else
+            {
+                $this->App->out("Execute MySQL statements...");
+            }
+            $this->App->out();
+            // loop thru all the commands
             foreach ($mysqldump_commands as $key => $cmd)
             {
                 // dry run
@@ -358,10 +374,6 @@ class Backup
     function prepare()
     {
         #####################################
-        # PRE BACKUP JOB
-        #####################################
-        $this->jobs('pre');
-        #####################################
         # SYNC DIR
         #####################################
         if (!file_exists($this->rsyncdir))
@@ -385,6 +397,10 @@ class Backup
                 $this->Cmd->exe("mkdir -p $this->rsyncdir/$aa");
             }
         }
+        #####################################
+        # PRE BACKUP JOB
+        #####################################
+        $this->jobs('pre');
     }
 
     /**
@@ -568,7 +584,8 @@ class Backup
                 $timeout += (integer) $this->Config->get('rsync.retry-timeout');
             }
             $i = 1;
-            $success = false;
+            //set to false
+            $this->rsync_success = false;
             while ($i <= $attempts)
             {
                 $output = $this->Cmd->exe("$cmd");
@@ -579,7 +596,7 @@ class Backup
                     $message = $this->get_rsync_status($this->Cmd->exit_status);
                     $message = (empty($message)) ? '' : ': "' . $message . '".';
                     $this->App->notice("Rsync of $sourcedir directory exited with a non-zero status! Non fatal, will continue. Exit status: " . $this->Cmd->exit_status . $message);
-                    $success = true;
+                    $this->rsync_success = true;
                     break;
                 }
                 //ERRORS
@@ -601,22 +618,33 @@ class Backup
                 else
                 {
                     $this->App->out("");
-                    $success = true;
+                    $this->rsync_success = true;
                     break;
                 }
             }
             //check if successful
-            if (!$success)
+            if (!$this->rsync_success)
             {
                 $message = $this->get_rsync_status($this->Cmd->exit_status);
                 $message = (empty($message)) ? '' : ': "' . $message . '".';
                 $output = "Rsync of $sourcedir directory failed! Aborting! Exit status " . $this->Cmd->exit_status . $message;
                 $this->App->warn($output);
-                $FATAL_ERRORS [] = $output;
+
+            }
+            else
+            {
+                $this->App->out("OK!", 'simple-success');
             }
         }
+    }
+
+    /**
+     * Post backup script depending on successful rsync run
+     */
+    function wrap_up()
+    {
         //check fatal error
-        if(count($FATAL_ERRORS))
+        if(!$this->rsync_success)
         {
             // even if the backup job failed, execute the post-script!
             if($this->Config->get('remote.backup-onfail') == 'abort')
@@ -626,6 +654,7 @@ class Backup
             }
             else
             {
+                $this->App->out("OK!");
                 // run post-backup scripts
                 $this->jobs('post');
             }
@@ -633,7 +662,6 @@ class Backup
         }
         else
         {
-            $this->App->out("OK!", 'simple-success');
             // run post-backup scripts
             $this->jobs('post');
         }

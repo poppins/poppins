@@ -1298,8 +1298,8 @@ class Application
                 {
                     $this->out("Create directory $mysqldump_dir...");
                     $this->Cmd->exe("mkdir -p $mysqldump_dir");
-                } // empty the dir
-                else
+                } // empty the dir unless dry run
+                elseif(!$this->Options->is_set('n'))
                 {
                     $this->out("Empty directory $mysqldump_dir...");
                     // ignore error in case of empty dir: || true
