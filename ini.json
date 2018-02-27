@@ -200,7 +200,7 @@
         {
           "name":"output",
           "depends":"mysql.enabled",
-          "default":"databases",
+          "default":"database",
           "validate":{"list":["database", "table", "csv"]}
         },
         {
