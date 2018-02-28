@@ -25,9 +25,10 @@ class DatabaseDumper extends Dumper
     {
         $statements = [];
         //ignore tables
-        if($this->Config->is_set('mysql.ignore-tables'))
+        $tables_ignore = [];
+        // add tables to ignore -
+        if($this->Config->is_set('mysql.ignore-tables') && !empty($this->Config->get('mysql.ignore-tables')))
         {
-            $tables_ignore = [];
             //check if these items exist
             $exists_check = true;
             // get patterns

@@ -1732,7 +1732,9 @@ class Application
             {
                 $message []= $s.': '.date('Y-m-d H:i:s', $this->Session->get(['chrono', $type, $s]));
             }
-            $message []= 'elapsed (HH:MM:SS): '.gmdate('H:i:s', ($this->Session->get(['chrono', $type, 'stop']) - $this->Session->get(['chrono', $type, 'start'])));
+            $lapse = ($this->Session->get(['chrono', $type, 'stop']) - $this->Session->get(['chrono', $type, 'start']));
+            $this->Session->set(['chrono', $type, 'lapse'], gmdate('H:i:s', $lapse));
+            $message []= 'elapsed (HH:MM:SS): '.$this->Session->get(['chrono', $type, 'lapse']);
             $this->out(implode(', ', $message), 'simple-indent');
             $this->out();
         }
@@ -1802,7 +1804,7 @@ class Application
                     $m['timestamp'] = date('Y-m-d H:i:s');
                     $m['host'] = $host;
                     $m['result'] = strtoupper($exit_status);
-                    $m['lapse'] = $lapse;
+                    $m['lapse'] = $this->Session->get('chrono.session.lapse');
                     $m['logfile'] = $logfile_host;
                     //compress host logfile?
                     if($this->Config->get('log.compress'))
