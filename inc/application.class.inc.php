@@ -869,6 +869,7 @@ class Application
         $dependencies['local']['gzip'] = 'gzip --version';
         $dependencies['local']['rsync'] = 'rsync --version';
         $dependencies['local']['grep'] = '{GREP} --version';
+        $dependencies['local']['moreutils'] = 'echo "OK" | ts';
         //iterate packages
         foreach ($dependencies as $host => $packages)
         {

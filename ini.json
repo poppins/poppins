@@ -137,7 +137,7 @@
           "validate":{"boolean":"error"}
         },
         {
-          "name":"verbose",
+          "name":"timestamps",
           "default":false,
           "validate":{"boolean":"error"}
         },
@@ -150,6 +150,11 @@
           "name":"retry-timeout",
           "default":0,
           "validate":{"integer":"error"}
+        },
+        {
+          "name":"verbose",
+          "default":false,
+          "validate":{"boolean":"error"}
         }
       ]
     },

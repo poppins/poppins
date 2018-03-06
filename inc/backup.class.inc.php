@@ -573,6 +573,10 @@ class Backup
             $targetdir = stripslashes($targetdir);
             $remote_connection = ($this->Config->get('remote.ssh'))? $this->Config->get('remote.user') . "@" . $this->Config->get('remote.host') .':':'';
             $cmd = "rsync $rsync_options -as $excluded " .$remote_connection. "\"$sourcedir\" '$targetdir' 2>&1";
+            if($this->Config->get('rsync.timestamps'))
+            {
+                $cmd .= "| /usr/bin/ts '[%Y-%m-%d %H:%M:%S]'";
+            }
             $this->App->out($cmd);
             //obviously try rsync at least once :)
             $attempts = 1;
