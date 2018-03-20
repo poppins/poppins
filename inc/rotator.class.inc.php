@@ -44,15 +44,15 @@ class Rotator
         $this->Options = Options::get_instance();
 
         // App specific settings
-        $this->Settings = Settings::get_instance();
+        $this->Session = Session::get_instance();
 
         //create datestamp
-        $this->Settings->set('rsync.cdatestamp', date('Y-m-d_His', $this->Settings->get('start_time')));
+        $this->Session->set('rsync.cdatestamp', date('Y-m-d_His', $this->Session->get('chrono.session.start')));
 
         //directories
         $this->archivedir = $this->Config->get('local.hostdir') . '/archive';
         
-        $this->newdir = $this->Config->get('local.hostdir-name') . '.' . $this->Settings->get('rsync.cdatestamp') . '.poppins';
+        $this->newdir = $this->Config->get('local.hostdir-name') . '.' . $this->Session->get('rsync.cdatestamp') . '.poppins';
 
         $this->rsyncdir = $this->Config->get('local.rsyncdir');
                 
@@ -68,6 +68,14 @@ class Rotator
     function init()
     {
         $this->App->out('Rotate snapshots', 'header');
+        //dry run?
+        if($this->Options->is_set('n'))
+        {
+            $this->App->out('DRY RUN!');
+            return;
+        }
+        // mark time
+        $this->Session->set('chrono.rotation.start', date('U'));
         //prepare
         $this->prepare();
         //iniate comparison
@@ -115,7 +123,7 @@ class Rotator
                         //directory timestamp
                         $ddatestamp = $m[0];
                         //convert to seconds
-                        $cdatestamp2unix = $this->to_time($this->Settings->get('rsync.cdatestamp'));
+                        $cdatestamp2unix = $this->to_time($this->Session->get('rsync.cdatestamp'));
                         $ddatestamp2unix = $this->to_time($ddatestamp);
                         //in theory this is not possible, check it anyway - testing purposes
                         if ($cdatestamp2unix < $ddatestamp2unix)
@@ -226,6 +234,8 @@ class Rotator
                 $this->App->out($vv, 'indent');
             }
         }
+        // mark time
+        $this->Session->set('chrono.rotation.stop', date('U'));
     }
 
     /**
@@ -358,7 +368,7 @@ class Rotator
         $offset = (integer) $a[0];
         $interval = $a[1];
         //validate
-        if (!in_array($interval, $this->Settings->get('intervals')))
+        if (!in_array($interval, $this->Session->get('intervals')))
         {
             $this->App->fail('Interval not supported!');
         }

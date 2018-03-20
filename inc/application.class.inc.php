@@ -52,7 +52,7 @@ class Application
         $this->Options = Options::get_instance();
 
         // App specific settings
-        $this->Settings = Settings::get_instance();
+        $this->Session = Session::get_instance();
     }
 
     /**
@@ -156,7 +156,7 @@ class Application
         #####################################
         # HELP
         #####################################
-        $CLI_SHORT_OPTS = ["c:dhvt:"];
+        $CLI_SHORT_OPTS = ["c:dhnvt:"];
         $CLI_LONG_OPTS = ["version", "help", "color"];
         $options = getopt(implode('', $CLI_SHORT_OPTS), $CLI_LONG_OPTS);
         $this->Options->update($options);
@@ -168,14 +168,14 @@ class Application
         }
         elseif($this->Options->is_set('h') || $this->Options->is_set('help'))
         {
-            print $this->Settings->get('appname').' '.$this->Settings->get('version')."\n\n";
+            print $this->Session->get('appname').' '.$this->Session->get('version')."\n\n";
             $content = file_get_contents(dirname(__FILE__).'/../documentation.txt');
             print "$content\n";
             exit();
         }
         elseif($this->Options->is_set('v') || $this->Options->is_set('version'))
         {
-            print $this->Settings->get('appname').' version '.$this->Settings->get('version')."\n";
+            print $this->Session->get('appname').' version '.$this->Session->get('version')."\n";
             $content = file_get_contents(dirname(__FILE__).'/../license.txt');
 
             //abort without error code
@@ -192,7 +192,13 @@ class Application
         #####################################
         # START
         #####################################
-        $this->out($this->Settings->get('appname').' v'.$this->Settings->get('version')." - SCRIPT STARTED " . date('Y-m-d H:i:s', $this->Settings->get('start_time')), 'title');
+        $this->out($this->Session->get('appname').' v'.$this->Session->get('version')." - SCRIPT STARTED " . date('Y-m-d H:i:s', $this->Session->get('chrono.session.start')), 'title');
+        // dry run
+        if($this->Options->is_set('n'))
+        {
+            $this->warn('DRY RUN!!');
+        }
+        // environment
         $this->out('Environment', 'header');
         #####################################
         # LOCAL ENVIRONMENT
@@ -208,14 +214,14 @@ class Application
          // PHP version
         $this->out('Check PHP version...');
         // full version e.g. 5.5.9-1ubuntu4.17
-        $this->Settings->set('php.version.full', PHP_VERSION);
+        $this->Session->set('php.version.full', PHP_VERSION);
         // display version - debugging purposes
-        $this->out($this->Settings->get('php.version.full'), 'simple-indent');
+        $this->out($this->Session->get('php.version.full'), 'simple-indent');
         // version id e.g. 505070
-        $this->Settings->set('php.version.id', PHP_VERSION_ID);
+        $this->Session->set('php.version.id', PHP_VERSION_ID);
         //check version < 5.6.1
         //  TODO implement deprecated - see parse_ini_file($configfile, 1, INI_SCANNER_TYPED);
-        if($this->Settings->get('php.version.id') < 506010)
+        if($this->Session->get('php.version.id') < 506010)
         {
             //$this->fail('PHP version 5.6.1 or higher required!');
         }
@@ -228,7 +234,7 @@ class Application
         // hostname
         $this->out('Check hostname...');
         $hostname = $this->Cmd->exe('hostname');
-        $this->Settings->set('local.hostname', $hostname);
+        $this->Session->set('local.hostname', $hostname);
         $this->out($hostname, 'simple-indent');
         $this->out();
         $this->out('OK!', 'simple-success');
@@ -254,7 +260,9 @@ class Application
         else
         {
             $this->out('Check ini file...');
-            $configfile_full_path = $this->Cmd->exe('readlink -f '.$configfile);
+            #echo $configfile."\n";
+            $configfile_full_path = $this->Cmd->exe('readlink -nf '.$configfile);
+            #die($configfile_full_path);
             $this->out(' '.$configfile_full_path);
             //check for illegal comments in ini file
             $lines = file($configfile);
@@ -271,9 +279,11 @@ class Application
             $config = parse_ini_file($configfile, 1);
             // TODO PHP > 5.6
             // $config = parse_ini_file($configfile, 1, INI_SCANNER_TYPED);
+            // if an error occured, this variable will be false
             if(!$config)
             {
-                $this->fail('Error parsing ini file!');
+                $error = error_get_last();
+                $this->fail('Error parsing ini file! Syntax? Message: '.$error['message']);
             }
             $this->Config->update($config);
             // check cli options of format --foo-bar
@@ -343,10 +353,11 @@ class Application
                         $this->warn('Config values may not contain spaces. Value for '.$kk.' ['.$k.'] is trimmed!');
                         $this->Config->set([$k, $kk], $vv1);
                     }
-                    //No trailing slashes
-                    if (preg_match('/\/$/', $vv))
+                    //No trailing slashes for certain sections
+                    $blacklist = ['local', 'included', 'excluded'];
+                    if (in_array($k, $blacklist) && preg_match('/\/$/', $vv))
                     {
-                        $this->fail("No trailing slashes allowed in config file! $kk = $vv...");
+                        //$this->fail("No trailing slashes allowed in config file! $kk = $vv...");
                     }
                 }
             }
@@ -407,33 +418,64 @@ class Application
                     {
                         continue;
                     }
-                    //initiate message
-                    $message = '';
+                    //check if section and directive is set
                     if($this->Config->is_set([$section['name'], $directive['name']]))
                     {
                         // set value
                         $value = $this->Config->get([$section['name'], $directive['name']]);
                         #####################################
-                        # ALLOWED CHARACTERS
+                        # WEIRD CHARACTERS
                         #####################################
-                        if (!Validator::contains_allowed_characters($value))
+                        // allow database patterns and regex
+                        if(isset($directive['validate']['databases_include_type']))
+                        {
+                            $patterns = explode(',', $value);
+                            foreach($patterns as $pattern)
+                            {
+                                if (!preg_match('/^\/.+\/$/', $pattern) && !preg_match('/^[^\/\.]+$/', $pattern))
+                                {
+                                    $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] has illegal database value: "' . $pattern . '"';
+                                    $this->fail($message);
+                                }
+                            }
+                        }
+                        // allow table patterns and regex
+                        elseif(isset($directive['validate']['tables_include_type']))
+                        {
+                            $patterns = (preg_match('/,/', $value))? explode(',', $value):[$value];
+                            //possibly single value
+                            foreach($patterns as $pattern)
+                            {
+                                if (!preg_match('/^\/.+\/$/', $pattern) && !preg_match('/^[^\.]+\.[^\.]+$/', $pattern))
+                                {
+                                    $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] has illegal table value: "' . $pattern . '"';
+                                    $this->fail($message);
+                                }
+                            }
+                        }
+                        // other weird characters
+                        elseif (!Validator::contains_allowed_characters($value))
                         {
                             //check bad characters - #&;`|*?~<>^()[]{}$\, \x0A and \xFF. ' and " are escaped
                             $escaped = escapeshellcmd($value);
+                            // weird characters found
                             if ($value != $escaped)
                             {
+                                #####################################
+                                # allow tilda
+                                #####################################
                                 //allow tilde in home paths!
-                                $allow_homepath = false;
-                                $allowed_homepaths = ['homepath', 'absolutepath|homepath', 'mysqlpaths'];
-                                foreach($allowed_homepaths as $h)
+                                $validate_tilda_path = false;
+                                $possible_tilda_paths = ['home_path', 'absolute_path|home_path', 'mysql_paths'];
+                                foreach($possible_tilda_paths as $path)
                                 {
-                                    if(isset($directive['validate'][$h]))
+                                    if(isset($directive['validate'][$path]))
                                     {
-                                        $allow_homepath = true;
-                                        break;
+                                        $validate_tilda_path = true; break;
                                     }
                                 }
-                                if ($allow_homepath)
+                                // validate special path
+                                if ($validate_tilda_path)
                                 {
                                     $paths = explode(',', $value);
                                     foreach ($paths as $p)
@@ -456,7 +498,7 @@ class Application
                                 }
                                 else
                                 {
-                                    $this->fail("Illegal character found in string '$value' in directive " . $directive['name'] . " [" . $section['name'] . "]!");
+                                    $this->fail("Illegal path character found in string '$value' in directive " . $directive['name'] . " [" . $section['name'] . "]!");
                                 }
                             }
                         }
@@ -469,12 +511,20 @@ class Application
                             $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an allowed value. Use values "'.implode('/', $allowed).'"!';
                             if (!in_array($value, $allowed))
                             {
-                                if ($directive['validate']['allowed'] == 'warning')
+                                $this->fail($message);
+                            }
+                        }
+                        #####################################
+                        # LIST
+                        #####################################
+                        if (isset($directive['validate']['list']))
+                        {
+                            $list = $directive['validate']['list'];
+                            foreach(explode(',', $value) as $v)
+                            {
+                                if (!in_array($v, $list))
                                 {
-                                    $this->warn($message);
-                                }
-                                else
-                                {
+                                    $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an allowed list value: "'.$v.'". Use values "'.implode('/', $list).'"!';
                                     $this->fail($message);
                                 }
                             }
@@ -522,12 +572,12 @@ class Application
                         # ABSOLUTE OR RELATIVE HOME PATH
                         #####################################
                         //exactly one absolute path
-                        if (isset($directive['validate']['absolutepath|homepath']))
+                        if (isset($directive['validate']['absolute_path|home_path']))
                         {
                             if (!Validator::is_absolute_path($value) && (!Validator::is_relative_home_path($value)))
                             {
                                 $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an absolute/home path!';
-                                if ($directive['validate']['absolutepath|homepath'] == 'warning')
+                                if ($directive['validate']['absolute_path|home_path'] == 'warning')
                                 {
                                     $this->warn($message);
                                 }
@@ -541,12 +591,12 @@ class Application
                         # 1 ABSOLUTE PATH
                         #####################################
                         //exactly one absolute path
-                        if (isset($directive['validate']['absolutepath']))
+                        if (isset($directive['validate']['absolute_path']))
                         {
                             if (!Validator::is_absolute_path($value))
                             {
                                 $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an absolute path!';
-                                if ($directive['validate']['absolutepath'] == 'warning')
+                                if ($directive['validate']['absolute_path'] == 'warning')
                                 {
                                     $this->warn($message);
                                 }
@@ -560,12 +610,12 @@ class Application
                         # 1 ABSOLUTE PATH OR EMPTY
                         #####################################
                         //exactly one absolute path
-                        if (isset($directive['validate']['absolutepath?']))
+                        if (isset($directive['validate']['absolute_path?']))
                         {
                             if (!empty($value) && !Validator::is_absolute_path($value))
                             {
                                 $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an absolute path!';
-                                if ($directive['validate']['absolutepath?'] == 'warning')
+                                if ($directive['validate']['absolute_path?'] == 'warning')
                                 {
                                     $this->warn($message);
                                 }
@@ -576,37 +626,69 @@ class Application
                             }
                         }
                         #####################################
-                        # MULTIPLE MYSQL PATHS
+                        # NO TRAILING SLASH
                         #####################################
-                        if (isset($directive['validate']['mysqlpaths']))
+                        //exactly one absolute path
+                        if (isset($directive['validate']['no_trailing_slash']))
                         {
-                            //set to home if empty
-                            if(empty($value))
+                            if (Validator::contains_trailing_slash($value))
                             {
-                                $this->Config->set([$section['name'], $directive['name']], $directive['default']);
-                            }
-                            else
-                            {
-                                $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] contains an illegal path!';
-                                $paths = explode(',', $value);
-                                if(!count($paths))
+                                $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] may not have a trailing slash!';
+                                if ($directive['validate']['no_trailing_slash'] == 'warning')
                                 {
-                                    $paths = [$value];
+                                    $this->warn($message);
                                 }
-                                foreach($paths as $path)
+                                else
                                 {
-                                    if($path != '~' && !Validator::is_absolute_path($path) && (!Validator::is_relative_home_path($path)))
+                                    $this->fail($message);
+                                }
+                            }
+                        }
+                        #####################################
+                        # MYSQL
+                        #####################################
+                        if($this->Config->get('mysql.enabled'))
+                        {
+                            #####################################
+                            # MULTIPLE MYSQL PATHS
+                            #####################################
+                            if (isset($directive['validate']['mysql_paths']))
+                            {
+                                //set to home if empty
+                                if (empty($value))
+                                {
+                                    $this->Config->set([$section['name'], $directive['name']], $directive['default']);
+                                }
+                                else
+                                {
+                                    $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] contains an illegal path!';
+                                    $paths = explode(',', $value);
+                                    if (!count($paths))
                                     {
-                                        if ($directive['validate']['mysqlpaths'] == 'warning')
+                                        $paths = [$value];
+                                    }
+                                    foreach ($paths as $path)
+                                    {
+                                        if ($path != '~' && !Validator::is_absolute_path($path) && (!Validator::is_relative_home_path($path)))
                                         {
-                                            $this->warn($message);
-                                        }
-                                        else
-                                        {
-                                            $this->fail($message);
+                                            if ($directive['validate']['mysql_paths'] == 'warning')
+                                            {
+                                                $this->warn($message);
+                                            } else
+                                            {
+                                                $this->fail($message);
+                                            }
                                         }
                                     }
                                 }
+                            }
+                            #####################################
+                            # include types
+                            #####################################
+                            //exactly one absolute path
+                            if (isset($directive['validate']['mysql_include_types']))
+                            {
+
                             }
                         }
                     }
@@ -658,11 +740,11 @@ class Application
         {
             foreach ($this->Config->get($section) as $k => $v)
             {
-                if (preg_match('/.+\/$/', trim($k)))
+                if (Validator::contains_trailing_slash(trim($k)))
                 {
                     $this->fail("Directive '".$k."' in [$section] section may not contain a trailing slash!");
                 }
-                elseif (preg_match('/.+\/$/', trim($v)))
+                elseif (Validator::contains_trailing_slash(trim($v)))
                 {
                     $this->fail("Value '".$v."' in [$section] section may not contain a trailing slash!");
                 }
@@ -724,7 +806,7 @@ class Application
         foreach($this->Config->get('snapshots') as $k => $v)
         {
             //check syntax of key
-            if($k != 'incremental' && !preg_match('/^[0-9]+-(' .  implode("|", $this->Settings->get('intervals')).')$/', $k))
+            if($k != 'incremental' && !preg_match('/^[0-9]+-(' .  implode("|", $this->Session->get('intervals')).')$/', $k))
             {
                 $this->fail("Error in snapshot configuration, $k not supported!");
             }
@@ -1066,8 +1148,8 @@ class Application
         #####################################
         # CHECK IF META DIR IS CLEAN
         #####################################
-        $filebase = strtolower($this->Config->get('local.hostdir-name') . '.' . $this->Settings->get('appname'));
-        $this->Settings->set('meta.filebase', $filebase);
+        $filebase = strtolower($this->Config->get('local.hostdir-name') . '.' . $this->Session->get('appname'));
+        $this->Session->set('meta.filebase', $filebase);
         //check if meta dir is clean
         $dir = $this->Config->get('local.rsyncdir').'/meta';
         if(file_exists($dir))
@@ -1094,6 +1176,7 @@ class Application
         # CHECK IF MYSQL DIR IS CLEAN
         #####################################
         //check if mysql dir is clean
+        //TODO implement?
         if(!$this->Config->get('mysql.enabled'))
         {
             $dir = $this->Config->get('local.rsyncdir').'/mysql';
@@ -1125,6 +1208,142 @@ class Application
                 foreach ($diff as $file => $type)
                 {
                     $this->notice("Directory $dir not clean, unknown $type '$file'..");
+                }
+            }
+        }
+        #####################################
+        # SETUP MYSQL CONFIG & DIRS
+        #####################################
+        if($this->Config->get('mysql.enabled'))
+        {
+            #####################################
+            # SEARCH CONFIG FILES IN DIRS
+            #####################################
+            $config_dirs = [];
+            if ($this->Config->get('mysql.configdirs'))
+            {
+                $config_dirs = explode(',', $this->Config->get('mysql.configdirs'));
+            }
+            // default is home dir
+            else
+            {
+                $config_dirs [] = '~';
+            }
+            // iterate config dirs
+            $config_files = [];
+            //iterate dirs
+            foreach ($config_dirs as $config_dir)
+            {
+                $this->Cmd->exe("'cd $config_dir' 2>&1", true);
+                if ($this->Cmd->is_error())
+                {
+                    $this->warn('Cannot access remote mysql configdir ' . $config_dir . '...');
+                }
+                else
+                {
+                    $output = $this->Cmd->exe("'ls $config_dir/.my.cnf* 2>/dev/null'", true);
+                }
+                //check output
+                if ($output)
+                {
+                    $config_files = array_merge($config_files, explode("\n", $output));
+                }
+                else
+                {
+                    $this->warn('Cannot find mysql config files in remote dir ' . $config_dir . '...');
+                }
+            }
+            // noting to do, exit
+            if (!count($config_files))
+            {
+                $this->App->fail('Cannot find any mysql config files...');
+            }
+            #####################################
+            # MY.CONF CONFIG FILE DIRS
+            #####################################
+            $config_file_cache = [];
+            foreach($config_files as $config_file)
+            {
+                //check if the config file is named correctly
+                if (!preg_match('/^.+my\.cnf(\.)*/', $config_file))
+                {
+                    $this->fail('Database config file does not match pattern ".my.cnf*": '.$config_file);
+                }
+                //instance - use special name or set default
+                $instance = preg_replace('/^.+my\.cnf(\.)*/', '', $config_file);
+                // set default dir
+                $instance = ($instance) ? $instance : 'default';
+                //ignore if file is the same
+                $contents = $this->Cmd->exe("'cat $config_file'", true);
+                if (in_array($contents, $config_file_cache))
+                {
+                    // notice to user
+                    $this->notice("Found duplicate mysql config file $config_file...");
+                    // unset this file from the config array
+                    $key = array_search($config_file, $config_files);
+                    unset($config_files[$key]);
+                    // continue the loop
+                    continue;
+                }
+                else
+                {
+                    $config_file_cache [] = $contents;
+                }
+                #####################################
+                # SETUP MYSQLDUMP DIR
+                #####################################
+                $rsyncdir = $this->Config->get('local.rsyncdir');
+                $mysqldump_dir = "$rsyncdir/mysql/$instance";
+                // check if dir exists
+                if (!is_dir($mysqldump_dir))
+                {
+                    $this->out("Create directory $mysqldump_dir...");
+                    $this->Cmd->exe("mkdir -p $mysqldump_dir");
+                } // empty the dir unless dry run
+                elseif(!$this->Options->is_set('n'))
+                {
+                    $this->out("Empty directory $mysqldump_dir...");
+                    // ignore error in case of empty dir: || true
+                    $this->Cmd->exe("rm -f $mysqldump_dir/*");
+                }
+                // load in session
+                $this->Session->set('mysql.dumpdir.'.$instance, $mysqldump_dir);
+            }
+            //store the array in the session
+            $this->Session->set('mysql.configfiles', $config_files);
+            #####################################
+            # VALIDATE INCLUDED/EXCLUDED
+            #####################################
+            // check if more than 1 config file found
+            if(count($this->Session->get('mysql.configfiles')) > 1)
+            {
+                foreach (['included', 'excluded'] as $include_type)
+                {
+                    foreach (['databases', 'tables'] as $object)
+                    {
+                        if ($this->Config->is_set('mysql.' . $include_type . '-' . $object))
+                        {
+                            $this->fail("Cannot configure $include_type-$object while using multiple mysql config files!");
+                        }
+                    }
+                }
+            }
+            #####################################
+            # VALIDATE MYSQL OUTPUT
+            #####################################
+            if(!$this->Config->is_set('mysql.output'))
+            {
+                $this->Config->set('mysql.output', 'databases');
+            }
+            else
+            {
+                $mysql_output = explode(',', $this->Config->get('mysql.output'));
+                foreach ($mysql_output as $o)
+                {
+                    if(!in_array($o, ['database', 'table', 'csv']))
+                    {
+                        $this->fail('Illegal value for mysql output: "'.$o.'"');
+                    }
                 }
             }
         }
@@ -1444,7 +1663,14 @@ class Application
         //log message
         if(!$error)
         {
-            $this->out("SCRIPT RAN SUCCESSFULLY!", 'final-success');
+            if($this->Options->is_set('n'))
+            {
+                $this->out("DRY RUN RAN SUCCESSFULLY!", 'final-success');
+            }
+        else
+            {
+                $this->out("SCRIPT RAN SUCCESSFULLY!", 'final-success');
+            }
         }
         else
         {
@@ -1484,16 +1710,37 @@ class Application
         {
             $tag = '(untagged)';
         }
-        $this->log("Run tagged as: $tag");
+        $this->out("Session tagged as: $tag");
         #####################################
-        # TIME SCRIPT
+        # TIMING
         #####################################
-        $lapse = date('U') - $this->Settings->get('start_time');
-        $lapse = gmdate('H:i:s', $lapse);
-        $this->log("Script time: $lapse (HH:MM:SS)");
-        $this->log();
+        $this->out('Schedule', 'header');
+        // mark time
+        $this->Session->set('chrono.session.stop', date('U'));
+        // output all times
+        foreach($this->Session->get('chrono') as $type => $times)
+        {
+            // skip if no end time
+            if(!$this->Session->is_set(['chrono', $type, 'stop']))
+            {
+                continue;
+            }
+            // title
+            $this->out($type);
+            // create message
+            $message = [];
+            foreach(['start', 'stop'] as $s)
+            {
+                $message []= $s.': '.date('Y-m-d H:i:s', $this->Session->get(['chrono', $type, $s]));
+            }
+            $lapse = ($this->Session->get(['chrono', $type, 'stop']) - $this->Session->get(['chrono', $type, 'start']));
+            $this->Session->set(['chrono', $type, 'lapse'], gmdate('H:i:s', $lapse));
+            $message []= 'elapsed (HH:MM:SS): '.$this->Session->get(['chrono', $type, 'lapse']);
+            $this->out(implode(', ', $message), 'simple-indent');
+            $this->out();
+        }
         //final header
-        $this->out($this->Settings->get('appname').' v'.$this->Settings->get('version'). " - SCRIPT ENDED " . date('Y-m-d H:i:s'), 'title');
+        $this->out($this->Session->get('appname').' v'.$this->Session->get('version'). " - SCRIPT ENDED " . date('Y-m-d H:i:s'), 'title');
         #####################################
         # COLORIZE OUTPUT
         #####################################
@@ -1531,7 +1778,7 @@ class Application
             {
                 // create log file
                 $host = ($this->Config->get('local.hostdir-name'))? $this->Config->get('local.hostdir-name'):$this->Config->get('remote.host');
-                $logfile_host = $this->Config->get('local.logdir') . '/' . $host . '.' . date('Y-m-d_His', $this->Settings->get('start_time')) . '.poppins.' . $exit_status. '.log';
+                $logfile_host = $this->Config->get('local.logdir') . '/' . $host . '.' . date('Y-m-d_His', $this->Session->get('chrono.session.start')) . '.poppins.' . $exit_status. '.log';
                 $logfile_app = $this->Config->get('local.logdir') . '/poppins.log';
                 $content [] = 'Create logfile for host ' . $logfile_host . '...';
                 //create file
@@ -1558,7 +1805,7 @@ class Application
                     $m['timestamp'] = date('Y-m-d H:i:s');
                     $m['host'] = $host;
                     $m['result'] = strtoupper($exit_status);
-                    $m['lapse'] = $lapse;
+                    $m['lapse'] = $this->Session->get('chrono.session.lapse');
                     $m['logfile'] = $logfile_host;
                     //compress host logfile?
                     if($this->Config->get('log.compress'))
@@ -1568,7 +1815,7 @@ class Application
                         //append suffix in log
                         $m['logfile'] .= '.gz';
                     }
-                    $m['version'] = $this->Settings->get('version');
+                    $m['version'] = $this->Session->get('version');
                     // add tag to entry
                     if($this->Options->is_set('t') && $this->Options->get('t'))
                     {

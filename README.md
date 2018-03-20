@@ -55,7 +55,7 @@ All configuration in {filename}.poppins.ini. See example.poppins.ini for instruc
 ### Deployment ###
 SYNOPSIS
 
-    poppins -c {configfile} [--color] [-d] [-h] [-t {tag}] [-v] [--long-options]
+    poppins -c {configfile} [--color] [-d] [-h] [-n] [-t {tag}] [-v] [--long-options]
 
 DESCRIPTION
 
@@ -81,6 +81,9 @@ OPTIONS
 
     -t {tag}
         Add a tag to the application log file.
+        
+    -n
+        Dry run
 
     -v
         Print Poppins version.
