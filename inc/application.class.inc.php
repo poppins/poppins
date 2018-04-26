@@ -1256,7 +1256,7 @@ class Application
             // noting to do, exit
             if (!count($config_files))
             {
-                $this->App->fail('Cannot find any mysql config files...');
+                $this->fail('Cannot find any mysql config files...');
             }
             #####################################
             # MY.CONF CONFIG FILE DIRS
