@@ -280,7 +280,27 @@ class Backup
             // remote disk layout and packages
             if ($this->Config->get('remote.os') == "Linux")
             {
-                $this->Cmd->exe("'( df -hT 2>&1; vgs 2>&1; pvs 2>&1; lvs 2>&1; blkid 2>&1; lsblk -fi 2>&1; for disk in $(ls /dev/sd[a-z] /dev/cciss/* 2>/dev/null) ; do fdisk -l \$disk 2>&1; done )' > $this->rsyncdir/meta/" . $filebase . ".disk-layout.txt", true);
+                $cmds = [];
+                $cmds []= 'df -hT';
+                $cmds []= 'vgs';
+                $cmds []= 'pvs';
+                $cmds []= 'lvs';
+                $cmds []= 'blkid';
+                $cmds []= 'lsblk -fi';
+
+                $emb = '%%%%%%';
+
+                $cmd_string = '';
+                foreach($cmds as $cmd)
+                {
+                    $cmd_string .= "echo ".$emb.' '.$cmd.' '.$emb."; echo; $cmd 2>&1; echo;";
+
+                }
+
+                echo $cmd_string;
+
+                $this->Cmd->exe("'( ".$cmd_string." echo  ".$emb." fdisk ".$emb."; for disk in $(ls /dev/sd[a-z] /dev/cciss/* 2>/dev/null) ; do fdisk -l \$disk 2>&1; done )' > $this->rsyncdir/meta/" . $filebase . ".disk-layout.txt", true);
+                #$this->Cmd->exe("'( df -hT 2>&1; vgs 2>&1; pvs 2>&1; lvs 2>&1; blkid 2>&1; lsblk -fi 2>&1; for disk in $(ls /dev/sd[a-z] /dev/cciss/* 2>/dev/null) ; do fdisk -l \$disk 2>&1; done )' > $this->rsyncdir/meta/" . $filebase . ".disk-layout.txt", true);
 
                 if ($this->Cmd->is_error())
                 {
