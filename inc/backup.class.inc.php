@@ -285,6 +285,9 @@ class Backup
             // remote disk layout and packages
             if ($this->Config->get('remote.os') == "Linux")
             {
+                #####################################
+                # DISK LAYOUT
+                #####################################
                 $cmds = [];
                 $cmds []= 'df -hT';
                 $cmds []= 'vgs';
@@ -299,11 +302,9 @@ class Backup
                 foreach($cmds as $cmd)
                 {
                     $cmd_string .= "echo ".$emb.' '.$cmd.' '.$emb."; echo; $cmd 2>&1; echo;";
-
                 }
 
-                $this->Cmd->exe("'( ".$cmd_string." echo  ".$emb." fdisk ".$emb."; for disk in $(ls /dev/sd[a-z] /dev/cciss/* 2>/dev/null) ; do fdisk -l \$disk 2>&1 && echo; done )' > $this->rsyncdir/meta/" . $filebase . ".disk-layout.txt", true);
-                #$this->Cmd->exe("'( df -hT 2>&1; vgs 2>&1; pvs 2>&1; lvs 2>&1; blkid 2>&1; lsblk -fi 2>&1; for disk in $(ls /dev/sd[a-z] /dev/cciss/* 2>/dev/null) ; do fdisk -l \$disk 2>&1; done )' > $this->rsyncdir/meta/" . $filebase . ".disk-layout.txt", true);
+                $this->Cmd->exe("'( ".$cmd_string." echo  ".$emb." fdisk ".$emb."; for disk in $(ls /dev/sd[a-z] 2>/dev/null) ; do fdisk -l \$disk 2>&1 && echo; done )' > $this->rsyncdir/meta/" . $filebase . ".disk-layout.txt", true);
 
                 if ($this->Cmd->is_error())
                 {
@@ -315,6 +316,20 @@ class Backup
                     $this->App->out();
                     $this->App->out("OK!", 'simple-success');
                 }
+                #####################################
+                # BACKUP PARTITION TABLE
+                #####################################
+                // iterate disks
+                $drives = $this->Cmd->exe('for disk in $(ls /dev/sd[a-z] 2>/dev/null); do echo $disk; done');
+                foreach(explode("\n", $drives) as $drive)
+                {
+                    $drivename = str_replace('/', '.', trim($drive, '/'));
+                    $this->Cmd->exe("'( sfdisk -d ".$drive." )' > $this->rsyncdir/meta/" . "$filebase.$drivename" . ".partition.table.txt", true);
+                }
+                #####################################
+                # BACKUP LVM LAYOUT
+                #####################################
+                $this->Cmd->exe("'( cat /etc/lvm/backup/* 2>/dev/null)' > $this->rsyncdir/meta/$filebase.lvm.txt", true);
             }
         }
         else
@@ -420,6 +435,7 @@ class Backup
         {
             $a [] = 'mysql';
         }
+        // create directories
         foreach ($a as $aa)
         {
             if (!file_exists($this->rsyncdir . '/' . $aa))

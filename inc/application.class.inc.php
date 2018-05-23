@@ -947,6 +947,7 @@ class Application
             $dependencies['remote']['pacman'] = 'pacman --version';
         }
         $dependencies['remote']['rsync'] = 'rsync --version';
+        $dependencies['remote']['sfdisk'] = 'sfdisk -v';
         //local
         $dependencies['local']['gzip'] = 'gzip --version';
         $dependencies['local']['rsync'] = 'rsync --version';
