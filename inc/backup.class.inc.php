@@ -276,6 +276,11 @@ class Backup
         //disk layout
         if ($this->Config->get('meta.remote-disk-layout'))
         {
+            // need root privileges
+            if($this->Config->get('remote.user') != 'root')
+            {
+                $this->App->warn('Disk layout needs root privileges!');
+            }
             $this->App->out('Gather information about disk layout...');
             // remote disk layout and packages
             if ($this->Config->get('remote.os') == "Linux")
