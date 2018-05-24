@@ -1155,28 +1155,28 @@ class Application
         #####################################
         $filebase = strtolower($this->Config->get('local.hostdir-name') . '.' . $this->Session->get('appname'));
         $this->Session->set('meta.filebase', $filebase);
-        //check if meta dir is clean
-        $dir = $this->Config->get('local.rsyncdir').'/meta';
-        if(file_exists($dir))
-        {
-            $allowed = [];
-            $directives = ['remote-disk-layout' => 'disk-layout.txt', 'remote-package-list' => 'packages.txt'];
-            foreach ($directives as $directive => $file)
-            {
-                if ($this->Config->get(['meta', $directive]))
-                {
-                    $allowed [] = $filebase . '.' . $file;
-                }
-            }
-            $diff = Validator::contains_allowed_files($dir, $allowed);
-            if (count($diff))
-            {
-                foreach ($diff as $file => $type)
-                {
-                    $this->notice("Directory $dir not clean, unknown $type '$file'..");
-                }
-            }
-        }
+//        //check if meta dir is clean
+//        $dir = $this->Config->get('local.rsyncdir').'/meta';
+//        if(file_exists($dir))
+//        {
+//            $allowed = [];
+//            $directives = ['remote-disk-layout' => 'disk-layout.txt', 'remote-package-list' => 'packages.txt'];
+//            foreach ($directives as $directive => $file)
+//            {
+//                if ($this->Config->get(['meta', $directive]))
+//                {
+//                    $allowed [] = $filebase . '.' . $file;
+//                }
+//            }
+//            $diff = Validator::contains_allowed_files($dir, $allowed);
+//            if (count($diff))
+//            {
+//                foreach ($diff as $file => $type)
+//                {
+//                    $this->notice("Directory $dir not clean, unknown $type '$file'..");
+//                }
+//            }
+//        }
         #####################################
         # CHECK IF MYSQL DIR IS CLEAN
         #####################################
