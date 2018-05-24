@@ -1719,7 +1719,7 @@ class Application
         #####################################
         # TIMING
         #####################################
-        $this->out('Schedule', 'header');
+        $this->out('Timing', 'header');
         // mark time
         $this->Session->set('chrono.session.stop', date('U'));
         // output all times

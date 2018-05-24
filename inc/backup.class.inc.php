@@ -320,11 +320,14 @@ class Backup
                 # BACKUP PARTITION TABLE
                 #####################################
                 // iterate disks
-                $drives = $this->Cmd->exe('for disk in $(ls /dev/sd[a-z] 2>/dev/null); do echo $disk; done');
-                foreach(explode("\n", $drives) as $drive)
+                $drives = $this->Cmd->exe("'for disk in $(ls /dev/sd[a-z]); do echo \$disk; done'", true);
+                if(!empty($drives))
                 {
-                    $drivename = str_replace('/', '.', trim($drive, '/'));
-                    $this->Cmd->exe("'( sfdisk -d ".$drive." )' > $this->rsyncdir/meta/$filebase.partition_table.$drivename.txt", true);
+                    foreach (explode("\n", $drives) as $drive)
+                    {
+                        $drivename = str_replace('/', '.', trim($drive, '/'));
+                        $this->Cmd->exe("'( sfdisk -d " . $drive . " )' > $this->rsyncdir/meta/$filebase.partition_table.$drivename.txt", true);
+                    }
                 }
                 #####################################
                 # BACKUP LVM LAYOUT
