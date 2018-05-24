@@ -933,37 +933,41 @@ class Application
         //Debian - Ubuntu
         if(in_array($remote_distro, ['Debian', 'Ubuntu']))
         {
-//            $dependencies['remote']['aptitude'] = 'aptitude --version';
+//            $dependencies['hard']['remote']['aptitude'] = 'aptitude --version';
         }
         //Red Hat - Fedora
         if(in_array($remote_distro, ['Red Hat', 'CentOS', 'Fedora']))
         {
             //yum is nice though rpm will suffice, no hard dependency needed
-            //$dependencies['remote']['yum-utils'] = 'yumdb --version';
+            //$dependencies['hard']['remote']['yum-utils'] = 'yumdb --version';
         }
         //Arch - Manjaro
         if(in_array($remote_distro, ['Arch', 'Manjaro']))
         {
-            $dependencies['remote']['pacman'] = 'pacman --version';
+            $dependencies['hard']['remote']['pacman'] = 'pacman --version';
         }
-        $dependencies['remote']['rsync'] = 'rsync --version';
-        $dependencies['remote']['sfdisk'] = 'sfdisk -v';
+        $dependencies['hard']['remote']['rsync'] = 'rsync --version';
+        $dependencies['soft']['remote']['sfdisk'] = 'sfdisk -v';
         //local
-        $dependencies['local']['gzip'] = 'gzip --version';
-        $dependencies['local']['rsync'] = 'rsync --version';
-        $dependencies['local']['grep'] = '{GREP} --version';
-        $dependencies['local']['moreutils'] = 'echo "OK" | ts';
+        $dependencies['hard']['local']['gzip'] = 'gzip --version';
+        $dependencies['hard']['local']['rsync'] = 'rsync --version';
+        $dependencies['hard']['local']['grep'] = '{GREP} --version';
+        $dependencies['hard']['local']['moreutils'] = 'echo "OK" | ts';
         //iterate packages
-        foreach ($dependencies as $host => $packages)
+        foreach($dependencies as $type => $dependency)
         {
-            foreach ($packages as $package => $command)
+            foreach ($dependency as $host => $packages)
             {
-                //check if installed
-                $remote = ($host == 'remote')? true:false;
-                $this->Cmd->exe($command, $remote);
-                if ($this->Cmd->is_error())
+                foreach ($packages as $package => $command)
                 {
-                    $this->fail("Package $package installed on $host machine?");
+                    //check if installed
+                    $remote = ($host == 'remote') ? true : false;
+                    $this->Cmd->exe($command, $remote);
+                    if ($this->Cmd->is_error())
+                    {
+                        $action = ($type == 'hard')? 'fail':'notice';
+                        $this->$action("Package $package installed on $host machine?");
+                    }
                 }
             }
         }
