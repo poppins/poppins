@@ -304,7 +304,7 @@ class Backup
                     $cmd_string .= "echo ".$emb.' '.$cmd.' '.$emb."; echo; $cmd 2>&1; echo;";
                 }
 
-                $this->Cmd->exe("'( ".$cmd_string." echo  ".$emb." fdisk ".$emb."; for disk in $(ls /dev/sd[a-z] 2>/dev/null) ; do fdisk -l \$disk 2>&1 && echo; done )' > $this->rsyncdir/meta/" . $filebase . ".disk-layout.txt", true);
+                $this->Cmd->exe("'( ".$cmd_string." echo  ".$emb." fdisk ".$emb."; for disk in $(ls /dev/sd[a-z] 2>/dev/null) ; do fdisk -l \$disk 2>&1 && echo; done )' > $this->rsyncdir/meta/" . $filebase . ".disk_layout.txt", true);
 
                 if ($this->Cmd->is_error())
                 {
@@ -312,7 +312,7 @@ class Backup
                 }
                 else
                 {
-                    $this->App->out("Write to file $this->rsyncdir/meta/" . $filebase . ".disk-layout.txt...");
+                    $this->App->out("Write to file $this->rsyncdir/meta/" . $filebase . ".disk_layout.txt...");
                     $this->App->out();
                     $this->App->out("OK!", 'simple-success');
                 }
@@ -324,12 +324,14 @@ class Backup
                 foreach(explode("\n", $drives) as $drive)
                 {
                     $drivename = str_replace('/', '.', trim($drive, '/'));
-                    $this->Cmd->exe("'( sfdisk -d ".$drive." )' > $this->rsyncdir/meta/" . "$filebase.$drivename" . ".partition.table.txt", true);
+                    $this->Cmd->exe("'( sfdisk -d ".$drive." )' > $this->rsyncdir/meta/$filebase.partition_table.$drivename.txt", true);
                 }
                 #####################################
                 # BACKUP LVM LAYOUT
                 #####################################
-                $this->Cmd->exe("'( cat /etc/lvm/backup/* 2>/dev/null)' > $this->rsyncdir/meta/$filebase.lvm.txt", true);
+                //$this->Cmd->exe("'( cat /etc/lvm/backup/* 2>/dev/null)' > $this->rsyncdir/meta/$filebase.lvm_backup.txt", true);
+                $file_name = 'vgcfgbackup.txt';
+                $this->Cmd->exe("'( which lvdisplay > /dev/null && vgcfgbackup -f /tmp/$file_name && cat /tmp/$file_name)' > $this->rsyncdir/meta/$filebase.$file_name", true);
             }
         }
         else
@@ -420,7 +422,7 @@ class Backup
     function prepare()
     {
         #####################################
-        # SYNC DIR
+        # CREATE SYNC DIR
         #####################################
         if (!file_exists($this->rsyncdir))
         {
@@ -428,20 +430,34 @@ class Backup
             $this->create_syncdir();
         }
         #####################################
-        # OTHER DIRS
+        # CREATE OTHER DIRS
         #####################################
-        $a = ['meta', 'files'];
+        $dirs = ['meta', 'files'];
         if ($this->Config->get('mysql.enabled'))
         {
-            $a [] = 'mysql';
+            $dirs [] = 'mysql';
         }
         // create directories
-        foreach ($a as $aa)
+        foreach ($dirs as $dir)
         {
-            if (!file_exists($this->rsyncdir . '/' . $aa))
+            if (!file_exists($this->rsyncdir . '/' . $dir))
             {
-                $this->App->out("Create $aa dir $this->rsyncdir/$aa...");
-                $this->Cmd->exe("mkdir -p $this->rsyncdir/$aa");
+                $this->App->out("Create $dir dir $this->rsyncdir/$dir...");
+                $this->Cmd->exe("mkdir -p $this->rsyncdir/$dir");
+            }
+        }
+        #####################################
+        # EMPTY DIRS
+        #####################################
+        if (!$this->Options->is_set('n'))
+        {
+            $dirs = ['meta'];
+            // empty dirs
+            foreach ($dirs as $dir)
+            {
+                $this->App->out("Empty meta directory " . $this->rsyncdir . '/' . $dir . "...");
+                // ignore error in case of empty dir: || true
+                $this->Cmd->exe("rm -f " . $this->rsyncdir . '/' . $dir . "/*");
             }
         }
         #####################################
