@@ -326,10 +326,10 @@ class Backup
                     foreach (explode("\n", $drives) as $drive)
                     {
                         $drivename = str_replace('/', '.', trim($drive, '/'));
-                        $this->Cmd->exe("'( sfdisk -d " . $drive . " 2>/dev/null)' > $this->rsyncdir/meta/$filebase.partition_table.$drivename.txt", true);
+                        $this->Cmd->exe("'( sfdisk -d " . $drive . " 2>/dev/null)' > $this->rsyncdir/meta/$filebase.partition.$drivename.txt", true);
                         //restore commands
                         $filebase = $this->Session->get('meta.filebase');
-                        $this->Cmd->exe("echo 'sfdisk -f /dev/sda < /tmp/restore/poppins.partition_table.dev.sda.txt' > ".$this->rsyncdir . '/restore/'.$filebase.'.partitions.'.$drivename.'.txt');
+                        $this->Cmd->exe("echo 'sfdisk -f /dev/sda < /tmp/restore/poppins.partition.dev.sda.txt' > ".$this->rsyncdir . '/restore/'.$filebase.'.rebuild_partition.'.$drivename.'.sh');
                         # $remote_connection = ($this->Config->get('remote.ssh'))? $this->Config->get('remote.user') . "@" . $this->Config->get('remote.host') :'';
                         # $this->Cmd->exe("echo 'cat $this->rsyncdir/meta/$filebase.partition_table.$drivename.txt | ssh ".$remote_connection." sfdisk -f $drive' >> ".$this->rsyncdir . '/restore/'.$filebase.'.sfdisk.'.$drivename.'.txt');
                     }
@@ -338,27 +338,28 @@ class Backup
                 # BACKUP LVM LAYOUT
                 #####################################
                 //$this->Cmd->exe("'( cat /etc/lvm/backup/* 2>/dev/null)' > $this->rsyncdir/meta/$filebase.lvm_backup.txt", true);
-                $file_name = 'vgcfgbackup.txt';
-                $this->Cmd->exe("'( which lvdisplay > /dev/null && vgcfgbackup -f /tmp/$file_name && cat /tmp/$file_name)' > $this->rsyncdir/meta/$filebase.$file_name", true);
-                if(filesize("$this->rsyncdir/meta/$filebase.$file_name"))
+                $lvm_output_file_name = 'vgcfgbackup.txt';
+                $lvm_extension = 'restore_logical_volumes.sh';
+                $this->Cmd->exe("'( which lvdisplay > /dev/null && vgcfgbackup -f /tmp/$lvm_output_file_name && cat /tmp/$lvm_output_file_name)' > $this->rsyncdir/meta/$filebase.$lvm_output_file_name", true);
+                if(filesize("$this->rsyncdir/meta/$filebase.$lvm_output_file_name"))
                 {
                     // build the restore file
-                    $physical_volumes = $this->Cmd->exe("grep -E -A2 'pv[0-9]+ {' $this->rsyncdir/meta/$filebase.$file_name");
+                    $physical_volumes = $this->Cmd->exe("grep -E -A2 'pv[0-9]+ {' $this->rsyncdir/meta/$filebase.$lvm_output_file_name");
                     foreach (explode('--', $physical_volumes) as $physical_volume)
                     {
                         preg_match('/id = \"(.+)\"/', $physical_volume, $matches);
                         $id = $matches[1];
-                        preg_match('/device = \"(.+)\"/', $physical_volume, $matches);
-                        $device = $matches[1];
-                        $this->Cmd->exe("echo '# re-create the physical volume with pvcreate \npvcreate --uuid \"$id\" --restorefile /tmp/restore/$filebase.$file_name' >> " . $this->rsyncdir . '/restore/' . $filebase . '.lvm.txt');
+//                        preg_match('/device = \"(.+)\"/', $physical_volume, $matches);
+//                        $device = $matches[1];
+                        $this->Cmd->exe("echo '# re-create the physical volume with pvcreate \npvcreate --uuid \"$id\" --restorefile /tmp/restore/$filebase.$lvm_output_file_name' >> " . $this->rsyncdir . '/restore/' . $filebase . '.'.$lvm_extension);
                     }
                     //volume restore
-                    $output = $physical_volumes = $this->Cmd->exe("head -1 $this->rsyncdir/meta/$filebase.$file_name");
+                    $output = $physical_volumes = $this->Cmd->exe("head -1 $this->rsyncdir/meta/$filebase.$lvm_output_file_name");
                     preg_match('/Volume group "(.+)"/', $output, $matches);
                     $volume_group = $matches[1];
-                    $this->Cmd->exe("echo '# restore the volume group with vgcfgrestore \nvgcfgrestore -f /tmp/restore/$filebase.$file_name $volume_group' >> " . $this->rsyncdir . '/restore/' . $filebase . '.lvm.txt');
+                    $this->Cmd->exe("echo '# restore the volume group with vgcfgrestore \nvgcfgrestore -f /tmp/restore/$filebase.$lvm_output_file_name $volume_group' >> " . $this->rsyncdir . '/restore/' . $filebase . '.'.$lvm_extension);
                     // activate volumes
-                    $this->Cmd->exe("echo '# activate all logical volumes \nvgchange -a y $volume_group' >> " . $this->rsyncdir . '/restore/' . $filebase . '.lvm.txt');
+                    $this->Cmd->exe("echo '# activate all logical volumes \nvgchange -a y $volume_group' >> " . $this->rsyncdir . '/restore/' . $filebase . '.'.$lvm_extension);
                 }
             }
         }
@@ -624,6 +625,8 @@ class Backup
         {
             $o [] = "--inplace";
         }
+        // add default options
+        $o []= '-as';
         $rsync_options = implode(' ', $o);
         #####################################
         # RSYNC THE DIRECTORIES
@@ -661,7 +664,7 @@ class Backup
             $targetdir = stripslashes($targetdir);
             $remote_connection = ($this->Config->get('remote.ssh'))? $this->Config->get('remote.user') . "@" . $this->Config->get('remote.host') .':':'';
             // the rsync command
-            $cmd = "rsync $rsync_options -as $excluded " .$remote_connection. "\"$sourcedir\" '$targetdir' 2>&1";
+            $cmd = "rsync $rsync_options $excluded " .$remote_connection. "\"$sourcedir\" '$targetdir' 2>&1";
             if($this->Config->get('rsync.timestamps'))
             {
                 $cmd .= "| /usr/bin/ts '[%Y-%m-%d %H:%M:%S]'";
@@ -734,7 +737,7 @@ class Backup
                 $this->Session->set(['chrono', 'rsync "'.$source .'"', 'stop'], date('U'));
                 //restore command
                 $filebase = $this->Session->get('meta.filebase');
-                $this->Cmd->exe("echo rsync --numeric-ids -e ssh -v -x -a \'$targetdir\' " .$remote_connection. "\'$sourcedir\' >> ".$this->rsyncdir . '/restore/'.$filebase.'.rsync.txt');
+                $this->Cmd->exe("echo rsync ".$rsync_options." \'$targetdir\' " .$remote_connection. "\'/mnt/poppins$sourcedir\' >> ".$this->rsyncdir . '/restore/'.$filebase.'.rsync_data.sh');
             }
         }
     }
