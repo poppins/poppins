@@ -339,7 +339,7 @@ class Backup
                         $this->Cmd->exe("'( sfdisk -d " . $drive . " 2>/dev/null)' > ".$this->Session->get('meta.path')."$filebase.partition.$filename_drive.txt", true);
                         //restore commands
                         $filebase = $this->Session->get('meta.filebase');
-                        $this->Cmd->exe("echo 'sfdisk -f ".$drive." < /tmp/restore/poppins.partition.$filename_drive.txt' | $tee_cmd > ".$this->Session->get('restore.path').$filebase.'.'.$filebase_partitions.'.'.$filename_drive.'.sh');
+                        $this->Cmd->exe("echo 'sfdisk -f ".$drive." < /tmp/meta/poppins.partition.$filename_drive.txt' | $tee_cmd > ".$this->Session->get('restore.path').$filebase.'.'.$filebase_partitions.'.'.$filename_drive.'.sh');
                     }
                 }
                 #####################################
@@ -362,13 +362,13 @@ class Backup
                         $id = $matches[1];
 //                        preg_match('/device = \"(.+)\"/', $physical_volume, $matches);
 //                        $device = $matches[1];
-                        $this->Cmd->exe("echo '# re-create the physical volume with pvcreate \npvcreate --uuid \"$id\" --restorefile /tmp/restore/$filebase.$filename_vgcfgbackup' | $tee_cmd >> " . $this->Session->get('restore.path') . $filebase . '.'.$filebase_lvm.'.sh');
+                        $this->Cmd->exe("echo '# re-create the physical volume with pvcreate \npvcreate --uuid \"$id\" --restorefile /tmp/meta/$filebase.$filename_vgcfgbackup' | $tee_cmd >> " . $this->Session->get('restore.path') . $filebase . '.'.$filebase_lvm.'.sh');
                     }
                     //volume restore
                     $output = $physical_volumes = $this->Cmd->exe("head -1 ".$this->Session->get('meta.path')."$filebase.$filename_vgcfgbackup");
                     preg_match('/Volume group "(.+)"/', $output, $matches);
                     $volume_group = $matches[1];
-                    $this->Cmd->exe("echo '# restore the volume group with vgcfgrestore \nvgcfgrestore -f /tmp/restore/$filebase.$filename_vgcfgbackup $volume_group' | $tee_cmd >> " . $this->Session->get('restore.path') . $filebase . '.'.$filebase_lvm.'.sh');
+                    $this->Cmd->exe("echo '# restore the volume group with vgcfgrestore \nvgcfgrestore -f /tmp/meta/$filebase.$filename_vgcfgbackup $volume_group' | $tee_cmd >> " . $this->Session->get('restore.path') . $filebase . '.'.$filebase_lvm.'.sh');
                     // activate volumes
                     $this->Cmd->exe("echo '# activate all logical volumes \nvgchange -a y $volume_group' | $tee_cmd >> " . $this->Session->get('restore.path') . $filebase . '.'.$filebase_lvm.'.sh');
                 }
