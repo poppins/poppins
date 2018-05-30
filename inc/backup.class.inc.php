@@ -369,12 +369,12 @@ class Backup
                 $this->Cmd->exe("echo '# ".strtoupper(str_replace('_', ' ',$restore_type))." (RESCUE SYSTEM)' >> ".$this->Session->get('restore.script'));
                 $this->Cmd->exe("echo '################################################' >> ".$this->Session->get('restore.script'));
                 # $this->Cmd->exe("'( which lvdisplay > /dev/null && vgcfgbackup -f /tmp/$filename_vgcfgbackup && cat /tmp/$filename_vgcfgbackup)' > ".$this->Session->get('meta.path')."$filebase.$filename_vgcfgbackup", true);
-                $output = $this->Cmd->exe("'( which lvdisplay > /dev/null && vgcfgbackup -f /tmp/$filename_vgcfgbackup)'", true);
-                preg_match('/Volume group "(.+)"/', $output, $matches);
-                $volume_group = $matches[1];
-                $this->Cmd->exe("'(cat /tmp/$filename_vgcfgbackup)' > ".$this->Session->get('meta.path')."$filebase.$filename_vgcfgbackup", true);
-                if(filesize($this->Session->get('meta.path')."$filebase.$filename_vgcfgbackup"))
+                $output = $this->Cmd->exe("'( which lvdisplays > /dev/null && vgcfgbackup -f /tmp/$filename_vgcfgbackup) || echo FAILED'", true);
+                if($output != 'FAILED')
                 {
+                    preg_match('/Volume group "(.+)"/', $output, $matches);
+                    $volume_group = $matches[1];
+                    $this->Cmd->exe("'(cat /tmp/$filename_vgcfgbackup)' > ".$this->Session->get('meta.path')."$filebase.$filename_vgcfgbackup", true);
                     // build the restore file
                     $physical_volumes = $this->Cmd->exe("grep -E -A2 'pv[0-9]+ {' ".$this->Session->get('meta.path')."$filebase.$filename_vgcfgbackup");
                     foreach (explode('--', $physical_volumes) as $physical_volume)
