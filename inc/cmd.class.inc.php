@@ -91,8 +91,10 @@ class Cmd
         $this->commands []= $cmd;
         
         //redirect error to standard
-        $o = trim(exec("$cmd", $output, $this->exit_status));
-        
+        exec("$cmd", $output, $status);
+
+        $this->exit_status = $status;
+
         //output is an array, we want a string
         $this->output = implode("\n", $output);
                

@@ -289,9 +289,10 @@ class Backup
                 $this->Session->set('meta.path', $this->rsyncdir . '/meta/');
                 $this->Session->set('restore.path', $this->rsyncdir . '/restore/');
                 $this->Session->set('scripts.path', $this->rsyncdir . '/restore/scripts/');
-                $this->Session->set('restore.script.local', $this->rsyncdir . '/restore/'.$filebase.'.local.restore.sh');
+                $this->Session->set('restore.script.local', $this->rsyncdir . '/restore/'.$filebase.'.restore.sh');
                 // other variables
-                $remote_connection = ($this->Config->get('remote.ssh'))? $this->Config->get('remote.user') . "@" . $this->Config->get('remote.host') :'';
+                $ssh_connection = ($this->Config->get('remote.ssh'))? $this->Config->get('remote.user') . "@" . $this->Config->get('remote.host') :'';
+                $rsync_seperator = ($this->Config->get('remote.ssh'))? ':':'';
                 $tee_cmd = "tee -a ".$this->Session->get('restore.script.local');
                 #####################################
                 # DISK LAYOUT
@@ -338,7 +339,7 @@ class Backup
                 $this->Cmd->exe("echo '################################################' >> ".$this->Session->get('restore.script.local'));
                 $content = [];
                 $content []= '# Rsync both the meta and restore directories to the rescue system.';
-                $content []= 'rsync -av '.$this->rsyncdir.'/meta '.$this->rsyncdir.'/restore '.$remote_connection. ":'/tmp'";
+                $content []= 'rsync -av '.$this->rsyncdir.'/meta '.$this->rsyncdir.'/restore '.$ssh_connection.$rsync_seperator. "'/tmp'";
                 $this->Cmd->exe("echo '".implode("\n",$content)."' >> ".$this->Session->get('restore.script.local'));
                 #####################################
                 # BACKUP PARTITION TABLE
@@ -353,7 +354,7 @@ class Backup
                 $content []= '# WARNING! The order of partitions may not be the same as the original configuration.';
                 $content []= '';
                 $content []= '# To restore, run on backup server: ';
-                $content []= 'ssh '.$remote_connection.' "bash /tmp/restore/scripts/'.$restore_type.'.*.sh"';
+                $content []= 'ssh '.$ssh_connection.' "bash /tmp/restore/scripts/'.$restore_type.'.*.sh"';
                 $content []= '';
                 $content []= '--- OR ---';
                 $content []= '';
@@ -390,7 +391,7 @@ class Backup
                     $this->Cmd->exe("echo '################################################' >> ".$this->Session->get('restore.script.local'));
                     $content = [];
                     $content []= '# To restore, run on backup server: ';
-                    $content []= 'ssh '.$remote_connection.' "bash /tmp/restore/scripts/'.$restore_type.'.sh"';
+                    $content []= 'ssh '.$ssh_connection.' "bash /tmp/restore/scripts/'.$restore_type.'.sh"';
                     $content []= '';
                     $content []= '--- OR ---';
                     $content []= '';
@@ -427,7 +428,7 @@ class Backup
                 $this->Cmd->exe("echo '################################################' >> ".$this->Session->get('restore.script.local'));
                 $content = [];
                 $content []= '# To restore, run on backup server: ';
-                $content []= 'ssh '.$remote_connection.' "bash /tmp/restore/scripts/'.$restore_type.'.sh"';
+                $content []= 'ssh '.$ssh_connection.' "bash /tmp/restore/scripts/'.$restore_type.'.sh"';
                 $content []= '';
                 $content []= '--- OR ---';
                 $content []= '';
@@ -472,7 +473,7 @@ class Backup
                 $this->Cmd->exe("echo '################################################' >> ".$this->Session->get('restore.script.local'));
                 $content = [];
                 $content []= '# To restore, run on backup server:';
-                $content []= 'ssh '.$remote_connection.' "bash /tmp/restore/scripts/'.$restore_type.'.sh"';
+                $content []= 'ssh '.$ssh_connection.' "bash /tmp/restore/scripts/'.$restore_type.'.sh"';
                 $content []= '';
                 $content []= '--- OR ---';
                 $content []= '';
@@ -822,12 +823,13 @@ class Backup
             //slashes are protected by -s option in rsync
             $sourcedir = stripslashes($sourcedir);
             $targetdir = stripslashes($targetdir);
-            $remote_connection = ($this->Config->get('remote.ssh'))? $this->Config->get('remote.user') . "@" . $this->Config->get('remote.host') .':':'';
+            $ssh_connection = ($this->Config->get('remote.ssh'))? $this->Config->get('remote.user') . "@" . $this->Config->get('remote.host'):'';
+            $rsync_seperator = ($this->Config->get('remote.ssh'))? ':':'';
             // the rsync command
-            $cmd = "rsync $rsync_options $excluded " .$remote_connection. ":\"$sourcedir\" '$targetdir' 2>&1";
+            $cmd = "rsync $rsync_options $excluded " .$ssh_connection. $rsync_seperator. "\"$sourcedir\" '$targetdir' 2>&1";
             if($this->Config->get('rsync.timestamps'))
             {
-                $cmd .= "| /usr/bin/ts '[%Y-%m-%d %H:%M:%S]'";
+                # $cmd .= "| /usr/bin/ts '[%Y-%m-%d %H:%M:%S]'";
             }
             $this->App->out($cmd);
             //obviously try rsync at least once :)
@@ -900,7 +902,7 @@ class Backup
                 #####################################
                 $tee_cmd = "tee -a ".$this->Session->get('restore.script.local');
                 $rsync_options2 = preg_replace('/\s+/', ' ', preg_replace('/-e \".+\"/', '-e ssh', $rsync_options));
-                $this->Cmd->exe("echo rsync ".$rsync_options2." \'$targetdir\' " .$remote_connection. ":\'/mnt/poppins$sourcedir\' | $tee_cmd  >> ".$this->Session->get('scripts.path').$filebase.'.'.$restore_type.'.sh');
+                $this->Cmd->exe("echo rsync ".$rsync_options2." \'$targetdir\' " .$ssh_connection. $rsync_seperator. "\'/mnt/poppins$sourcedir\' | $tee_cmd  >> ".$this->Session->get('scripts.path').$filebase.'.'.$restore_type.'.sh');
             }
         }
     }
