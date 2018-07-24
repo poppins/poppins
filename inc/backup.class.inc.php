@@ -770,6 +770,11 @@ class Backup
         {
             $o [] = "--inplace";
         }
+        //add a timestamp to every file
+        if($this->Config->get('rsync.timestamps'))
+        {
+            $o [] = '--log-format="%t %n %L"';
+        }
         // add default options
         $o []= '-as';
         $rsync_options = implode(' ', $o);
@@ -827,10 +832,6 @@ class Backup
             $rsync_seperator = ($this->Config->get('remote.ssh'))? ':':'';
             // the rsync command
             $cmd = "rsync $rsync_options $excluded " .$ssh_connection. $rsync_seperator. "\"$sourcedir\" '$targetdir' 2>&1";
-            if($this->Config->get('rsync.timestamps'))
-            {
-                # $cmd .= "| /usr/bin/ts '[%Y-%m-%d %H:%M:%S]'";
-            }
             $this->App->out($cmd);
             //obviously try rsync at least once :)
             $attempts = 1;
