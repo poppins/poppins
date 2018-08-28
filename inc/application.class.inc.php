@@ -954,7 +954,6 @@ class Application
         $dependencies['hard']['local']['gzip'] = 'gzip --version';
         $dependencies['hard']['local']['rsync'] = 'rsync --version';
         $dependencies['hard']['local']['grep'] = '{GREP} --version';
-        $dependencies['hard']['local']['moreutils'] = 'echo "OK" | ts';
         //iterate packages
         foreach($dependencies as $type => $dependency)
         {
