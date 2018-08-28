@@ -711,7 +711,11 @@ class Application
                             {
                                 $default = (empty($directive['default']))? 0:$directive['default'];
                             }
-                            $this->notice($message.' Using default value ('.$default.').');
+                            // ignore some directives e.g. mysql include/exclude stuff
+                            if (!isset($directive['ignore-missing']) || $directive['ignore-missing'] !== true)
+                            {
+                                $this->notice($message.' Using default value ('.$default.').');
+                            }
                         }
                         else
                         {

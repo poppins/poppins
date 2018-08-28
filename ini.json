@@ -174,30 +174,35 @@
         },
         {
           "name":"included-databases",
+          "ignore-missing":true,
           "depends":"mysql.enabled",
           "default":false,
           "validate":{"databases_include_type":"error"}
         },
         {
           "name":"excluded-databases",
+          "ignore-missing":true,
           "depends":"mysql.enabled",
           "default":false,
           "validate":{"databases_include_type":"error"}
         },
         {
           "name":"ignore-tables",
+          "ignore-missing":true,
           "depends":"mysql.enabled",
           "default":false,
           "validate":{"tables_include_type":"error"}
         },
         {
           "name":"included-tables",
+          "ignore-missing":true,
           "depends":"mysql.enabled",
           "default":false,
           "validate":{"tables_include_type":"error"}
         },
         {
           "name":"excluded-tables",
+          "ignore-missing":true,
           "depends":"mysql.enabled",
           "default":false,
           "validate":{"tables_include_type":"error"}
