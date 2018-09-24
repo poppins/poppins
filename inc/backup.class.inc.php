@@ -797,6 +797,8 @@ class Backup
         $content []= '# Or run manually on the backup server...';
         $content []= '';
         $this->Cmd->exe("echo '".implode("\n",$content)."' >> ".$this->Session->get('restore.script.local'));
+        // record if a process has failed
+        $failed_rsync_process = false;
         // mark time
         foreach ($this->Config->get('included') as $source => $target)
         {
@@ -892,7 +894,8 @@ class Backup
                 $message = (empty($message)) ? '' : ': "' . $message . '".';
                 $output = "Rsync of $sourcedir directory failed! Aborting! Exit status " . $this->Cmd->exit_status . $message;
                 $this->App->warn($output);
-
+                // record failed process
+                $failed_rsync_process = true;
             }
             else
             {
@@ -905,6 +908,11 @@ class Backup
                 $rsync_options2 = preg_replace('/\s+/', ' ', preg_replace('/-e \".+\"/', '-e ssh', $rsync_options));
                 $this->Cmd->exe("echo rsync ".$rsync_options2." \'$targetdir\' " .$ssh_connection. $rsync_seperator. "\'/mnt/poppins$sourcedir\' | $tee_cmd  >> ".$this->Session->get('scripts.path').$filebase.'.'.$restore_type.'.sh');
             }
+        }
+        // abort if one rsync process has failed
+        if($failed_rsync_process)
+        {
+            $this->App->fail('An rsync process has failed!');
         }
     }
 
