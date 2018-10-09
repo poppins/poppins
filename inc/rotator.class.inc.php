@@ -415,6 +415,15 @@ class DefaultRotator extends Rotator
      */
     function remove($dir, $parent)
     {
+        // take precautions when executing an rm command!
+        foreach([$this->archivedir, $dir, $parent] as $variable)
+        {
+            $variable = trim($variable);
+            if (!$variable || empty($variable) || $variable == '' || preg_match('/^\/+$/', $variable))
+            {
+                $this->App->fail('Cannot execute a rm command as a variable is empty!');
+            }
+        }
         $cmd = "{RM} -rf ". $this->archivedir."/$parent/$dir";
         $this->App->out('Remove direcory: '.$this->Cmd->parse($cmd));
         return $this->Cmd->exe("$cmd");

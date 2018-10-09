@@ -1313,7 +1313,15 @@ class Application
                 elseif(!$this->Options->is_set('n'))
                 {
                     $this->out("Empty directory $mysqldump_dir...");
-                    // ignore error in case of empty dir: || true
+                    // take precautions when executing an rm command!
+                    foreach([$mysqldump_dir] as $variable)
+                    {
+                        $variable = trim($variable);
+                        if (!$variable || empty($variable) || $variable == '' || preg_match('/^\/+$/', $variable))
+                        {
+                            $this->App->fail('Cannot execute a rm command as a variable is empty!');
+                        }
+                    }
                     $this->Cmd->exe("rm -f $mysqldump_dir/*");
                 }
                 // load in session
@@ -1780,6 +1788,16 @@ class Application
         if ($error != 'LOCKED' && file_exists(@$this->Config->get('local.hostdir') . "/LOCK"))
         {
             $content [] = "Remove LOCK file...";
+
+            // take precautions when executing an rm command!
+            foreach([$this->Config->get('local.hostdir')] as $variable)
+            {
+                $variable = trim($variable);
+                if (!$variable || empty($variable) || $variable == '' || preg_match('/^\/+$/', $variable))
+                {
+                    $this->App->fail('Cannot execute a rm command as a variable is empty!');
+                }
+            }
             $this->Cmd->exe('{RM} ' . $this->Config->get('local.hostdir') . "/LOCK");
         }
         #####################################

@@ -58,8 +58,31 @@ class Cmd
      * @param bool $remote Execute on remote host?
      * @return string The output of the command
      */
-    function exe($cmd, $remote = false)
+    function exe($cmd = false, $remote = false)
     {
+        // trim command
+        $cmd = trim($cmd);
+        // check if there is a command
+        if(!$cmd || $cmd == '')
+        {
+            return;
+        }
+        // debugging
+        # foreach(['rm -rf /*', '/bin/rm -rf /*', 'rm -rf //*', 'rm -r -f /*', 'rm -rf -d //*', 'rm -rf ////', 'rm /*', 'rm -r /', '/foo/bar.sh -xyz'] as $cmd)
+        // do not allow double slashes or rm command
+        if (true)
+        {
+            # print "\n".$cmd;
+            if (preg_match('|([^a-z]\/)?rm (\-[a-z]+ )*\/+\*?$|', $cmd))
+            {
+                // debugging
+                # print ' match % '; continue;
+                print "\n";
+                print 'Abort! Trying to execute a command with an illegal path: ' . $cmd;
+                print "\n";
+                die();
+            }
+        }
         //check if command is run on remote host
         if($remote)
         {
