@@ -97,8 +97,13 @@
           "validate":{"boolean":"error"}
         },
         {
-          "name":"remote-package-list",
+          "name":"remote-disk-layout",
           "default":true,
+          "validate":{"boolean":"error"}
+        },
+        {
+          "name":"restore-scripts",
+          "default":false,
           "validate":{"boolean":"error"}
         }
       ]

@@ -273,239 +273,61 @@ class Backup
             $this->App->out('DRY RUN!');
             return;
         }
-        //disk layout
+        // set paths
+        $this->Session->set('meta.path', $this->rsyncdir . '/meta/');
+        $this->Session->set('restore.path', $this->rsyncdir . '/restore/');
+        $this->Session->set('scripts.path', $this->rsyncdir . '/restore/scripts/');
+        $this->Session->set('restore.script.local', $this->rsyncdir . '/restore/'.$filebase.'.restore.sh');
+        // other variables
+        $ssh_connection = ($this->Config->get('remote.ssh'))? $this->Config->get('remote.user') . "@" . $this->Config->get('remote.host') :'';
+        $rsync_seperator = ($this->Config->get('remote.ssh'))? ':':'';
+        $tee_cmd = "tee -a ".$this->Session->get('restore.script.local');
+        #####################################
+        # DISK LAYOUT
+        #####################################
         if ($this->Config->get('meta.remote-disk-layout'))
         {
             // need root privileges
-            if($this->Config->get('remote.user') != 'root')
+            if($this->Config->get('remote.user') == 'root')
             {
-                $this->App->warn('Disk layout needs root privileges!');
+                $this->App->out('Gather information about disk layout...');
+                // remote disk layout and packages
+                if ($this->Config->get('remote.os') == "Linux")
+                {
+                    // disk layout commands
+                    $cmds = [];
+                    $cmds [] = 'df -hT';
+                    $cmds [] = 'vgs';
+                    $cmds [] = 'pvs';
+                    $cmds [] = 'lvs';
+                    $cmds [] = 'blkid';
+                    $cmds [] = 'lsblk -fi';
+
+                    $emb = '%%%%%%';
+
+                    $cmd_string = '';
+                    foreach ($cmds as $cmd)
+                    {
+                        $cmd_string .= "echo " . $emb . ' ' . $cmd . ' ' . $emb . "; echo; $cmd 2>&1; echo;";
+                    }
+
+                    $this->Cmd->exe("'( " . $cmd_string . " echo  " . $emb . " fdisk " . $emb . "; for disk in $(ls /dev/sd[a-z] 2>/dev/null) ; do fdisk -l \$disk 2>&1 && echo; done )' > $this->rsyncdir/meta/" . $filebase . ".disk_layout.txt", true);
+
+                    if ($this->Cmd->is_error())
+                    {
+                        $this->App->warn('Failed to gather information about disk layout!');
+                    }
+                    else
+                    {
+                        $this->App->out("Write to file " . $this->Session->get('meta.path') . $filebase . ".disk_layout.txt...");
+                        $this->App->out();
+                        $this->App->out("OK!", 'simple-success');
+                    }
+                }
             }
-            $this->App->out('Gather information about disk layout...');
-            // remote disk layout and packages
-            if ($this->Config->get('remote.os') == "Linux")
-            {
-                // set restore paths
-                $this->Session->set('meta.path', $this->rsyncdir . '/meta/');
-                $this->Session->set('restore.path', $this->rsyncdir . '/restore/');
-                $this->Session->set('scripts.path', $this->rsyncdir . '/restore/scripts/');
-                $this->Session->set('restore.script.local', $this->rsyncdir . '/restore/'.$filebase.'.restore.sh');
-                // other variables
-                $ssh_connection = ($this->Config->get('remote.ssh'))? $this->Config->get('remote.user') . "@" . $this->Config->get('remote.host') :'';
-                $rsync_seperator = ($this->Config->get('remote.ssh'))? ':':'';
-                $tee_cmd = "tee -a ".$this->Session->get('restore.script.local');
-                #####################################
-                # DISK LAYOUT
-                #####################################
-                $cmds = [];
-                $cmds []= 'df -hT';
-                $cmds []= 'vgs';
-                $cmds []= 'pvs';
-                $cmds []= 'lvs';
-                $cmds []= 'blkid';
-                $cmds []= 'lsblk -fi';
-
-                $emb = '%%%%%%';
-
-                $cmd_string = '';
-                foreach($cmds as $cmd)
-                {
-                    $cmd_string .= "echo ".$emb.' '.$cmd.' '.$emb."; echo; $cmd 2>&1; echo;";
-                }
-
-                $this->Cmd->exe("'( ".$cmd_string." echo  ".$emb." fdisk ".$emb."; for disk in $(ls /dev/sd[a-z] 2>/dev/null) ; do fdisk -l \$disk 2>&1 && echo; done )' > $this->rsyncdir/meta/" . $filebase . ".disk_layout.txt", true);
-
-                if ($this->Cmd->is_error())
-                {
-                    $this->App->warn('Failed to gather information about disk layout!');
-                }
             else
-                {
-                    $this->App->out("Write to file " . $this->Session->get('meta.path') . $filebase . ".disk_layout.txt...");
-                    $this->App->out();
-                    $this->App->out("OK!", 'simple-success');
-                }
-                #####################################
-                # DISCLAIMER
-                #####################################
-                $content = [];
-                $content []= '';
-                $content []= '# WARNING! Use at your own risk. Do not blindly copy paste and run these scripts.';
-                $content []= '';
-                $this->Cmd->exe("echo '".implode("\n",$content)."' >> ".$this->Session->get('restore.script.local'));
-                // rsync data from backup server
-                $this->Cmd->exe("echo '################################################' >> ".$this->Session->get('restore.script.local'));
-                $this->Cmd->exe("echo '# RSYNC RESTORE DIRECTORIES' >> ".$this->Session->get('restore.script.local'));
-                $this->Cmd->exe("echo '################################################' >> ".$this->Session->get('restore.script.local'));
-                $content = [];
-                $content []= '# Rsync both the meta and restore directories to the rescue system.';
-                $content []= 'rsync -av '.$this->rsyncdir.'/meta '.$this->rsyncdir.'/restore '.$ssh_connection.$rsync_seperator. "'/tmp'";
-                $this->Cmd->exe("echo '".implode("\n",$content)."' >> ".$this->Session->get('restore.script.local'));
-                #####################################
-                # BACKUP PARTITION TABLE
-                #####################################
-                //restore
-                $restore_type = 'partitions_restore';
-                $this->Cmd->exe("echo >> ".$this->Session->get('restore.script.local'));
-                $this->Cmd->exe("echo '################################################' >> ".$this->Session->get('restore.script.local'));
-                $this->Cmd->exe("echo '# ".strtoupper(str_replace('_', ' ',$restore_type))."' >> ".$this->Session->get('restore.script.local'));
-                $this->Cmd->exe("echo '################################################' >> ".$this->Session->get('restore.script.local'));
-                $content = [];
-                $content []= '# WARNING! The order of partitions may not be the same as the original configuration.';
-                $content []= '';
-                $content []= '# To restore, run on backup server: ';
-                $content []= 'ssh '.$ssh_connection.' "bash /tmp/restore/scripts/'.$restore_type.'.*.sh"';
-                $content []= '';
-                $content []= '--- OR ---';
-                $content []= '';
-                $content []= '# Or run manually on the rescue system:';
-                $content []= '';
-                $this->Cmd->exe("echo '".implode("\n",$content)."' >> ".$this->Session->get('restore.script.local'));
-                // iterate disks
-                $drives = $this->Cmd->exe("'for disk in $(ls /dev/sd[a-z]); do echo \$disk; done'", true);
-                if(!empty($drives))
-                {
-                    foreach (explode("\n", $drives) as $drive)
-                    {
-                        $filename_drive = str_replace('/', '_', trim($drive, '/'));
-                        $this->Cmd->exe("'( sfdisk -d " . $drive . " 2>/dev/null)' > ".$this->Session->get('meta.path')."$filebase.partition.$filename_drive.txt", true);
-                        //restore commands
-                        $filebase = $this->Session->get('meta.filebase');
-                        // add commet to following line
-                        $this->Cmd->exe("echo -n '# ' | $tee_cmd > ".$this->Session->get('scripts.path').$filebase.'.'.$restore_type.'.'.$filename_drive.'.sh');
-                        $this->Cmd->exe("fdisk -l ".$drive." 2>/dev/null | head -n1 | $tee_cmd > ".$this->Session->get('scripts.path').$filebase.'.'.$restore_type.'.'.$filename_drive.'.sh');
-                        $this->Cmd->exe("echo 'sfdisk -f ".$drive." < /tmp/meta/$filebase.partition.$filename_drive.txt' | $tee_cmd > ".$this->Session->get('scripts.path').$filebase.'.'.$restore_type.'.'.$filename_drive.'.sh');
-                    }
-                }
-                #####################################
-                # BACKUP LVM LAYOUT
-                #####################################
-                $check_lvm_installed = $this->Cmd->exe("'which pvscan 2>&1 >/dev/null && echo TRUE'", true);
-                if($check_lvm_installed == 'TRUE')
-                {
-                    $filename_vgcfgbackup = 'vgcfgbackup.txt';
-                    $restore_type = 'logical_volumes_restore';
-                    $this->Cmd->exe("echo >> ".$this->Session->get('restore.script.local'));
-                    $this->Cmd->exe("echo '################################################' >> ".$this->Session->get('restore.script.local'));
-                    $this->Cmd->exe("echo '# ".strtoupper(str_replace('_', ' ',$restore_type))."' >> ".$this->Session->get('restore.script.local'));
-                    $this->Cmd->exe("echo '################################################' >> ".$this->Session->get('restore.script.local'));
-                    $content = [];
-                    $content []= '# To restore, run on backup server: ';
-                    $content []= 'ssh '.$ssh_connection.' "bash /tmp/restore/scripts/'.$restore_type.'.sh"';
-                    $content []= '';
-                    $content []= '--- OR ---';
-                    $content []= '';
-                    $content []= '# Or run manually on the rescue system:';
-                    $content []= '';
-                    $this->Cmd->exe("echo '".implode("\n",$content)."' >> ".$this->Session->get('restore.script.local'));
-                    $output = $this->Cmd->exe("'vgcfgbackup -f /tmp/$filename_vgcfgbackup'", true);
-                    preg_match('/Volume group "(.+)"/', $output, $matches);
-                    $volume_group = $matches[1];
-                    $this->Cmd->exe("'(cat /tmp/$filename_vgcfgbackup)' > ".$this->Session->get('meta.path')."$filebase.$filename_vgcfgbackup", true);
-                    // build the restore file
-                    $physical_volumes = $this->Cmd->exe("grep -E -A2 'pv[0-9]+ {' ".$this->Session->get('meta.path')."$filebase.$filename_vgcfgbackup");
-                    foreach (explode('--', $physical_volumes) as $physical_volume)
-                    {
-                        preg_match('/id = \"(.+)\"/', $physical_volume, $matches);
-                        $id = $matches[1];
-                        preg_match('/device = \"(.+)\"/', $physical_volume, $matches);
-                        $device = $matches[1];
-                        $this->Cmd->exe("echo '# re-create the physical volume with pvcreate \npvcreate -ff --uuid \"$id\" --restorefile /tmp/meta/$filebase.$filename_vgcfgbackup $device' | $tee_cmd >> " . $this->Session->get('scripts.path') . $filebase . '.'.$restore_type.'.sh');
-                    }
-                    //volume restore
-                    $this->Cmd->exe("echo '# restore the volume group with vgcfgrestore \nvgcfgrestore -f /tmp/meta/$filebase.$filename_vgcfgbackup $volume_group' | $tee_cmd >> " . $this->Session->get('scripts.path') . $filebase . '.'.$restore_type.'.sh');
-                    // activate volumes
-                    $this->Cmd->exe("echo '# activate all logical volumes. Check if installed correctly by typing pvs. \nvgchange -a y $volume_group' | $tee_cmd >> " . $this->Session->get('scripts.path') . $filebase . '.'.$restore_type.'.sh');
-                }
-                #####################################
-                # FILESYSTEMS RESTORE
-                #####################################
-                //restore
-                $restore_type = 'filesystems_restore';
-                $this->Cmd->exe("echo >> ".$this->Session->get('restore.script.local'));
-                $this->Cmd->exe("echo '################################################' >> ".$this->Session->get('restore.script.local'));
-                $this->Cmd->exe("echo '# ".strtoupper(str_replace('_', ' ',$restore_type))."' >> ".$this->Session->get('restore.script.local'));
-                $this->Cmd->exe("echo '################################################' >> ".$this->Session->get('restore.script.local'));
-                $content = [];
-                $content []= '# To restore, run on backup server: ';
-                $content []= 'ssh '.$ssh_connection.' "bash /tmp/restore/scripts/'.$restore_type.'.sh"';
-                $content []= '';
-                $content []= '--- OR ---';
-                $content []= '';
-                $content []= '# Or run manually on the rescue system:';
-                $content []= '';
-                $this->Cmd->exe("echo '".implode("\n",$content)."' >> ".$this->Session->get('restore.script.local'));
-                // iterate mounted devices - except docker
-                $devices = $this->Cmd->exe("grep '^/dev /proc/mounts | grep -v var/lib/docker'", true);
-                $patterns = [];
-                $patterns []= 'mapper';
-                $patterns []= 'sd';
-                $patterns []= 'dm';
-                // store mounts
-                $mounts = [];
-                if(!empty($devices))
-                {
-                    foreach (explode("\n", $devices) as $device_line)
-                    {
-                        // get type and device
-                        $pieces = explode(' ',$device_line);
-                        $type = $pieces[2];
-                        $device = $pieces[0];
-
-                        // get uuid
-                        $output = $this->Cmd->exe("blkid $device", true);
-                        preg_match('/UUID=\"([^\" ]+)\"/', $output, $matches);
-                        $uuid = $matches[1];
-
-                        $this->Cmd->exe("echo 'mkfs -U $uuid --type $type $device' | $tee_cmd >> ".$this->Session->get('scripts.path').$filebase.'.'.$restore_type.'.sh');
-                        //store mounts
-                        $mounts [$pieces[0]]= $pieces[1];
-                    }
-                }
-                #####################################
-                # MOUNTS
-                #####################################
-                //restore
-                $restore_type = 'mounts';
-                $this->Cmd->exe("echo >> ".$this->Session->get('restore.script.local'));
-                $this->Cmd->exe("echo '################################################' >> ".$this->Session->get('restore.script.local'));
-                $this->Cmd->exe("echo '# ".strtoupper(str_replace('_', ' ',$restore_type))."' >> ".$this->Session->get('restore.script.local'));
-                $this->Cmd->exe("echo '################################################' >> ".$this->Session->get('restore.script.local'));
-                $content = [];
-                $content []= '# To restore, run on backup server:';
-                $content []= 'ssh '.$ssh_connection.' "bash /tmp/restore/scripts/'.$restore_type.'.sh"';
-                $content []= '';
-                $content []= '--- OR ---';
-                $content []= '';
-                $content []= '# Or run manually on the rescue system...';
-                $content []= '';
-                $out[] = '# Suggested mount points. Your mileage  may vary.';
-                $this->Cmd->exe("echo '".implode("\n",$content)."' >> ".$this->Session->get('restore.script.local'));
-                $mounts_ordered = [];
-                foreach($mounts as $dev => $mount)
-                {
-                    $m = explode('/', $mount);
-                    $mounts_ordered[count($m)] []= [$dev, $mount];
-                }
-//                dd($mounts_ordered);
-                // generate mount commands
-                foreach($mounts_ordered as $index => $array)
-                {
-                    foreach($array as $a)
-                    {
-                        $mount = $a[1];
-                        $dev = $a[0];
-                        $this->Cmd->exe("echo 'mkdir /mnt/poppins".$mount."; mount ".$dev."  /mnt/poppins".$mount."' | $tee_cmd >> ".$this->Session->get('scripts.path').$filebase.'.'.$restore_type.'.sh');
-                    }
-                }
-                //chroot
-                $content = [];
-                $content []= '';
-                $content []= '# You may want to restore the bootloader later by chrooting and installing grub by running for example: \'grub-install /dev/sda\'; update-grub';
-                $content []= '';
-                $content []= '# for i in dev dev/pts sys proc run; do mount --bind /$i /mnt/poppins/$i; done;';
-                $content []= '# chroot /mnt/poppins /bin/bash';
-                $this->Cmd->exe("echo '".implode("\n", $content)."' | $tee_cmd >> ".$this->Session->get('scripts.path').$filebase.'.'.$restore_type.'.sh');
+            {
+                $this->App->warn('Cannot get disk layout. Must be root!');
             }
         }
         else
@@ -513,7 +335,9 @@ class Backup
             $this->App->out('Skip information about disk layout...');
         }
         $this->App->out();
-        //packages
+        #####################################
+        # PACKAGES
+        #####################################
         if ($this->Config->get('meta.remote-package-list'))
         {
             $this->App->out('Gather information about packages...');
@@ -587,6 +411,196 @@ class Backup
         else
         {
             $this->App->out('Skip information about packages...');
+        }
+        #####################################
+        # RESTORE SCRIPTS
+        #####################################
+        if ($this->Config->get('meta.restore-scripts'))
+        {
+            if($this->Config->get('remote.user') == 'root')
+            {
+                $content = [];
+                $content [] = '';
+                $content [] = '# WARNING! Use at your own risk. Do not blindly copy paste and run these scripts.';
+                $content [] = '';
+                $this->Cmd->exe("echo '" . implode("\n", $content) . "' >> " . $this->Session->get('restore.script.local'));
+                // rsync data from backup server
+                $this->Cmd->exe("echo '################################################' >> " . $this->Session->get('restore.script.local'));
+                $this->Cmd->exe("echo '# RSYNC RESTORE DIRECTORIES' >> " . $this->Session->get('restore.script.local'));
+                $this->Cmd->exe("echo '################################################' >> " . $this->Session->get('restore.script.local'));
+                $content = [];
+                $content [] = '# Rsync both the meta and restore directories to the rescue system.';
+                $content [] = 'rsync -av ' . $this->rsyncdir . '/meta ' . $this->rsyncdir . '/restore ' . $ssh_connection . $rsync_seperator . "'/tmp'";
+                $this->Cmd->exe("echo '" . implode("\n", $content) . "' >> " . $this->Session->get('restore.script.local'));
+                #####################################
+                # BACKUP PARTITION TABLE
+                #####################################
+                //restore
+                $restore_type = 'partitions_restore';
+                $this->Cmd->exe("echo >> " . $this->Session->get('restore.script.local'));
+                $this->Cmd->exe("echo '################################################' >> " . $this->Session->get('restore.script.local'));
+                $this->Cmd->exe("echo '# " . strtoupper(str_replace('_', ' ', $restore_type)) . "' >> " . $this->Session->get('restore.script.local'));
+                $this->Cmd->exe("echo '################################################' >> " . $this->Session->get('restore.script.local'));
+                $content = [];
+                $content [] = '# WARNING! The order of partitions may not be the same as the original configuration.';
+                $content [] = '';
+                $content [] = '# To restore, run on backup server: ';
+                $content [] = 'ssh ' . $ssh_connection . ' "bash /tmp/restore/scripts/' . $restore_type . '.*.sh"';
+                $content [] = '';
+                $content [] = '--- OR ---';
+                $content [] = '';
+                $content [] = '# Or run manually on the rescue system:';
+                $content [] = '';
+                $this->Cmd->exe("echo '" . implode("\n", $content) . "' >> " . $this->Session->get('restore.script.local'));
+                // iterate disks
+                $drives = $this->Cmd->exe("'for disk in $(ls /dev/sd[a-z]); do echo \$disk; done'", true);
+                if (!empty($drives))
+                {
+                    foreach (explode("\n", $drives) as $drive)
+                    {
+                        $filename_drive = str_replace('/', '_', trim($drive, '/'));
+                        $this->Cmd->exe("'( sfdisk -d " . $drive . " 2>/dev/null)' > " . $this->Session->get('meta.path') . "$filebase.partition.$filename_drive.txt", true);
+                        //restore commands
+                        $filebase = $this->Session->get('meta.filebase');
+                        // add commet to following line
+                        $this->Cmd->exe("echo -n '# ' | $tee_cmd > " . $this->Session->get('scripts.path') . $filebase . '.' . $restore_type . '.' . $filename_drive . '.sh');
+                        $this->Cmd->exe("fdisk -l " . $drive . " 2>/dev/null | head -n1 | $tee_cmd > " . $this->Session->get('scripts.path') . $filebase . '.' . $restore_type . '.' . $filename_drive . '.sh');
+                        $this->Cmd->exe("echo 'sfdisk -f " . $drive . " < /tmp/meta/$filebase.partition.$filename_drive.txt' | $tee_cmd > " . $this->Session->get('scripts.path') . $filebase . '.' . $restore_type . '.' . $filename_drive . '.sh');
+                    }
+                }
+                #####################################
+                # BACKUP LVM LAYOUT
+                #####################################
+                $check_lvm_installed = $this->Cmd->exe("'which pvscan 2>&1 >/dev/null && echo TRUE'", true);
+                if ($check_lvm_installed == 'TRUE')
+                {
+                    $filename_vgcfgbackup = 'vgcfgbackup.txt';
+                    $restore_type = 'logical_volumes_restore';
+                    $this->Cmd->exe("echo >> " . $this->Session->get('restore.script.local'));
+                    $this->Cmd->exe("echo '################################################' >> " . $this->Session->get('restore.script.local'));
+                    $this->Cmd->exe("echo '# " . strtoupper(str_replace('_', ' ', $restore_type)) . "' >> " . $this->Session->get('restore.script.local'));
+                    $this->Cmd->exe("echo '################################################' >> " . $this->Session->get('restore.script.local'));
+                    $content = [];
+                    $content [] = '# To restore, run on backup server: ';
+                    $content [] = 'ssh ' . $ssh_connection . ' "bash /tmp/restore/scripts/' . $restore_type . '.sh"';
+                    $content [] = '';
+                    $content [] = '--- OR ---';
+                    $content [] = '';
+                    $content [] = '# Or run manually on the rescue system:';
+                    $content [] = '';
+                    $this->Cmd->exe("echo '" . implode("\n", $content) . "' >> " . $this->Session->get('restore.script.local'));
+                    $output = $this->Cmd->exe("'vgcfgbackup -f /tmp/$filename_vgcfgbackup'", true);
+                    preg_match('/Volume group "(.+)"/', $output, $matches);
+                    $volume_group = $matches[1];
+                    $this->Cmd->exe("'(cat /tmp/$filename_vgcfgbackup)' > " . $this->Session->get('meta.path') . "$filebase.$filename_vgcfgbackup", true);
+                    // build the restore file
+                    $physical_volumes = $this->Cmd->exe("grep -E -A2 'pv[0-9]+ {' " . $this->Session->get('meta.path') . "$filebase.$filename_vgcfgbackup");
+                    foreach (explode('--', $physical_volumes) as $physical_volume)
+                    {
+                        preg_match('/id = \"(.+)\"/', $physical_volume, $matches);
+                        $id = $matches[1];
+                        preg_match('/device = \"(.+)\"/', $physical_volume, $matches);
+                        $device = $matches[1];
+                        $this->Cmd->exe("echo '# re-create the physical volume with pvcreate \npvcreate -ff --uuid \"$id\" --restorefile /tmp/meta/$filebase.$filename_vgcfgbackup $device' | $tee_cmd >> " . $this->Session->get('scripts.path') . $filebase . '.' . $restore_type . '.sh');
+                    }
+                    //volume restore
+                    $this->Cmd->exe("echo '# restore the volume group with vgcfgrestore \nvgcfgrestore -f /tmp/meta/$filebase.$filename_vgcfgbackup $volume_group' | $tee_cmd >> " . $this->Session->get('scripts.path') . $filebase . '.' . $restore_type . '.sh');
+                    // activate volumes
+                    $this->Cmd->exe("echo '# activate all logical volumes. Check if installed correctly by typing pvs. \nvgchange -a y $volume_group' | $tee_cmd >> " . $this->Session->get('scripts.path') . $filebase . '.' . $restore_type . '.sh');
+                }
+                #####################################
+                # FILESYSTEMS RESTORE
+                #####################################
+                //restore
+                $restore_type = 'filesystems_restore';
+                $this->Cmd->exe("echo >> " . $this->Session->get('restore.script.local'));
+                $this->Cmd->exe("echo '################################################' >> " . $this->Session->get('restore.script.local'));
+                $this->Cmd->exe("echo '# " . strtoupper(str_replace('_', ' ', $restore_type)) . "' >> " . $this->Session->get('restore.script.local'));
+                $this->Cmd->exe("echo '################################################' >> " . $this->Session->get('restore.script.local'));
+                $content = [];
+                $content [] = '# To restore, run on backup server: ';
+                $content [] = 'ssh ' . $ssh_connection . ' "bash /tmp/restore/scripts/' . $restore_type . '.sh"';
+                $content [] = '';
+                $content [] = '--- OR ---';
+                $content [] = '';
+                $content [] = '# Or run manually on the rescue system:';
+                $content [] = '';
+                $this->Cmd->exe("echo '" . implode("\n", $content) . "' >> " . $this->Session->get('restore.script.local'));
+                // iterate mounted devices - except docker
+                $devices = $this->Cmd->exe("grep '^/dev /proc/mounts | grep -v var/lib/docker'", true);
+                $patterns = [];
+                $patterns [] = 'mapper';
+                $patterns [] = 'sd';
+                $patterns [] = 'dm';
+                // store mounts
+                $mounts = [];
+                if (!empty($devices))
+                {
+                    foreach (explode("\n", $devices) as $device_line)
+                    {
+                        // get type and device
+                        $pieces = explode(' ', $device_line);
+                        $type = $pieces[2];
+                        $device = $pieces[0];
+
+                        // get uuid
+                        $output = $this->Cmd->exe("blkid $device", true);
+                        preg_match('/UUID=\"([^\" ]+)\"/', $output, $matches);
+                        $uuid = $matches[1];
+
+                        $this->Cmd->exe("echo 'mkfs -U $uuid --type $type $device' | $tee_cmd >> " . $this->Session->get('scripts.path') . $filebase . '.' . $restore_type . '.sh');
+                        //store mounts
+                        $mounts [$pieces[0]] = $pieces[1];
+                    }
+                }
+                #####################################
+                # MOUNTS
+                #####################################
+                //restore
+                $restore_type = 'mounts';
+                $this->Cmd->exe("echo >> " . $this->Session->get('restore.script.local'));
+                $this->Cmd->exe("echo '################################################' >> " . $this->Session->get('restore.script.local'));
+                $this->Cmd->exe("echo '# " . strtoupper(str_replace('_', ' ', $restore_type)) . "' >> " . $this->Session->get('restore.script.local'));
+                $this->Cmd->exe("echo '################################################' >> " . $this->Session->get('restore.script.local'));
+                $content = [];
+                $content [] = '# To restore, run on backup server:';
+                $content [] = 'ssh ' . $ssh_connection . ' "bash /tmp/restore/scripts/' . $restore_type . '.sh"';
+                $content [] = '';
+                $content [] = '--- OR ---';
+                $content [] = '';
+                $content [] = '# Or run manually on the rescue system...';
+                $content [] = '';
+                $out[] = '# Suggested mount points. Your mileage  may vary.';
+                $this->Cmd->exe("echo '" . implode("\n", $content) . "' >> " . $this->Session->get('restore.script.local'));
+                $mounts_ordered = [];
+                foreach ($mounts as $dev => $mount)
+                {
+                    $m = explode('/', $mount);
+                    $mounts_ordered[count($m)] [] = [$dev, $mount];
+                }
+                // generate mount commands
+                foreach ($mounts_ordered as $index => $array)
+                {
+                    foreach ($array as $a)
+                    {
+                        $mount = $a[1];
+                        $dev = $a[0];
+                        $this->Cmd->exe("echo 'mkdir /mnt/poppins" . $mount . "; mount " . $dev . "  /mnt/poppins" . $mount . "' | $tee_cmd >> " . $this->Session->get('scripts.path') . $filebase . '.' . $restore_type . '.sh');
+                    }
+                }
+                //chroot
+                $content = [];
+                $content [] = '';
+                $content [] = '# You may want to restore the bootloader later by chrooting and installing grub by running for example: \'grub-install /dev/sda\'; update-grub';
+                $content [] = '';
+                $content [] = '# for i in dev dev/pts sys proc run; do mount --bind /$i /mnt/poppins/$i; done;';
+                $content [] = '# chroot /mnt/poppins /bin/bash';
+                $this->Cmd->exe("echo '" . implode("\n", $content) . "' | $tee_cmd >> " . $this->Session->get('scripts.path') . $filebase . '.' . $restore_type . '.sh');
+            }
+            else
+            {
+                $this->App->warn('Cannot create restore scripts. Must be root!');
+            }
         }
     }
 
