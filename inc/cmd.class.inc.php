@@ -67,15 +67,18 @@ class Cmd
         {
             return;
         }
+
         #####################################
         # Validate rm command
         #####################################
-        # foreach(['rm -f /home/brdooms/poppins.d/hosts/localhost/rsync.dir/meta/* 2>/dev/null', 'rm -rf /* ; ecokm.sh', '/bin/rm -rf /*', 'rm -rf //*', 'rm -r -f /*', 'rm -rf -d //*', 'rm -rf ////', 'rm /*', 'rm -r /', '/foo/bar.sh -xyz'] as $cmd)
+        # Start validate
+        #foreach(['rm -f /backups/poppins/server/vub-vm-02.priorweb.be/rsync.zfs/mysql/default/*', 'rm -f /home/brdooms/poppins.d/hosts/localhost/rsync.dir/meta/* 2>/dev/null', 'rm -rf /* ; ecokm.sh', '/bin/rm -rf /*', 'rm -rf //*', 'rm -r -f /*', 'rm -rf -d //*', 'rm -rf ////', 'rm /*', 'rm -r /', '/foo/bar.sh -xyz'] as $cmd)
         if (true)
         {
             //debugging
-            # print "\n".$cmd;
-            if (preg_match('|([^a-z]\/)?rm (\-[a-z]+ )*\/+\*? *;? *[^ ]*$|', $cmd))
+            # print "\n $cmd - ";
+            $pattern = '|([^a-z]\/)?rm (\-[a-z]+ )*\/+\*?( *; *[^ ]*)?$|';
+            if (preg_match($pattern, $cmd))
             {
                 // debugging
                 # print ' match % '; continue;
@@ -85,7 +88,7 @@ class Cmd
                 die();
             }
         }
-        #
+        # End validate
         //check if command is run on remote host
         if($remote)
         {
