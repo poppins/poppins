@@ -453,6 +453,12 @@ class Application
                                 }
                             }
                         }
+                        // no ".." dir expansion
+                        elseif (preg_match("/\/?\.\.\/?/", $value, $matches))
+                        {
+                            $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] has an illegal value: "'.$matches[0].'"';
+                            $this->fail($message);
+                        }
                         // other weird characters
                         elseif (!Validator::contains_allowed_characters($value))
                         {
