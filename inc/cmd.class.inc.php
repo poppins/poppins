@@ -67,15 +67,15 @@ class Cmd
         {
             return;
         }
-        #
-        // debugging
-        # foreach(['rm -rf /*', '/bin/rm -rf /*', 'rm -rf //*', 'rm -r -f /*', 'rm -rf -d //*', 'rm -rf ////', 'rm /*', 'rm -r /', '/foo/bar.sh -xyz'] as $cmd)
-        // do not allow double slashes or rm command
+        #####################################
+        # Validate rm command
+        #####################################
+        # foreach(['rm -f /home/brdooms/poppins.d/hosts/localhost/rsync.dir/meta/* 2>/dev/null', 'rm -rf /* ; ecokm.sh', '/bin/rm -rf /*', 'rm -rf //*', 'rm -r -f /*', 'rm -rf -d //*', 'rm -rf ////', 'rm /*', 'rm -r /', '/foo/bar.sh -xyz'] as $cmd)
         if (true)
         {
             //debugging
             # print "\n".$cmd;
-            if (preg_match('|([^a-z]\/)?rm (\-[a-z]+ )*\/+\*?[; ]?|', $cmd))
+            if (preg_match('|([^a-z]\/)?rm (\-[a-z]+ )*\/+\*? *;? *[^ ]*$|', $cmd))
             {
                 // debugging
                 # print ' match % '; continue;
