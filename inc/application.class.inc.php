@@ -1626,9 +1626,13 @@ class Application
             $output = [];
             foreach($this->Cmd->commands as $c)
             {
-                $output []= $c;
+                // do not output echo commands
+                if (!preg_match('/^echo /', $c))
+                {
+                    $output []= $c;
+                    $output []= '';
+                }
             }
-            $output []= "";
             $this->out(implode("\n", $output));
         }
         #####################################
