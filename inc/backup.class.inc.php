@@ -763,7 +763,8 @@ class Backup
         if ($this->Config->get('remote.ssh'))
         {
             $ssh = $this->Cmd->parse('{SSH}');
-            $o [] = '-e "' . $ssh . ' -o TCPKeepAlive=yes -o ServerAliveInterval=30"';
+            $sshopts = $this->Session->Get('ssh.options');
+            $o [] = '-e "' . $ssh . ' ' . $sshopts.'"';
         }
 
         // general options

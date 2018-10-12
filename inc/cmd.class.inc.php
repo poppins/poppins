@@ -97,7 +97,8 @@ class Cmd
             {
                 $host = $this->Config->get('remote.host');
                 $user = $this->Config->get('remote.user');
-                $cmd = "ssh -o BatchMode=yes $user@$host $cmd";
+                $sshopts = $this->Session->Get('ssh.options');
+                $cmd = "ssh $sshopts $user@$host $cmd";
             }
             // run on localhost (no ssh mode)
             else

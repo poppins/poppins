@@ -846,6 +846,8 @@ class Application
         // only applicable for ssh
         if($this->Config->get('remote.ssh'))
         {
+            // ssh options
+            $this->Session->Set('ssh.options', '-o BatchMode=yes -o ConnectTimeout=15 -o TCPKeepAlive=yes -o ServerAliveInterval=30');
             $this->out('Check remote parameters...');
             //validate user
             $remote_user  = ($this->Config->get('remote.user'))? $this->Config->get('remote.user'):$this->Cmd->exe('whoami');
@@ -1429,6 +1431,7 @@ class Application
         $this->messages [] = $message;
         //output color
         if($fgcolor) $this->cmessages [count($this->messages) - 1] = [$fgcolor, $bgcolor];
+
     }
 
     /**
