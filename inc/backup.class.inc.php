@@ -474,40 +474,47 @@ class Backup
                 $check_lvm_installed = $this->Cmd->exe("'which pvscan 2>&1 >/dev/null && echo TRUE'", true);
                 if ($check_lvm_installed == 'TRUE')
                 {
-                    $filename_vgcfgbackup = 'vgcfgbackup.txt';
-                    $restore_type = 'logical_volumes_restore';
-                    $this->Cmd->exe("echo >> " . $this->Session->get('restore.script.local'));
-                    $this->Cmd->exe("echo '################################################' >> " . $this->Session->get('restore.script.local'));
-                    $this->Cmd->exe("echo '# " . strtoupper(str_replace('_', ' ', $restore_type)) . "' >> " . $this->Session->get('restore.script.local'));
-                    $this->Cmd->exe("echo '################################################' >> " . $this->Session->get('restore.script.local'));
-                    $content = [];
-                    $content [] = '# To restore, run on backup server: ';
-                    $content [] = 'ssh ' . $ssh_connection . ' "bash /tmp/restore/scripts/' . $restore_type . '.sh"';
-                    $content [] = '';
-                    $content [] = '--- OR ---';
-                    $content [] = '';
-                    $content [] = '# Or run manually on the rescue system:';
-                    $content [] = '';
-                    $this->Cmd->exe("echo '" . implode("\n", $content) . "' >> " . $this->Session->get('restore.script.local'));
-                    $output = $this->Cmd->exe("'vgcfgbackup -f /tmp/$filename_vgcfgbackup'", true);
-                    preg_match('/Volume group "(.+)"/', $output, $matches);
-                    $volume_group = $matches[1];
-                    $this->Cmd->exe("'(cat /tmp/$filename_vgcfgbackup)' > " . $this->Session->get('meta.path') . "$filebase.$filename_vgcfgbackup", true);
-                    // build the restore file
-                    $physical_volumes = $this->Cmd->exe("grep -E -A2 'pv[0-9]+ {' " . $this->Session->get('meta.path') . "$filebase.$filename_vgcfgbackup");
-                    foreach (explode('--', $physical_volumes) as $physical_volume)
-                    {
-                        preg_match('/id = \"(.+)\"/', $physical_volume, $matches);
-                        $id = $matches[1];
-                        preg_match('/device = \"(.+)\"/', $physical_volume, $matches);
-                        $device = $matches[1];
-                        $this->Cmd->exe("echo '# re-create the physical volume with pvcreate \npvcreate -ff --uuid \"$id\" --restorefile /tmp/meta/$filebase.$filename_vgcfgbackup $device' | $tee_cmd >> " . $this->Session->get('scripts.path') . $filebase . '.' . $restore_type . '.sh');
-                    }
-                    //volume restore
-                    $this->Cmd->exe("echo '# restore the volume group with vgcfgrestore \nvgcfgrestore -f /tmp/meta/$filebase.$filename_vgcfgbackup $volume_group' | $tee_cmd >> " . $this->Session->get('scripts.path') . $filebase . '.' . $restore_type . '.sh');
-                    // activate volumes
-                    $this->Cmd->exe("echo '# activate all logical volumes. Check if installed correctly by typing pvs. \nvgchange -a y $volume_group' | $tee_cmd >> " . $this->Session->get('scripts.path') . $filebase . '.' . $restore_type . '.sh');
+		    $vgs=$this->Cmd->Exe("vgs -o name --noheadings", true);
+		    $vgs=explode("\n", $vgs);
+		    foreach ( $vgs as $vg ) {
+			$vg=ltrim($vg);
+			$restore_type = 'logical_volumes_restore';
+
+			$filename_vgcfgbackup = "vgcfgbackup_$vg.txt";
+			$this->Cmd->exe("echo >> " . $this->Session->get('restore.script.local'));
+			$this->Cmd->exe("echo '################################################' >> " . $this->Session->get('restore.script.local'));
+			$this->Cmd->exe("echo '# " . strtoupper(str_replace('_', ' ', $restore_type)) . "' >> " . $this->Session->get('restore.script.local'));
+			$this->Cmd->exe("echo '################################################' >> " . $this->Session->get('restore.script.local'));
+			$content = [];
+			$content [] = '# To restore, run on backup server: ';
+			$content [] = 'ssh ' . $ssh_connection . ' "bash /tmp/restore/scripts/' . $restore_type . '.sh"';
+			$content [] = '';
+			$content [] = '--- OR ---';
+			$content [] = '';
+			$content [] = '# Or run manually on the rescue system:';
+			$content [] = '';
+			$this->Cmd->exe("echo '" . implode("\n", $content) . "' >> " . $this->Session->get('restore.script.local'));
+			$output = $this->Cmd->exe("'vgcfgbackup -f /tmp/$filename_vgcfgbackup $vg'", true);
+			preg_match('/Volume group "(.+)"/', $output, $matches);
+			$volume_group = $matches[1];
+			$this->Cmd->exe("'(cat /tmp/$filename_vgcfgbackup)' > " . $this->Session->get('meta.path') . "$filebase.$filename_vgcfgbackup", true);
+			// build the restore file
+			$physical_volumes = $this->Cmd->exe("grep -E -A2 'pv[0-9]+ {' " . $this->Session->get('meta.path') . "$filebase.$filename_vgcfgbackup");
+			foreach (explode('--', $physical_volumes) as $physical_volume)
+			{
+			    preg_match('/id = \"(.+)\"/', $physical_volume, $matches);
+			    $id = $matches[1];
+			    preg_match('/device = \"(.+)\"/', $physical_volume, $matches);
+			    $device = $matches[1];
+			    $this->Cmd->exe("echo '# re-create the physical volume with pvcreate \npvcreate -ff --uuid \"$id\" --restorefile /tmp/meta/$filebase.$filename_vgcfgbackup $device' | $tee_cmd >> " . $this->Session->get('scripts.path') . $filebase . '.' . $restore_type . '.sh');
+			}
+			//volume restore
+			$this->Cmd->exe("echo '# restore the volume group with vgcfgrestore \nvgcfgrestore -f /tmp/meta/$filebase.$filename_vgcfgbackup $volume_group' | $tee_cmd >> " . $this->Session->get('scripts.path') . $filebase . '.' . $restore_type . '.sh');
+			// activate volumes
+			$this->Cmd->exe("echo '# activate all logical volumes. Check if installed correctly by typing pvs. \nvgchange -a y $volume_group' | $tee_cmd >> " . $this->Session->get('scripts.path') . $filebase . '.' . $restore_type . '.sh');
+		    }
                 }
+
                 #####################################
                 # FILESYSTEMS RESTORE
                 #####################################
