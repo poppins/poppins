@@ -283,7 +283,7 @@ class Rotator
     }
 
     /**
-     * Function will scan for directories
+     * Function will scan for each subdirectory in /archive
      *
      * @param $validate Validate if unknown files or directories
      * @return array The directories
@@ -291,37 +291,69 @@ class Rotator
     function scandir($validate = false)
     {
         //variables
-        $tmp = [];
+        $scanned_dirs = [];
         $res = [];
         //archive dir
         $archivedir = $this->archivedir;
-        //scan thru all intervals
-        foreach (array_keys($this->Config->get('snapshots')) as $k)
+
+        // get the types e.g. incremental, 10-minutely, etc
+        $snapshot_types = array_keys($this->Config->get('snapshots'));
+
+        // build an array of directories
+        foreach ($snapshot_types as $snapshot_type)
         {
             //keys must be stored in array!
-            $res[$k] = [];
-            $dir = $archivedir . '/' . $k;
+            $res[$snapshot_type] = [];
+            $dir = $archivedir . '/' . $snapshot_type;
             if(is_dir($dir))
             {
-                $tmp[$k] = scandir($dir);
+                // get all snapshots from certain type e.g. incrementals
+                $scanned_dirs[$snapshot_type] = scandir($dir);
             }
         }
+        //create whitelist for validation
+        $whitelist = [];
         //validate array
-        foreach ($tmp as $k => $v)
+        foreach ($scanned_dirs as $snapshot_type => $snapshots)
         {
-            foreach ($v as $vv)
+            //initiate variable
+            $whitelist[$snapshot_type] = [];
+
+            // iterate through all snapshots
+            foreach ($snapshots as $snapshot)
             {
                 //check if dir
                 $prefix = str_replace('.', '\.', $this->Config->get('local.hostdir-name'));
-                $found = "$archivedir/$k/$vv";
-                if (is_dir($found) && preg_match("/$prefix\.$this->dir_regex\.poppins$/", $vv))
+                if (is_dir("$archivedir/$snapshot_type/$snapshot"))
                 {
-                    $res[$k] []= $vv;
+                    if (preg_match("/$prefix\.$this->dir_regex\.poppins$/", $snapshot))
+                    {
+                        // e.g. incremental => x, y, z
+                        $res[$snapshot_type] [] = $snapshot;
+                        // add to whitelist
+                        $whitelist [$snapshot_type] [] = $snapshot;
+                    }
                 }
-                elseif(!in_array($vv, ['.', '..']) && $validate)
+            }
+        }
+
+        // check if unclean
+        if($validate)
+        {
+
+            $unclean_files = [];
+            foreach ($snapshot_types as $snapshot_type)
+            {
+                //unclean files
+                $allowed = $whitelist[$snapshot_type];
+                $unclean_files = Validator::get_unclean_files("$archivedir/$snapshot_type", $allowed);
+
+                if (count($unclean_files))
                 {
-                    $type = filetype($found);
-                    $this->App->notice("Directory $archivedir/$k unclean, unknown $type $found");
+                    foreach ($unclean_files as $file => $type)
+                    {
+                        $this->App->notice("Archive subdirectory $dir not clean, unknown $type '$file'. Remove or rename to '_$file'..");
+                    }
                 }
             }
         }
@@ -537,19 +569,25 @@ class ZfsRotator extends Rotator
             $res[$k] = [];
             if(is_array($snapshots))
             {
-                foreach($snapshots as $s)
+                foreach($snapshots as $snapshot)
                 {
-                    if(preg_match('/^'.$k.'/', $s))
+                    if(preg_match('/^'.$k.'/', $snapshot))
                     {
-                        $snap = str_replace($k.'-', '', $s);
+                        $snap = str_replace($k.'-', '', $snapshot);
                         $prefix = str_replace('.', '\.', $this->Config->get('local.hostdir-name'));
                         if(preg_match("/$prefix\.$this->dir_regex\.poppins$/", $snap))
                         {
                             $res[$k][]= $snap;
                         }
-                        elseif(!in_array($s, ['.', '..']) && $validate)
+                        elseif($validate)
                         {
-                            $this->App->notice("Directory $archivedir unclean, unknown snapshot $s");
+                            //unclean files
+                            $unclean_files = Validator::get_unclean_files($archivedir, $this->Config->get('snapshots'));
+                            if (count($unclean_files))
+                            {
+                                // unclean file found
+                                $this->App->notice("Snapshot directory $archivedir not clean, unknown snapshot $snapshot..");
+                            }
                         }
                     }
                 }

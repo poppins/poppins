@@ -54,14 +54,21 @@ class Validator
      * @param boolean $exact_match Search must match string exactly
      * @return array Files or directories that differ
      */
-    static function contains_allowed_files($dir, $allowed = [], $exact_match = true)
+    static function get_unclean_files($dir, $allowed = [], $exact_match = true)
     {
-        $unexpected = [];
+        $unclean_files = [];
         $scan = scandir($dir);
+        # var_dump($allowed);
         foreach($scan as $found)
         {
+            # echo $found."\n";
             // ignore dot
             if(in_array($found, ['.', '..']))
+            {
+                continue;
+            }
+            // ignore underscore
+            if(preg_match('/^_/', $found))
             {
                 continue;
             }
@@ -80,15 +87,15 @@ class Validator
                 // no match, fail
                 if(!$match)
                 {
-                    $unexpected [$found] = filetype($dir.'/'.$found);
+                    $unclean_files [$found] = filetype($dir.'/'.$found);
                 }
             }
             elseif(!in_array($found, $allowed))
             {
-                $unexpected [$found] = filetype($dir.'/'.$found);
+                $unclean_files [$found] = filetype($dir.'/'.$found);
             }
         }
-        return $unexpected;
+        return $unclean_files;
     }
 
     /**

@@ -29,7 +29,7 @@ See example.poppins.ini:
 ### MAJOR CHANGES
 
 * Directive "cross-filesystem-boundaries" is added to the rsync section. A warning is triggered when trying to cross mounted filesystem boundaries if this option is set to "no", which is the default. You must explicitly exclude these directories or set the option to "yes".
-* Notices are introduced. Less important messages (dir unclean, incomplete configuration, duplicate mysql config file) will be considered notices rather than warnings.
+* Notices are introduced. Less important messages (dir not clean, incomplete configuration, duplicate mysql config file) will be considered notices rather than warnings.
 * Post backup script added. May or not be run depending on a successful rsync run.
 
 ### MINOR CHANGES

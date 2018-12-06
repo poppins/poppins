@@ -1154,59 +1154,34 @@ class Application
         if(file_exists($dir))
         {
             $allowed = array_map('stripslashes', array_values($this->Config->get('included')));
-            $diff = Validator::contains_allowed_files($dir, $allowed);
-            if (count($diff))
+            $unclean_files = Validator::get_unclean_files($dir, $allowed);
+
+            // files found!
+            if (count($unclean_files))
             {
-                foreach ($diff as $file => $type)
+                foreach ($unclean_files as $file => $type)
                 {
-                    $this->notice("Directory $dir not clean, unknown $type '$file'..");
+                    $this->notice("Rsync subdirectory '/files' not clean, unknown $type '$file'. Remove or rename to '_$file'..");
                 }
             }
         }
-        #####################################
-        # CHECK IF META DIR IS CLEAN
-        #####################################
-        $filebase = strtolower($this->Config->get('local.hostdir-name') . '.' . $this->Session->get('appname'));
-        $this->Session->set('meta.filebase', $filebase);
-//        //check if meta dir is clean
-//        $dir = $this->Config->get('local.rsyncdir').'/meta';
-//        if(file_exists($dir))
-//        {
-//            $allowed = [];
-//            $directives = ['remote-disk-layout' => 'disk-layout.txt', 'remote-package-list' => 'packages.txt'];
-//            foreach ($directives as $directive => $file)
-//            {
-//                if ($this->Config->get(['meta', $directive]))
-//                {
-//                    $allowed [] = $filebase . '.' . $file;
-//                }
-//            }
-//            $diff = Validator::contains_allowed_files($dir, $allowed);
-//            if (count($diff))
-//            {
-//                foreach ($diff as $file => $type)
-//                {
-//                    $this->notice("Directory $dir not clean, unknown $type '$file'..");
-//                }
-//            }
-//        }
+        # die();
         #####################################
         # CHECK IF MYSQL DIR IS CLEAN
         #####################################
         //check if mysql dir is clean
-        //TODO implement?
         if(!$this->Config->get('mysql.enabled'))
         {
             $dir = $this->Config->get('local.rsyncdir').'/mysql';
             if(file_exists($dir))
             {
                 $allowed = [];
-                $diff = Validator::contains_allowed_files($dir, $allowed);
-                if (count($diff))
+                $unclean_files = Validator::get_unclean_files($dir, $allowed);
+                if (count($unclean_files))
                 {
-                    foreach ($diff as $file => $type)
+                    foreach ($unclean_files as $file => $type)
                     {
-                        $this->notice("Directory $dir not clean, found $type '$file' while mysql is disabled..");
+                        $this->notice("MySQL directory $dir not clean, found $type '$file' while mysql is disabled. Remove or rename to '_$file'..");
                     }
                 }
             }
@@ -1220,12 +1195,12 @@ class Application
         {
             $allowed = array_keys($this->Config->get('snapshots'));
             $exact_match = ($this->Config->get('local.snapshot-backend') == 'zfs')? false:true;
-            $diff = Validator::contains_allowed_files($dir, $allowed, $exact_match);
-            if (count($diff))
+            $unclean_files = Validator::get_unclean_files($dir, $allowed, $exact_match);
+            if (count($unclean_files))
             {
-                foreach ($diff as $file => $type)
+                foreach ($unclean_files as $file => $type)
                 {
-                    $this->notice("Directory $dir not clean, unknown $type '$file'..");
+                    $this->notice("Archive directory $dir not clean, unknown $type '$file'. Remove or rename to '_$file'..");
                 }
             }
         }
