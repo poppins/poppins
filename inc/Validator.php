@@ -50,15 +50,53 @@ class Validator
      * if not, return the difference
      *
      * @param $dir Directory
-     * @param array $allowed Allowed files and directories
+     * @param array $whitelist Allowed files and directories
      * @param boolean $exact_match Search must match string exactly
      * @return array Files or directories that differ
      */
-    static function get_unclean_files($dir, $allowed = [], $exact_match = true)
+    static function check_unclean_files_array($dir, $whitelist = [])
     {
         $unclean_files = [];
         $scan = scandir($dir);
-        # var_dump($allowed);
+
+
+        foreach($scan as $found)
+        {
+            # echo $found."\n";
+            // ignore dot
+            if(in_array($found, ['.', '..']))
+            {
+                continue;
+            }
+            // ignore underscore
+            if(preg_match('/^_/', $found))
+            {
+                continue;
+            }
+            //check if the file is in the whitelist
+            if(!in_array($found, $whitelist))
+            {
+                $unclean_files [$found] = filetype($dir.'/'.$found);
+            }
+        }
+        return $unclean_files;
+    }
+
+    /**
+     * Check if actual dir listing is as expected and
+     * if not, return the difference
+     *
+     * @param $dir Directory
+     * @param array $whitelist Allowed files and directories
+     * @param boolean $exact_match Search must match string exactly
+     * @return array Files or directories that differ
+     */
+    static function check_unclean_files_regex($dir, $whitelist = [])
+    {
+        $unclean_files = [];
+        $scan = scandir($dir);
+
+
         foreach($scan as $found)
         {
             # echo $found."\n";
@@ -73,24 +111,17 @@ class Validator
                 continue;
             }
             //match based on regex
-            if(!$exact_match)
+            $match = false;
+            foreach($whitelist as $a)
             {
-                $match = false;
-                foreach($allowed as $a)
+                if (preg_match('/^'.$a.'/', $found))
                 {
-                    if (preg_match('/^'.$a.'/', $found))
-                    {
-                        $match = true;
-                        break;
-                    }
-                }
-                // no match, fail
-                if(!$match)
-                {
-                    $unclean_files [$found] = filetype($dir.'/'.$found);
+                    $match = true;
+                    break;
                 }
             }
-            elseif(!in_array($found, $allowed))
+            // no match, fail
+            if(!$match)
             {
                 $unclean_files [$found] = filetype($dir.'/'.$found);
             }

@@ -60,7 +60,7 @@ class ArchiveMapper
         // get listing
         foreach($archive_dirs as $dir)
         {
-            $this->validate($dir);
+            $this->validate_archive_dir($dir);
         }
     }
 
@@ -102,10 +102,14 @@ class ArchiveMapper
         return $this->whitelist;
     }
 
-    function get_filtered_filename($archive_dir)
+    /**
+     * @param $archive_dir
+     * @return array
+     */
+    function get_clean_files($archive_dir)
     {
         //create whitelist for validation
-        $filtered = [];
+        $clean_files = [];
 
         // iterate through all snapshots
         foreach (scandir($archive_dir) as $found)
@@ -117,12 +121,12 @@ class ArchiveMapper
                 if (preg_match("/$prefix\.$this->dir_regex\.poppins$/", $found))
                 {
                     // add to whitelist
-                    $filtered [] = $found;
+                    $clean_files [] = $found;
                 }
             }
         }
 
-        return $filtered;
+        return $clean_files;
     }
 
     function get_snapshots_per_category()
@@ -139,12 +143,12 @@ class ArchiveMapper
         return $snapshots;
     }
 
-    function validate($archive_dir)
+    function validate_archive_dir($archive_dir)
     {
-        $whitelist = $this->get_filtered_filename($archive_dir);
+        $whitelist = $this->get_clean_files($archive_dir);
         $this->whitelist[$archive_dir] = $whitelist;
 
-        $unclean_files = Validator::get_unclean_files($archive_dir, $whitelist);
+        $unclean_files = Validator::check_unclean_files_array($archive_dir, $whitelist);
 
         if (count($unclean_files))
         {
