@@ -1,6 +1,6 @@
 <?php
 /**
- * File backup.class.inc.php
+ * File Backup.php
  *
  * @package    Poppins
  * @license    http://www.gnu.org/licenses/gpl-3.0.en.html  GNU Public License
@@ -977,51 +977,3 @@ class Backup
 
 }
 
-/**
- * Class BtrfsBackup based on btrfs filesystem (btrfs snapshots)
- */
-class BtrfsBackup extends Backup
-{
-
-    /**
-     * Create the syncdir
-     */
-    function create_syncdir()
-    {
-        $this->Cmd->exe("btrfs subvolume create " . $this->rsyncdir);
-    }
-
-}
-
-/**
- * Class DefaultBackup based on default filesystem (hardlink rotation)
- */
-class DefaultBackup extends Backup
-{
-
-    /**
-     * Create the syncdir
-     */
-    function create_syncdir()
-    {
-        $this->Cmd->exe("mkdir -p " . $this->rsyncdir);
-    }
-
-}
-
-/**
- * Class ZfsBackup based on zfs filesystem (zfs snapshots)
- */
-class ZfsBackup extends Backup
-{
-
-    /**
-     * Create the syncdir
-     */
-    function create_syncdir()
-    {
-        $rsyncdir = preg_replace('/^\//', '', $this->rsyncdir);
-        $this->Cmd->exe("zfs create " . $rsyncdir);
-    }
-
-}

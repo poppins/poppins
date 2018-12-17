@@ -1,13 +1,13 @@
 <?php
 /**
- * File databasedumper.class.inc.php
+ * File DatabaseDumper.php
  *
  * @package    Poppins
  * @license    http://www.gnu.org/licenses/gpl-3.0.en.html  GNU Public License
  * @author     Bruno Dooms, Frank Van Damme
  */
 
-require_once dirname(__FILE__).'/dumper.class.inc.php';
+require_once dirname(__FILE__).'/Dumper.php';
 
 /**
  * Class DatabaseDumper contains functions that generate mysqldump commands

@@ -1,6 +1,6 @@
 <?php
 /**
- * File validator.class.inc.php
+ * File Validator.php
  *
  * @package    Poppins
  * @license    http://www.gnu.org/licenses/gpl-3.0.en.html  GNU Public License

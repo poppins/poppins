@@ -1,6 +1,6 @@
 <?php
 /**
- * File keybasedparser.class.inc.php
+ * File KeyBasedParser.php
  *
  * @package    Poppins
  * @license    http://www.gnu.org/licenses/gpl-3.0.en.html  GNU Public License
@@ -8,7 +8,7 @@
  */
 
 //require parent class
-require_once(dirname(__FILE__).'/parser.class.inc.php');
+require_once(dirname(__FILE__).'/Parser.php');
 
 /**
  * Class PathBasedParser

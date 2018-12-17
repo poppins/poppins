@@ -37,7 +37,7 @@ function d($s = '')
 $files = scandir(dirname(__FILE__));
 foreach($files as $file)
 {
-    if (preg_match('/class\.inc\.php$/', $file))
+    if (preg_match('/.php$/', $file))
     {
         require_once $file;
     }

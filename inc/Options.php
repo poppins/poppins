@@ -1,6 +1,6 @@
 <?php
 /**
- * File session.class.inc.php
+ * File Options.php
  *
  * @package    Poppins
  * @license    http://www.gnu.org/licenses/gpl-3.0.en.html  GNU Public License
@@ -8,9 +8,9 @@
  */
 
 //require parent class
-require_once(dirname(__FILE__).'/store.class.inc.php');
+require_once(dirname(__FILE__).'/Store.php');
 
 /**
- * Class Sessions contains application session variables
+ * Class Options contains all cli options
  */
-class Session extends Store{}
+class Options extends Store{}

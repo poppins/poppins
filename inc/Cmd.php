@@ -1,6 +1,6 @@
 <?php
 /**
- * File cmd.class.inc.php
+ * File Cmd.php
  *
  * @package    Poppins
  * @license    http://www.gnu.org/licenses/gpl-3.0.en.html  GNU Public License
@@ -161,42 +161,5 @@ class Cmd
 
 }
 
-/**
- * Class LinuxCmd is used for all linux commands
- */
-class LinuxCmd extends Cmd
-{
 
-    function map()
-    {
-        $cmd = [];
-        $cmd['{CP}'] = 'cp';
-        $cmd['{MV}'] = 'mv';
-        $cmd['{RM}'] = 'rm';
-        $cmd['{SSH}'] = 'ssh';
-        $cmd['{GREP}'] = 'grep';
-        $cmd['{DF}'] = 'df';
-        return $cmd;
-    }
 
-}
-
-/**
- * Class SunOSCmd is used for all SunOS commands
- */
-class SunOSCmd extends Cmd
-{
-
-    function map()
-    {
-        $cmd = [];
-        $cmd['{CP}'] = '/bin/cp';
-        $cmd['{MV}'] = '/usr/bin/mv';
-        $cmd['{RM}'] = '/usr/gnu/bin/rm';
-        $cmd['{SSH}'] = '/opt/csw/bin/ssh';
-        $cmd['{GREP}'] = '/usr/bin/ggrep';
-        $cmd['{DF}'] = '/usr/gnu/bin/df';
-        return $cmd;
-    }
-
-}

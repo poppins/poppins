@@ -1,6 +1,6 @@
 <?php
 /**
- * File application.class.inc.php
+ * File Application.php
  *
  * @package    Poppins
  * @license    http://www.gnu.org/licenses/gpl-3.0.en.html  GNU Public License
