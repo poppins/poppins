@@ -1154,7 +1154,7 @@ class Application
         if(file_exists($dir))
         {
             $allowed = array_map('stripslashes', array_values($this->Config->get('included')));
-            $unclean_files = Validator::check_unclean_files_array($dir, $allowed);
+            $unclean_files = Validator::get_unclean_files($dir, $allowed);
 
             // files found!
             if (count($unclean_files))
@@ -1176,7 +1176,7 @@ class Application
             if(file_exists($dir))
             {
                 $allowed = [];
-                $unclean_files = Validator::check_unclean_files_array($dir, $allowed);
+                $unclean_files = Validator::get_unclean_files($dir, $allowed);
                 if (count($unclean_files))
                 {
                     foreach ($unclean_files as $file => $type)
@@ -1196,11 +1196,11 @@ class Application
             $whitelist = array_keys($this->Config->get('snapshots'));
             if ($this->Config->get('local.snapshot-backend') == 'zfs')
             {
-                $unclean_files = Validator::check_unclean_files_regex($dir, $whitelist);
+                $unclean_files = Validator::get_unclean_files($dir, $whitelist, false);
             }
             else
             {
-                $unclean_files = Validator::check_unclean_files_array($dir, $whitelist);
+                $unclean_files = Validator::get_unclean_files($dir, $whitelist);
             }
             // check if there are any
             if (count($unclean_files))

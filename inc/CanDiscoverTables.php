@@ -31,7 +31,7 @@ trait CanDiscoverTables
                     $tables []= $db.'.'.$table;
                 }
             }
-        }
+        }   
 
         // cache the results
         $this->Session->set('cache.discovered-tables.'.$this->config_file, $tables);

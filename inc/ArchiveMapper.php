@@ -148,7 +148,7 @@ class ArchiveMapper
         $whitelist = $this->get_clean_files($archive_dir);
         $this->whitelist[$archive_dir] = $whitelist;
 
-        $unclean_files = Validator::check_unclean_files_array($archive_dir, $whitelist);
+        $unclean_files = Validator::get_unclean_files($archive_dir, $whitelist);
 
         if (count($unclean_files))
         {
