@@ -59,6 +59,11 @@ class Validator
     {
         $unclean_files = [];
         $scan = scandir($dir);
+        
+        if(!is_array($scan))
+        {
+            return [];
+        }
 
         foreach($scan as $found)
         {
