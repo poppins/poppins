@@ -16,8 +16,8 @@ $Session->set('appname', 'Poppins');
 // set start time
 $Session->set('chrono.session.start', date('U'));
 // version
-$mercurial_version = shell_exec('cd "'.dirname(__FILE__).'";hg parent --template "{rev}" 2>/dev/null;');
-$mercurial_hash = shell_exec('cd "'.dirname(__FILE__).'";hg id -i 2>/dev/null;');
+$mercurial_version = trim(shell_exec('cd "'.dirname(__FILE__).'";hg parent --template "{rev}" 2>/dev/null;'));
+$mercurial_hash = trim(shell_exec('cd "'.dirname(__FILE__).'";hg id -i 2>/dev/null;'));
 $full_version = ($mercurial_version)? $_poppins_version.'.'.$mercurial_version.' '.$mercurial_hash:$_poppins_version;
 $Session->set('version', $full_version);
 // supported intervals

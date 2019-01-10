@@ -5,25 +5,19 @@ require_once(dirname(__FILE__).'/ArchiveMapper.php');
 class ZfsArchiveMapper extends ArchiveMapper
 {
     /**
-     * Function will scan for each subdirectory in /archive
+     * Function will scan for each subdirectory in /archive. In ZFS this is just one directory
      *
      * @param $validate Validate if unknown files or directories
      * @return array The directories
      */
     function get_archive_dirs()
     {
-        // dirs
-        $archive_dirs = [];
-
-        //full path
-        $dir = $this->archive_dir;
-
-        if(is_dir($dir))
+        // just one dir in ZFS case
+        if(is_dir($this->archive_dir))
         {
-            $archive_dirs []= $dir;
+            return [$this->archive_dir];
         }
 
-        return $archive_dirs;
     }
 
 
@@ -31,7 +25,7 @@ class ZfsArchiveMapper extends ArchiveMapper
      * @param $archive_dir
      * @return array
      */
-    function get_clean_files($archive_dir)
+    function scan($archive_dir)
     {
         //create whitelist for validation
         $clean_files = [];
@@ -58,19 +52,23 @@ class ZfsArchiveMapper extends ArchiveMapper
     {
         $snaphots = [];
 
-        foreach($this->whitelist as $path => $files)
+        if (is_array($this->whitelist))
         {
-            $snapshots['all'] = $files;
+            foreach ($this->whitelist as $path => $files)
+            {
+                $snapshots['all'] = $files;
+            }
         }
 
         return $snapshots;
     }
 
-    function validate_archive_dir($archive_dir)
+    // TODO
+    function validate($archive_dir)
     {
         //this check is already done in the Application class.
         return;
-//        $whitelist = $this->get_clean_files($archive_dir);
+//        $whitelist = $this->scan($archive_dir);
 //        $this->whitelist[$archive_dir] = $whitelist;
 //
 //        $unclean_files = Validator::get_unclean_files($archive_dir, $whitelist, false);

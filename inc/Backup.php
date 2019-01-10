@@ -327,7 +327,7 @@ class Backup
             }
             else
             {
-                $this->App->warn('Cannot get disk layout. Must be root!');
+                $this->App->warn('Cannot get disk layout. Remote user is "'. $this->Config->get('remote.user') .'". Must be root!');
             }
         }
         else

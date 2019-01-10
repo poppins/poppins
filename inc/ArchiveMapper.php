@@ -17,11 +17,11 @@ class ArchiveMapper
 
     protected $Cmd;
 
-    protected $archive_dirs;
-
     protected $messages;
 
-    protected $whitelist;
+    protected $snapshots;
+
+    protected $validate;
 
     function __construct($App)
     {
@@ -41,26 +41,55 @@ class ArchiveMapper
         // App specific settings
         $this->Session = Session::get_instance();
 
-        //directories
-        $this->archive_dir = $this->Config->get('local.hostdir') . '/archive';
-
+        // messages
         $this->messages = [];
 
-        $this->dir_regex = '[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{6}';
-
-        // get the types e.g. incremental, 10-minutely, etc
-        $this->snapshot_types = array_keys($this->Config->get('snapshots'));
+        // snapshots per directory
+        $this->snapshots = [];
 
     }
 
-    function init()
+    function init($validate = true)
     {
-        $archive_dirs = $this->get_archive_dirs();
+        // validate the arch dir
+        $this->validate = $validate;
 
         // get listing
-        foreach($archive_dirs as $dir)
+        foreach($this->get_archive_dirs() as $dir)
         {
-            $this->validate_archive_dir($dir);
+            //create whitelist for validation
+            $unclean_files = [];
+
+            // iterate through all snapshots
+            foreach (scandir($dir) as $file_found)
+            {
+                //check if dir
+                $hostname = str_replace('.', '\.', $this->Config->get('local.hostdir-name'));
+
+                // check end
+                if (preg_match("/^$hostname\.[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{6}\.poppins$/", $file_found))
+                {
+                    // add to whitelist
+                    $this->snapshots[$dir] []= $file_found;
+                }
+                // ignore dot
+                elseif(!in_array($file_found, ['.', '..']) && !preg_match('/^_/', $file_found))
+                {
+                    $unclean_files [$file_found] = filetype($dir.'/'.$file_found);
+                }
+            }
+
+            // warn if unclean file
+            if($this->validate)
+            {
+                if (count($unclean_files))
+                {
+                    foreach ($unclean_files as $file => $type)
+                    {
+                        $this->messages [] = "Archive (snapshot) subdirectory $dir not clean, unknown $type '$file'. Remove or rename to '_$file'..";
+                    }
+                }
+            }
         }
     }
 
@@ -73,23 +102,26 @@ class ArchiveMapper
     function get_archive_dirs()
     {
         // dirs
-        $archive_dirs = [];
+        $dirs = [];
 
-        // build an array of directories
-        foreach ($this->snapshot_types as $sub_dir)
+        //  get the types e.g. incremental, 10-minutely, etc
+        foreach (array_keys($this->Config->get('snapshots')) as $sub_dir)
         {
-            //full path
-            $dir = $this->archive_dir . '/' . $sub_dir;
+            // base archive dir
+            $base_dir = $this->Config->get('local.hostdir') . '/archive';
+
+            // full path
+            $dir = $base_dir . '/' . $sub_dir;
 
             if(is_dir($dir))
             {
                 // get all snapshots from certain type e.g. incrementals
-                $archive_dirs []= $dir;
+                $dirs []= $dir;
             }
 
         }
 
-        return $archive_dirs;
+        return $dirs;
     }
 
     function get_messages()
@@ -97,43 +129,9 @@ class ArchiveMapper
         return $this->messages;
     }
 
-    function get_whitelist()
+    function get_snapshots_per_type()
     {
-        return $this->whitelist;
-    }
-
-    /**
-     * @param $archive_dir
-     * @return array
-     */
-    function get_clean_files($archive_dir)
-    {
-        //create whitelist for validation
-        $clean_files = [];
-
-        // iterate through all snapshots
-        foreach (scandir($archive_dir) as $found)
-        {
-            //check if dir
-            $prefix = str_replace('.', '\.', $this->Config->get('local.hostdir-name'));
-            if (is_dir("$archive_dir/$found"))
-            {
-                if (preg_match("/$prefix\.$this->dir_regex\.poppins$/", $found))
-                {
-                    // add to whitelist
-                    $clean_files [] = $found;
-                }
-            }
-        }
-
-        return $clean_files;
-    }
-
-    function get_snapshots_per_category()
-    {
-        $snaphots = [];
-
-        foreach($this->whitelist as $path => $files)
+        foreach($this->snapshots as $path => $files)
         {
             $pieces = explode('/', $path);
             $index = count($pieces) - 1;
@@ -142,23 +140,5 @@ class ArchiveMapper
 
         return $snapshots;
     }
-
-    function validate_archive_dir($archive_dir)
-    {
-        $whitelist = $this->get_clean_files($archive_dir);
-        $this->whitelist[$archive_dir] = $whitelist;
-
-        $unclean_files = Validator::get_unclean_files($archive_dir, $whitelist);
-
-        if (count($unclean_files))
-        {
-            foreach ($unclean_files as $file => $type)
-            {
-                $this->messages []= "Archive subdirectory $archive_dir not clean, unknown $type '$file'. Remove or rename to '_$file'..";
-            }
-        }
-
-    }
-
 
 }

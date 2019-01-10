@@ -55,11 +55,11 @@ class Validator
      * @param boolean $exact_match Search must match string exactly
      * @return array Files or directories that differ
      */
-    static function get_unclean_files($dir, $whitelist = [], $exact_match = true)
+    static function scan_dir_unclean_files($dir, $whitelist = [])
     {
         $unclean_files = [];
         $scan = scandir($dir);
-        
+
         if(!is_array($scan))
         {
             return [];
@@ -79,32 +79,11 @@ class Validator
                 continue;
             }
 
-            // base results on match type: exact or regex
-            if ($exact_match)
+            // TODO implenent fuzzy match??
+            //check if the file is in the whitelist
+            if(!in_array($found, $whitelist))
             {
-                //check if the file is in the whitelist
-                if(!in_array($found, $whitelist))
-                {
-                    $unclean_files [$found] = filetype($dir.'/'.$found);
-                }
-            }
-            else
-            {
-                //match based on regex
-                $match = false;
-                foreach($whitelist as $a)
-                {
-                    if (preg_match('/^'.$a.'/', $found))
-                    {
-                        $match = true;
-                        break;
-                    }
-                }
-                // no match, fail
-                if(!$match)
-                {
-                    $unclean_files [$found] = filetype($dir.'/'.$found);
-                }
+                $unclean_files [$found] = filetype($dir.'/'.$found);
             }
         }
         return $unclean_files;

@@ -25,10 +25,10 @@ class Rotator
     // Settings class - application specific settings
     protected $Settings;
 
-    // discovered snapshots
-    protected $archive_map;
+    // validate the archive dir
+    protected $validate;
 
-    /**
+        /**
      * Rotator constructor.
      * @param $App Application class
      */
@@ -59,7 +59,7 @@ class Rotator
 
         $this->rsyncdir = $this->Config->get('local.rsyncdir');
 
-        $this->dir_regex = '[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{6}';
+        $this->validate = true;
     }
 
     /**
@@ -86,9 +86,7 @@ class Rotator
 
         // discover and set snapshot dirs
         $this->App->out('Discover dirs...');
-        $this->discover();
-
-        $arch1 = $arch2 = $this->archives;
+        $arch1 = $arch2 = $this->map();
 
         #####################################
         # SORT DATA 
@@ -123,7 +121,7 @@ class Rotator
                 if ($end[$type])
                 {
                     //validate
-                    if (!preg_match("/$this->dir_regex/", $end[$type], $m))
+                    if (!preg_match("/[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{6}/", $end[$type], $m))
                     {
                         $this->App->fail("Wrong dirstamp format found, cannot continue!");
                     }
@@ -231,6 +229,7 @@ class Rotator
         // done
         $this->App->out();
         $this->App->out("OK!", 'simple-success');
+
         #####################################
         # LIST ARCHIVES
         #####################################
@@ -242,7 +241,7 @@ class Rotator
         $this->App->out();
 
         // output
-        foreach($this->archive_map as $type => $snapshots)
+        foreach($this->map() as $type => $snapshots)
         {
             $this->App->out($type);
             // sort reverse order
@@ -300,19 +299,22 @@ class Rotator
         }
     }
 
-    function discover()
+    function map()
     {
 
         // construct
         $ArchiveMapper = ArchiveMapperFactory::create($this->App);
-        $ArchiveMapper->init();
+        $ArchiveMapper->init($this->validate);
+
+        // do not validate more than once
+        $this->validate = false;
 
         foreach($ArchiveMapper->get_messages() as $message)
         {
             $this->App->notice($message);
         }
 
-        $this->archives = $ArchiveMapper->get_snapshots_per_category();
+        return $ArchiveMapper->get_snapshots_per_type();
     }
 
     /**
@@ -350,7 +352,7 @@ class Rotator
      */
     function time_exceed($diff, $snapshot)
     {
-        //parse type 
+        //parse type
         $a = explode('-', $snapshot);
         $offset = (integer) $a[0];
         $interval = $a[1];

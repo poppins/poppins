@@ -189,6 +189,7 @@ class Application
                 $this->abort("Option -t {tag} may not be empty!");
             }
         }
+
         #####################################
         # START
         #####################################
@@ -200,6 +201,7 @@ class Application
         }
         // environment
         $this->out('Environment', 'header');
+
         #####################################
         # LOCAL ENVIRONMENT
         #####################################
@@ -225,6 +227,7 @@ class Application
         {
             //$this->fail('PHP version 5.6.1 or higher required!');
         }
+
         #####################################
         # SETUP COMMANDS
         #####################################
@@ -325,6 +328,7 @@ class Application
                 }
             }
         }
+
         #####################################
         # CONFIGURATION CLEANUP
         #####################################
@@ -362,6 +366,7 @@ class Application
                 }
             }
         }
+
         #####################################
         # ABORT IF NO ACTION NEEDED
         #####################################
@@ -370,6 +375,7 @@ class Application
         {
             $this->fail("No directories configured for backup nor mysql configured. Nothing to do...");
         }
+
         #####################################
         # CHECK REMOTE HOST
         #####################################
@@ -378,6 +384,7 @@ class Application
         {
             $this->fail("Remote host is not configured!");
         }
+
         #####################################
         # VALIDATE INI FILE
         #####################################
@@ -423,6 +430,7 @@ class Application
                     {
                         // set value
                         $value = $this->Config->get([$section['name'], $directive['name']]);
+
                         #####################################
                         # WEIRD CHARACTERS
                         #####################################
@@ -508,6 +516,7 @@ class Application
                                 }
                             }
                         }
+
                         #####################################
                         # ALLOWED
                         #####################################
@@ -520,6 +529,7 @@ class Application
                                 $this->fail($message);
                             }
                         }
+
                         #####################################
                         # LIST
                         #####################################
@@ -535,6 +545,7 @@ class Application
                                 }
                             }
                         }
+
                         #####################################
                         # BOOLEAN
                         #####################################
@@ -556,6 +567,7 @@ class Application
                                 $this->fail($message);
                             }
                         }
+
                         #####################################
                         # INTEGER
                         #####################################
@@ -574,6 +586,7 @@ class Application
                                 }
                             }
                         }
+
                         #####################################
                         # ABSOLUTE OR RELATIVE HOME PATH
                         #####################################
@@ -593,6 +606,7 @@ class Application
                                 }
                             }
                         }
+
                         #####################################
                         # 1 ABSOLUTE PATH
                         #####################################
@@ -612,6 +626,7 @@ class Application
                                 }
                             }
                         }
+
                         #####################################
                         # 1 ABSOLUTE PATH OR EMPTY
                         #####################################
@@ -631,6 +646,7 @@ class Application
                                 }
                             }
                         }
+
                         #####################################
                         # NO TRAILING SLASH
                         #####################################
@@ -650,6 +666,7 @@ class Application
                                 }
                             }
                         }
+
                         #####################################
                         # MYSQL
                         #####################################
@@ -688,6 +705,7 @@ class Application
                                     }
                                 }
                             }
+
                             #####################################
                             # include types
                             #####################################
@@ -698,6 +716,7 @@ class Application
                             }
                         }
                     }
+
                     #####################################
                     # DEFAULTS
                     #####################################
@@ -731,6 +750,7 @@ class Application
                 }
             }
         }
+
         #####################################
         # VALIDATE INCLUDED/EXCLUDED
         #####################################
@@ -821,6 +841,7 @@ class Application
                 $this->fail("Error in snapshot configuration, $k not supported!");
             }
         }
+
         #####################################
         # SET LOG DIR
         #####################################
@@ -840,6 +861,7 @@ class Application
                 }
             }
         }
+
         #####################################
         # SET SSH CONNECTION
         #####################################
@@ -936,6 +958,7 @@ class Application
                 $this->fail('Wrong value for "pre-backup-onfail". Use "abort" or "continue"!');
             }
         }
+
         #####################################
         # CHECK DEPENDENCIES
         #####################################
@@ -984,6 +1007,7 @@ class Application
                 }
             }
         }
+
         #####################################
         # SET ROOT DIR
         #####################################
@@ -1055,6 +1079,7 @@ class Application
                     }
                 }
         }
+
         #####################################
         # SET HOST DIR
         #####################################
@@ -1077,6 +1102,7 @@ class Application
         {
             $this->fail("hostname may not contain slashes!");
         }
+
         #####################################
         # SETUP LOCAL DIRS
         #####################################
@@ -1133,6 +1159,7 @@ class Application
                 }
                 break;
         }
+
         #####################################
         # SET RSYNC DIR
         #####################################
@@ -1147,14 +1174,15 @@ class Application
                 $rsyncdir = 'rsync.dir';
         }
         $this->Config->set('local.rsyncdir',  $this->Config->get('local.hostdir').'/'.$rsyncdir);
+
         #####################################
         # CHECK IF RSYNC DIR IS CLEAN
         #####################################
         $dir = $this->Config->get('local.rsyncdir').'/files';
         if(file_exists($dir))
         {
-            $allowed = array_map('stripslashes', array_values($this->Config->get('included')));
-            $unclean_files = Validator::get_unclean_files($dir, $allowed);
+            $whitelist = array_map('stripslashes', array_values($this->Config->get('included')));
+            $unclean_files = Validator::scan_dir_unclean_files($dir, $whitelist);
 
             // files found!
             if (count($unclean_files))
@@ -1165,18 +1193,18 @@ class Application
                 }
             }
         }
-        # die();
+
         #####################################
         # CHECK IF MYSQL DIR IS CLEAN
         #####################################
-        //check if mysql dir is clean
+        // when not enabled, mysql dir should be empty
         if(!$this->Config->get('mysql.enabled'))
         {
             $dir = $this->Config->get('local.rsyncdir').'/mysql';
             if(file_exists($dir))
             {
-                $allowed = [];
-                $unclean_files = Validator::get_unclean_files($dir, $allowed);
+                $whitelist = [];
+                $unclean_files = Validator::scan_dir_unclean_files($dir, $whitelist);
                 if (count($unclean_files))
                 {
                     foreach ($unclean_files as $file => $type)
@@ -1186,6 +1214,7 @@ class Application
                 }
             }
         }
+
         #####################################
         # CHECK IF ARCHIVE DIR IS CLEAN
         #####################################
@@ -1193,15 +1222,15 @@ class Application
         $dir = $this->Config->get('local.hostdir') . '/archive';
         if(file_exists($dir))
         {
+            // only snapshot subdirectories allowed
             $whitelist = array_keys($this->Config->get('snapshots'));
-            if ($this->Config->get('local.snapshot-backend') == 'zfs')
+
+            // different implementation for zfs - archive dir is validated later
+            if ($this->Config->get('local.snapshot-backend') != 'zfs')
             {
-                $unclean_files = Validator::get_unclean_files($dir, $whitelist, false);
+                $unclean_files = Validator::scan_dir_unclean_files($dir, $whitelist);
             }
-            else
-            {
-                $unclean_files = Validator::get_unclean_files($dir, $whitelist);
-            }
+
             // check if there are any
             if (count($unclean_files))
             {
@@ -1211,6 +1240,7 @@ class Application
                 }
             }
         }
+
         #####################################
         # SETUP MYSQL CONFIG & DIRS
         #####################################
@@ -1258,6 +1288,7 @@ class Application
             {
                 $this->fail('Cannot find any mysql config files...');
             }
+
             #####################################
             # MY.CONF CONFIG FILE DIRS
             #####################################
@@ -1289,6 +1320,7 @@ class Application
                 {
                     $config_file_cache [] = $contents;
                 }
+
                 #####################################
                 # SETUP MYSQLDUMP DIR
                 #####################################
@@ -1319,6 +1351,7 @@ class Application
             }
             //store the array in the session
             $this->Session->set('mysql.configfiles', $config_files);
+
             #####################################
             # VALIDATE INCLUDED/EXCLUDED
             #####################################
@@ -1336,6 +1369,7 @@ class Application
                     }
                 }
             }
+
             #####################################
             # VALIDATE MYSQL OUTPUT
             #####################################
@@ -1357,6 +1391,7 @@ class Application
         }
         $this->out();
         $this->out('OK!', 'simple-success');
+
         ######################################
         # DUMP ALL CONFIG
         #####################################
@@ -1384,6 +1419,7 @@ class Application
         $this->out(trim(implode("\n", $output)));
         $this->out();
         $this->out('OK!', 'simple-success');
+
         #####################################
         # CREATE LOCK FILE
         #####################################
