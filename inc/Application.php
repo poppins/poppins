@@ -10,6 +10,7 @@
 
 /**
  * Class Application contains common functions used throughout the application.
+ *
  */
 class Application
 {
@@ -27,13 +28,16 @@ class Application
 
     // Messages intended for output
     private $messages;
+
     // Array of messages with specific output color
     private $cmessages;
 
     // Errors
     private $errors = [];
+
     //Warnings
     private $warnings = [];
+
     //Notices
     private $notices = [];
 
@@ -45,13 +49,13 @@ class Application
         #####################################
         # CONFIGURATION
         #####################################
-        //Config from ini file
+        // Config from ini file
         $this->Config = Config::get_instance();
 
         // Command line options
         $this->Options = Options::get_instance();
 
-        // App specific settings
+        // Session specific settings
         $this->Session = Session::get_instance();
     }
 
@@ -65,10 +69,12 @@ class Application
      */
     function abort($message = '', $error_code = 1)
     {
+        // add a newline (cosmetic)
         if($message)
         {
             $message .= "\n";
         }
+
         // redirect output to out/error
         switch($error_code)
         {
@@ -79,13 +85,15 @@ class Application
                 fwrite(STDERR, $message);
                 break;
         }
+
+        // end the application
         die($error_code);
     }
 
     /**
      * Will take a string and add a color to it.
      *
-     * @param $string
+     * @param string $string The string to colorize
      * @param string $fgcolor Foreground color
      * @param bool $bgcolor Background color
      * @return string The colorized string
@@ -99,21 +107,27 @@ class Application
             $fgcolors = ['black' => '0;30','dark_gray' => '1;30','blue' => '0;34','light_blue' => '1;34','green' => '0;32','light_green' => '1;32','cyan' => '0;36',
                          'light_cyan' => '1;36','red' => '0;31','light_red' => '1;31','purple' => '0;35','light_purple' => '1;35','brown' => '0;33','yellow' => '1;33',
                          'light_gray' => '0;37','white' => '1;37'];
+
             //background
             $bgcolors = ['black' => '40','red' => '41','green' => '42','yellow' => '43','blue' => '44','magenta' => '45','cyan' => '46','light_gray' => '47'];
+
             //return string
             $colored_string = '';
+
             // set foreground
             if (isset($fgcolors[$fgcolor]))
             {
                 $colored_string .= "\033[" . $fgcolors[$fgcolor] . "m";
             }
+
             // set background
             if (isset($bgcolors[$bgcolor]))
             {
                 $colored_string .= "\033[" . $bgcolors[$bgcolor] . "m";
             }
+
             $colored_string .=  $string . "\033[0m";
+
             return $colored_string;
         }
         else
@@ -123,21 +137,24 @@ class Application
     }
 
     /**
-     * The application fails while attempting to make backups.
-     * This function records the error and type and will invoke
-     * the final function in which te error will be recorded and logged.
+     * The application fails for some reason.
+     * This function captures the error and type and will invoke
+     * the final function in which te error will be logged.
      *
      * @param string $message The (error) message
      * @param string $error Type of error
      */
     function fail($message = '', $error = 'generic')
     {
+        // add the message to the errors array
         $this->errors []= $message;
-        //compose message
+
+        // compose message
         $output = [];
         $output []= "$message";
         $this->out(implode("\n", $output), 'error');
-        //quit
+
+        // quit the applications
         $this->quit($error);
     }
 
@@ -154,18 +171,26 @@ class Application
     function init()
     {
         #####################################
-        # HELP
+        # CLI OPTIONS
         #####################################
-        $CLI_SHORT_OPTS = ["c:dhnvt:"];
-        $CLI_LONG_OPTS = ["version", "help", "color"];
-        $options = getopt(implode('', $CLI_SHORT_OPTS), $CLI_LONG_OPTS);
+        // short options
+        $cli_short_options = ["c:dhnvt:"];
+
+        // long options
+        $cli_long_options = ["version", "help", "color"];
+
+        // consolidate options
+        $options = getopt(implode('', $cli_short_options), $cli_long_options);
         $this->Options->update($options);
+
+        // if no options are supplied, show documentation
         if (!count($this->Options->get()))
         {
             $content = file_get_contents(dirname(__FILE__).'/../documentation.txt');
             preg_match('/SYNOPSIS\n(.*?)\n/s', $content, $match);
             $this->abort("Usage: " . trim($match[1]));
         }
+        // -h show help
         elseif($this->Options->is_set('h') || $this->Options->is_set('help'))
         {
             print $this->Session->get('appname').' '.$this->Session->get('version')."\n\n";
@@ -173,6 +198,7 @@ class Application
             print "$content\n";
             exit();
         }
+        // -v show version
         elseif($this->Options->is_set('v') || $this->Options->is_set('version'))
         {
             print $this->Session->get('appname').' version '.$this->Session->get('version')."\n";
@@ -181,7 +207,7 @@ class Application
             //abort without error code
             $this->abort($content, 0);
         }
-        //check tag
+        // -t add a tag to the run
         if ($this->Options->is_set('t'))
         {
             if (!$this->Options->get('t'))
@@ -191,20 +217,23 @@ class Application
         }
 
         #####################################
-        # START
+        # TOP HEADER
         #####################################
+        // add version and time to header
         $this->out($this->Session->get('appname').' v'.$this->Session->get('version')." - SCRIPT STARTED " . date('Y-m-d H:i:s', $this->Session->get('chrono.session.start')), 'title');
-        // dry run
+
+        // -n dry run
         if($this->Options->is_set('n'))
         {
             $this->warn('DRY RUN!!');
         }
-        // environment
-        $this->out('Environment', 'header');
 
         #####################################
-        # LOCAL ENVIRONMENT
+        # ENVIRONMENT
         #####################################
+        // add environment section
+        $this->out('Environment', 'header');
+
         // operating system
         $this->out('Check local operating system...');
         $OS = trim(shell_exec('uname'));
@@ -299,7 +328,7 @@ class Application
                 }
             }
             //store override options
-            $options = getopt(implode('', $CLI_SHORT_OPTS), $override_options);
+            $options = getopt(implode('', $cli_short_options), $override_options);
             //allow a yes or no value in override
             foreach($options as $k => $v)
             {
