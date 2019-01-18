@@ -865,15 +865,18 @@ class Application
         #####################################
         # SET SSH CONNECTION
         #####################################
+        //set remote user - must be set in any case (fdisk check)
+        $remote_user  = ($this->Config->get('remote.user'))? $this->Config->get('remote.user'):$this->Cmd->exe('whoami');
+
+        $this->Config->set('remote.user', $remote_user);
+
         // only applicable for ssh
         if($this->Config->get('remote.ssh'))
         {
             // ssh options
             $this->Session->Set('ssh.options', '-o BatchMode=yes -o ConnectTimeout=15 -o TCPKeepAlive=yes -o ServerAliveInterval=30');
             $this->out('Check remote parameters...');
-            //validate user
-            $remote_user  = ($this->Config->get('remote.user'))? $this->Config->get('remote.user'):$this->Cmd->exe('whoami');
-            $this->Config->set('remote.user', $remote_user);
+
             //first ssh attempt
             $this->out('Check ssh connection...');
             //obviously try ssh at least once :)
@@ -918,6 +921,7 @@ class Application
                 $this->fail("SSH connection $user@$host failed! Generate a key with ssh-keygen and ssh-copy-id to set up a passwordless ssh connection?");
             }
         }
+
         //get remote os
         $this->Config->set('remote.os', $this->Cmd->exe("uname", true));
         //get distro
@@ -984,11 +988,19 @@ class Application
         $dependencies['hard']['remote']['rsync'] = 'rsync --version';
         $dependencies['hard']['remote']['bash'] = 'bash --version';
         $dependencies['soft']['remote']['sfdisk'] = 'sfdisk -v';
+
+        //check mysql package
+        if($this->Config->get('mysql.enabled'))
+        {
+            $dependencies['hard']['remote']['mysql'] = 'mysql --version';
+        }
+
         //local
         $dependencies['hard']['local']['bash'] = 'bash --version';
         $dependencies['hard']['local']['gzip'] = 'gzip --version';
         $dependencies['hard']['local']['rsync'] = 'rsync --version';
         $dependencies['hard']['local']['grep'] = '{GREP} --version';
+
         //iterate packages
         foreach($dependencies as $type => $dependency)
         {
