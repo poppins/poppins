@@ -22,11 +22,11 @@ class CmdFactory extends Factory
      * @param $App Application class
      * @return mixed The object
      */
-    public static function create($OS = 'Linux')
+    public static function create($operating_system = 'Linux')
     {
         // build the class
         $classname = self::base;
-        $classname = $OS.self::base;
+        $classname = $operating_system.self::base;
         return new $classname();
     }
 }

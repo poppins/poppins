@@ -229,38 +229,48 @@ class Application
         }
 
         #####################################
-        # ENVIRONMENT
+        # OPERATING SYSTEM
         #####################################
         // add environment section
         $this->out('Environment', 'header');
 
         // operating system
         $this->out('Check local operating system...');
-        $OS = trim(shell_exec('uname'));
-        if (!in_array($OS, ['Linux', 'SunOS']))
+        $operating_system = trim(shell_exec('uname'));
+
+        // check supported operating system
+        if (!in_array($operating_system, ['Linux', 'SunOS']))
         {
             $this->abort("Local OS currently not supported!");
         }
-        $this->out($OS, 'simple-indent');
-         // PHP version
+        $this->out($operating_system, 'simple-indent');
+
+        #####################################
+        # PHP VERSION
+        #####################################
+        // Check PHP version
         $this->out('Check PHP version...');
+
         // full version e.g. 5.5.9-1ubuntu4.17
         $this->Session->set('php.version.full', PHP_VERSION);
+
         // display version - debugging purposes
         $this->out($this->Session->get('php.version.full'), 'simple-indent');
+
         // version id e.g. 505070
         $this->Session->set('php.version.id', PHP_VERSION_ID);
-        //check version < 5.6.1
+
         //  TODO implement deprecated - see parse_ini_file($configfile, 1, INI_SCANNER_TYPED);
-        if($this->Session->get('php.version.id') < 506010)
+        // check PHP version > 7.0
+        if($this->Session->get('php.version.id') < 70000)
         {
-            //$this->fail('PHP version 5.6.1 or higher required!');
+            $this->fail('PHP version 7 or higher required!');
         }
 
         #####################################
         # SETUP COMMANDS
         #####################################
-        $Cmd = CmdFactory::create($OS);
+        $Cmd = CmdFactory::create($operating_system);
         //load commands
         $this->Cmd = $Cmd;
         // hostname
