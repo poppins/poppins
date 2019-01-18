@@ -49,6 +49,9 @@ class ArchiveMapper
 
     }
 
+    /**
+     * @param bool $validate Validate the snapshot dir
+     */
     function init($validate = true)
     {
         // validate the arch dir
@@ -63,11 +66,10 @@ class ArchiveMapper
             // iterate through all snapshots
             foreach (scandir($dir) as $file_found)
             {
-                //check if dir
-                $hostname = str_replace('.', '\.', $this->Config->get('local.hostdir-name'));
+                $regex = $this->snapshot_regex();
 
                 // check end
-                if (preg_match("/^$hostname\.[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{6}\.poppins$/", $file_found))
+                if (preg_match("/$regex/", $file_found))
                 {
                     // add to whitelist
                     $this->snapshots[$dir] []= $file_found;
@@ -129,16 +131,39 @@ class ArchiveMapper
         return $this->messages;
     }
 
-    function get_snapshots_per_type()
+    /**
+     * Get all snapshots per type
+     *
+     * @return array
+     */
+    function map()
     {
+        $map = [];
+
         foreach($this->snapshots as $path => $files)
         {
             $pieces = explode('/', $path);
             $index = count($pieces) - 1;
-            $snapshots[$pieces[$index]] = $files;
+            $map[$pieces[$index]] = $files;
         }
 
-        return $snapshots;
+        return $map;
+    }
+
+
+    /**
+     * The regular expression of the snapshot
+     *
+     * @return string
+     */
+    function snapshot_regex()
+    {
+        //check if dir
+        $hostname = str_replace('.', '\.', $this->Config->get('local.hostdir-name'));
+
+        $regex = "^$hostname\.[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{6}\.poppins$";
+
+        return $regex;
     }
 
 }

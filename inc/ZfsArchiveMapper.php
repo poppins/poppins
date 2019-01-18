@@ -13,72 +13,55 @@ class ZfsArchiveMapper extends ArchiveMapper
     function get_archive_dirs()
     {
         // just one dir in ZFS case
-        if(is_dir($this->archive_dir))
-        {
-            return [$this->archive_dir];
-        }
+        return [$this->Config->get('local.hostdir') . '/archive'];
 
     }
 
-
     /**
-     * @param $archive_dir
+     * Get all snapshots per type
+     *
      * @return array
      */
-    function scan($archive_dir)
+    function map()
     {
-        //create whitelist for validation
-        $clean_files = [];
+        $map = [];
 
-        // iterate through all snapshots
-        foreach (scandir($archive_dir) as $found)
+        $snapshots = $this->snapshots;
+        reset($snapshots);
+        $path = key($snapshots);
+
+        //scan thru all intervals
+        foreach (array_keys($this->Config->get('snapshots')) as $snapshot_type)
         {
-            //check if dir
-            $prefix = str_replace('.', '\.', $this->Config->get('local.hostdir-name'));
-            if (is_dir("$archive_dir/$found"))
+            //types must be stored as keys in array!
+            $map[$snapshot_type] = [];
+
+            foreach($this->snapshots[$path] as $snapshot)
             {
-                if (preg_match("/$prefix\.$this->dir_regex\.poppins$/", $found))
+                // check which snapshot belongs to which type
+                if(preg_match('/^'.$snapshot_type.'/', $snapshot))
                 {
-                    // add to whitelist
-                    $clean_files [] = $found;
+                    $map[$snapshot_type][]= $snapshot;
                 }
             }
         }
 
-        return $clean_files;
+        return $map;
     }
 
-    function get_snapshots_per_category()
+    /**
+     * The regular expression of the snapshot
+     *
+     * @return string
+     */
+    function snapshot_regex()
     {
-        $snaphots = [];
+        //check if dir
+        $hostname = str_replace('.', '\.', $this->Config->get('local.hostdir-name'));
 
-        if (is_array($this->whitelist))
-        {
-            foreach ($this->whitelist as $path => $files)
-            {
-                $snapshots['all'] = $files;
-            }
-        }
+        // zfs snapshots start with string incremental-..., 1-hourly.., etc. So we do not check that part.
+        $regex = "$hostname\.[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{6}\.poppins$";
 
-        return $snapshots;
-    }
-
-    // TODO
-    function validate($archive_dir)
-    {
-        //this check is already done in the Application class.
-        return;
-//        $whitelist = $this->scan($archive_dir);
-//        $this->whitelist[$archive_dir] = $whitelist;
-//
-//        $unclean_files = Validator::get_unclean_files($archive_dir, $whitelist, false);
-//
-//        if (count($unclean_files))
-//        {
-//            foreach ($unclean_files as $file => $type)
-//            {
-//                $this->messages []= "Archive subdirectory $archive_dir not clean, unknown $type '$file'. Remove or rename to '_$file'..";
-//            }
-//        }
+        return $regex;
     }
 }

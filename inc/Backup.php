@@ -62,6 +62,7 @@ class Backup
     {
         // create dirs and pre backup job
         $this->prepare();
+
         // remote system info
         $this->meta();
         // mysql

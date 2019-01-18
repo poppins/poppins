@@ -181,7 +181,7 @@ class Rotator
         {
             if (count($snapshots))
             {
-                foreach ($snapshots as $vv)
+                foreach ($snapshots as $snapshot)
                 {
                     $actions['remove'][$type] = array_diff($arch1[$type], $arch2[$type]);
                     $actions['add'][$type] = array_diff($arch2[$type], $arch1[$type]);
@@ -201,23 +201,23 @@ class Rotator
                 {
                     if (count($snapshots))
                     {
-                        foreach ($snapshots as $vv)
+                        foreach ($snapshots as $snapshot)
                         {
                             switch ($action)
                             {
                                 case 'add':
-                                    $message = "Add $vv to $type...";
+                                    $message = "Add $snapshot to $type...";
                                     break;
                                 case 'remove':
-                                    $message = "Remove $vv from $type...";
+                                    $message = "Remove $snapshot from $type...";
                                     break;
                             }
                             $this->App->out($message, 'indent');
-                            $this->$action($vv, $type);
+                            $this->$action($snapshot, $type);
                             //check if command returned ok
                             if($this->Cmd->is_error())
                             {
-                                $this->App->fail('Cannot rotate. Command failed!');
+                                $this->App->fail('Cannot rotate snapshot "'.$snapshot.'". Command failed! Action: '.$action.' Type: '.$type);
                             }
                         }
                     }
@@ -246,9 +246,9 @@ class Rotator
             $this->App->out($type);
             // sort reverse order
             krsort($snapshots);
-            foreach($snapshots as $vv)
+            foreach($snapshots as $snapshot)
             {
-                $this->App->out($vv, 'indent');
+                $this->App->out($snapshot, 'indent');
             }
         }
         // mark time
@@ -299,6 +299,11 @@ class Rotator
         }
     }
 
+    /**
+     * Map the snapshot dir
+     *
+     * @return mixed
+     */
     function map()
     {
 
@@ -314,7 +319,8 @@ class Rotator
             $this->App->notice($message);
         }
 
-        return $ArchiveMapper->get_snapshots_per_type();
+        // get snapshots per type
+        return $ArchiveMapper->map();
     }
 
     /**

@@ -51,14 +51,14 @@ class ZfsRotator extends Rotator
     /**
      * Creates a command to remove a snapshot from a directory
      *
-     * @param $dir The snapshot directory
-     * @param $parent  The parent directory
+     * @param $snapshot The snapshot directory
+     * @param $type  The parent directory
      * @return string The command
      */
-    function remove($dir, $parent)
+    function remove($snapshot, $type)
     {
         $rsyncdir = preg_replace('/^\//', '', $this->rsyncdir);
-        $cmd = "zfs destroy $rsyncdir@$parent-$dir";
+        $cmd = "zfs destroy $rsyncdir@$snapshot";
         $this->App->out("Remove zfs snapshot: $cmd");
         return $this->Cmd->exe("$cmd");
     }

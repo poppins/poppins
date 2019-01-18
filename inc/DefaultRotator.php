@@ -34,14 +34,14 @@ class DefaultRotator extends Rotator
     /**
      * Creates a command to remove a snapshot from a directory
      *
-     * @param $dir The snapshot directory
+     * @param $snapshot The snapshot directory
      * @param $parent  The parent directory
      * @return string The command
      */
-    function remove($dir, $parent)
+    function remove($snapshot, $type)
     {
         // take precautions when executing an rm command!
-        foreach([$this->archive_dir, $dir, $parent] as $variable)
+        foreach([$this->archive_dir, $snapshot, $type] as $variable)
         {
             $variable = trim($variable);
             if (!$variable || empty($variable) || $variable == '' || preg_match('/^\/+$/', $variable))
@@ -49,7 +49,7 @@ class DefaultRotator extends Rotator
                 $this->App->fail('Cannot execute a rm command as a variable is empty!');
             }
         }
-        $cmd = "{RM} -rf ". $this->archive_dir."/$parent/$dir";
+        $cmd = "{RM} -rf ". $this->archive_dir."/$type/$snapshot";
         $this->App->out('Remove direcory: '.$this->Cmd->parse($cmd));
         return $this->Cmd->exe("$cmd");
     }

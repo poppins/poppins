@@ -34,13 +34,13 @@ class BtrfsRotator extends Rotator
     /**
      * Creates a command to remove a snapshot from a directory
      *
-     * @param $dir The snapshot directory
-     * @param $parent  The parent directory
+     * @param $snapshot The snapshot directory
+     * @param $type  The type of snapshot: 2-minutely, 1-hourly, etc...
      * @return string The command
      */
-    function remove($dir, $parent)
+    function remove($snapshot, $type)
     {
-        $cmd = "btrfs subvolume delete ". $this->archive_dir."/$parent/$dir";
+        $cmd = "btrfs subvolume delete ". $this->archive_dir."/$type/$snapshot";
         $this->App->out("Remove btrfs snapshot: $cmd");
         return $this->Cmd->exe("$cmd");
     }
