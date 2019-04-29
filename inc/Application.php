@@ -229,11 +229,14 @@ class Application
         }
 
         #####################################
-        # OPERATING SYSTEM
+        # START OF ENVIRONMENT SECTION
         #####################################
         // add environment section
         $this->out('Environment', 'header');
 
+        #####################################
+        # OPERATING SYSTEM
+        #####################################
         // operating system
         $this->out('Check local operating system...');
         $operating_system = trim(shell_exec('uname'));
@@ -260,7 +263,6 @@ class Application
         // version id e.g. 505070
         $this->Session->set('php.version.id', PHP_VERSION_ID);
 
-        //  TODO implement deprecated - see parse_ini_file($configfile, 1, INI_SCANNER_TYPED);
         // check PHP version > 7.0
         if($this->Session->get('php.version.id') < 70000)
         {
@@ -268,67 +270,93 @@ class Application
         }
 
         #####################################
-        # SETUP COMMANDS
+        # COMMANDS
         #####################################
+        // some commands may be different depending on operating system
         $Cmd = CmdFactory::create($operating_system);
-        //load commands
+
+        // load commands in class
         $this->Cmd = $Cmd;
-        // hostname
+
+        #####################################
+        # HOSTNAME
+        #####################################
         $this->out('Check hostname...');
+
+        // hostname
         $hostname = $this->Cmd->exe('hostname');
         $this->Session->set('local.hostname', $hostname);
         $this->out($hostname, 'simple-indent');
         $this->out();
-        $this->out('OK!', 'simple-success');
+
         #####################################
-        # LOAD OPTIONS FROM INI FILE
+        # END OF ENVIRONMENT SECTION
+        #####################################
+        $this->out('OK!', 'simple-success');
+
+        #####################################
+        # START INI FILE SECTION
         #####################################
         $this->out("Parse ini file", 'header');
-        //validate config file
+
+        // require the config file option
         if (!$this->Options->is_set('c'))
         {
             $this->abort("Option -c {configfile} is required!");
         }
-        // read configfile
-        $configfile = $this->Options->get('c');
+        else
+        {
+            // get configfile option
+            $configfile = $this->Options->get('c');
+        }
+
+        // check if the config file exists
         if (!file_exists($configfile))
         {
             $this->abort("Config file not found!");
         }
+        // config file must match naming convention
         elseif (!preg_match('/^.+\.poppins\.ini$/', $configfile))
         {
             $this->abort("Wrong ini file format: {hostname}.poppins.ini!");
         }
+        // ok, parse the file
         else
         {
             $this->out('Check ini file...');
-            #echo $configfile."\n";
+
+            // get the full path of the file
             $configfile_full_path = $this->Cmd->exe('readlink -nf '.$configfile);
-            #die($configfile_full_path);
             $this->out(' '.$configfile_full_path);
+
             //check for illegal comments in ini file
             $lines = file($configfile);
             $i = 1;
             foreach($lines as $line)
             {
+                // lines may not start with hash
                 if(preg_match('/^#/', $line))
                 {
                     $this->fail("Error on line $i. Hash (#) found! Use semicolon for comments!");
                 }
                 $i++;
             }
-            // read config
+
+            // parse config
             $config = parse_ini_file($configfile, 1);
-            // TODO PHP > 5.6
-            // $config = parse_ini_file($configfile, 1, INI_SCANNER_TYPED);
-            // if an error occured, this variable will be false
+
+            // TODO PHP > 5.6 - $config = parse_ini_file($configfile, 1, INI_SCANNER_TYPED);
+            // this variable will be false in case of an error
             if(!$config)
             {
                 $error = error_get_last();
                 $this->fail('Error parsing ini file! Syntax? Message: '.$error['message']);
             }
+
+            // store the config
             $this->Config->update($config);
-            // check cli options of format --foo-bar
+
+            // check cli override: long options like so: --foo-bar
             $override_options= [];
             foreach($this->Config->get() as $k => $v)
             {
