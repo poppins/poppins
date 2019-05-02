@@ -1140,10 +1140,10 @@ class Application
             $this->out('Check root dir filesystem type...');
             $filesystem_type = $this->Cmd->exe("df -T $rootdir | tail -1 | tr -s ' ' | cut -d' ' -f2");
             $this->out($filesystem_type, 'simple-indent');
-            $allowed_fs_types = ['ext2', 'ext3', 'ext4', 'btrfs', 'zfs', 'xfs', 'ufs', 'jfs', 'nfs', 'gfs', 'ocfs'];
+            $allowed_fs_types = ['ext2', 'ext3', 'ext4', 'btrfs', 'zfs', 'xfs', 'ufs', 'jfs', 'nfs', 'gfs', 'ocfs', 'fuse.osxfs'];
             if (!in_array($filesystem_type, $allowed_fs_types))
             {
-                $this->fail('Filesystem type of root dir not supported! Supported: '.implode('/', $allowed_fs_types));
+                $this->fail('Filesystem type of root dir "'.$filesystem_type.'"" not supported! Supported: '.implode('/', $allowed_fs_types));
             }
         }
         //check filesystem config
