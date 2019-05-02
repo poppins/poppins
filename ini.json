@@ -36,6 +36,12 @@
           "validate":{"boolean":"error"}
         },
         {
+          "name":"port",
+          "depends":"remote.ssh",
+          "default":"22",
+          "validate":{"integer":"error"}
+        },
+        {
           "name":"host",
           "depends":"remote.ssh",
           "default":"",

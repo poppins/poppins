@@ -180,8 +180,8 @@ class Application
         $cli_long_options = ["version", "help", "color"];
 
         // consolidate options
-        $options = getopt(implode('', $cli_short_options), $cli_long_options);
-        $this->Options->update($options);
+        $cli_options = getopt(implode('', $cli_short_options), $cli_long_options);
+        $this->Options->update($cli_options);
 
         // if no options are supplied, show documentation
         if (!count($this->Options->get()))
@@ -356,34 +356,78 @@ class Application
             // store the config
             $this->Config->update($config);
 
-            // check cli override: long options like so: --foo-bar
-            $override_options= [];
-            foreach($this->Config->get() as $k => $v)
+            #####################################
+            # GET SKELETON FROM TEMPLATE
+            #####################################
+            $json_file = dirname(__FILE__).'/../ini.json';
+            if (!file_exists($json_file))
             {
-                foreach($v as $kk => $vv)
+                $this->fail('Cannot find required json file ' . $json_file);
+            }
+            $contents = file_get_contents($json_file);
+            $json = json_decode($contents, true);
+            if(!$json)
+            {
+                $this->fail('Cannot parse json file:"'.json_last_error_msg().'"!');
+            }
+
+            $directive_skeleton = [];
+
+            // get all the values
+            foreach($json['sections'] as $section)
+            {
+                $section_name = $section['name'];
+
+                // skip if not array
+                if(@!is_array($section['directives']))
                 {
-                    $override_options[]= "$k-$kk::";
+                    continue;
+                }
+
+                foreach ($section['directives'] as $directive)
+                {
+                    $directive_name = $directive['name'];
+                    $directive_skeleton[]= "$section_name-$directive_name::";
+                }
+
+            }
+
+            #####################################
+            # ADD SKELETON FROM CONFIG FILE
+            #####################################
+            // iterate the config file
+            foreach($this->Config->get() as $section_name => $v)
+            {
+                foreach($v as $directive_name => $vv)
+                {
+                    $string = "$section_name-$directive_name::";
+                    if (!in_array($string, $directive_skeleton)) $directive_skeleton[]= $string;
                 }
             }
+
+            #####################################
+            # OVERRIDE OPTIONS
+            #####################################
             //store override options
-            $options = getopt(implode('', $cli_short_options), $override_options);
+            $cli_options = getopt(implode('', $cli_short_options), $directive_skeleton);
             //allow a yes or no value in override
-            foreach($options as $k => $v)
+            foreach($cli_options as $k => $v)
             {
                 if(in_array($v, ['yes', 'true']))
                 {
-                    $options[$k] = '1';
+                    $cli_options[$k] = '1';
                 }
                 elseif(in_array($v, ['no', 'false']))
                 {
-                    $options[$k] = '';
+                    $cli_options[$k] = '';
                 }
             }
-            $this->Options->update($options);
+            $this->Options->update($cli_options);
+
             //override configuration with cli options
-            foreach($options as $k => $v)
+            foreach($cli_options as $k => $v)
             {
-                if(in_array("$k::", $override_options))
+                if(in_array("$k::", $directive_skeleton))
                 {
                     $p = explode('-', $k);
                     // section
@@ -396,8 +440,9 @@ class Application
             }
         }
 
+//        dd($this->Config->get());
         #####################################
-        # CONFIGURATION CLEANUP
+        # CHECK CONFIGURATION SYNTAX
         #####################################
         //trim spaces
         $this->out("Check configuration syntax...");
@@ -453,19 +498,8 @@ class Application
         }
 
         #####################################
-        # VALIDATE INI FILE
+        # VALIDATE BASED ON INI FILE
         #####################################
-        $json_file = dirname(__FILE__).'/../ini.json';
-        if (!file_exists($json_file))
-        {
-            $this->fail('Cannot find required json file ' . $json_file);
-        }
-        $contents = file_get_contents($json_file);
-        $json = json_decode($contents, true);
-        if(!$json)
-        {
-            $this->fail('Cannot parse json file:"'.json_last_error_msg().'"!');
-        }
         //iterate sections
         foreach($json['sections'] as $section)
         {
@@ -785,7 +819,7 @@ class Application
                     }
 
                     #####################################
-                    # DEFAULTS
+                    # SET TO DEFAULT VALUE
                     #####################################
                     else
                     {
@@ -941,7 +975,9 @@ class Application
         if($this->Config->get('remote.ssh'))
         {
             // ssh options
-            $this->Session->Set('ssh.options', '-o BatchMode=yes -o ConnectTimeout=15 -o TCPKeepAlive=yes -o ServerAliveInterval=30');
+            $ssh_port  = ($this->Config->get('remote.port'))? $this->Config->get('remote.port'):"22";
+
+            $this->Session->Set('ssh.options', "-p $ssh_port -o BatchMode=yes -o ConnectTimeout=15 -o TCPKeepAlive=yes -o ServerAliveInterval=30");
             $this->out('Check remote parameters...');
 
             //first ssh attempt
@@ -985,7 +1021,7 @@ class Application
             //check if successful
             if (!$success)
             {
-                $this->fail("SSH connection $user@$host failed! Generate a key with ssh-keygen and ssh-copy-id to set up a passwordless ssh connection?");
+                $this->fail("SSH connection $user@$host failed on port $ssh_port! Generate a key with ssh-keygen and ssh-copy-id to set up a passwordless ssh connection?");
             }
         }
 
