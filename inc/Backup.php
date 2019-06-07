@@ -265,8 +265,12 @@ class Backup
      */
     function meta()
     {
-        //variables
-        $filebase = $this->Session->get('meta.filebase');
+        //filebase
+        $filebase = $this->Config->get('remote.host');
+        if (empty($filebase))
+        {
+          $this->App->warn('Meta filebase is not set!');
+        }
         $this->App->out('Metadata', 'header');
         // dry run?
         if($this->Options->is_set('n'))
@@ -461,8 +465,6 @@ class Backup
                     {
                         $filename_drive = str_replace('/', '_', trim($drive, '/'));
                         $this->Cmd->exe("'( sfdisk -d " . $drive . " 2>/dev/null)' > " . $this->Session->get('meta.path') . "$filebase.partition.$filename_drive.txt", true);
-                        //restore commands
-                        $filebase = $this->Session->get('meta.filebase');
                         // add commet to following line
                         $this->Cmd->exe("echo -n '# ' | $tee_cmd > " . $this->Session->get('scripts.path') . $filebase . '.' . $restore_type . '.' . $filename_drive . '.sh');
                         $this->Cmd->exe("fdisk -l " . $drive . " 2>/dev/null | head -n1 | $tee_cmd > " . $this->Session->get('scripts.path') . $filebase . '.' . $restore_type . '.' . $filename_drive . '.sh');
@@ -818,7 +820,7 @@ class Backup
         $this->Cmd->exe("echo '################################################' >> ".$this->Session->get('restore.script.local'));
         $this->Cmd->exe("echo '# ".strtoupper(str_replace('_', ' ',$restore_type))."' >> ".$this->Session->get('restore.script.local'));
         $this->Cmd->exe("echo '################################################' >> ".$this->Session->get('restore.script.local'));
-        $filebase = $this->Session->get('meta.filebase');
+        $filebase = $this->Config->get('remote.host');
         $content = [];
         $content []= '# To restore, run on backup server:';
         $content []= $this->Session->get('scripts.path').$restore_type.'.sh';
@@ -977,4 +979,3 @@ class Backup
     }
 
 }
-
