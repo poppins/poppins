@@ -269,7 +269,8 @@ class Backup
         $filebase = $this->Config->get('remote.host');
         if (empty($filebase))
         {
-          $this->App->warn('Meta filebase is not set!');
+          $this->App->warn('Meta filebase is not set! Skipping...');
+          return;
         }
         $this->App->out('Metadata', 'header');
         // dry run?
@@ -310,23 +311,26 @@ class Backup
 
                     $emb = '%%%%%%';
 
-                    $cmd_string = '';
+                    // create the file
+                    $this->App->out("Write to file " . $this->Session->get('meta.path') . $filebase . ".disk_layout.txt...");
+                    $this->App->out();
+                    $this->Cmd->exe(" > $this->rsyncdir/meta/" . $filebase . ".disk_layout.txt", false);
+
+                    //iterate commands and redirect to file
                     foreach ($cmds as $cmd)
                     {
-                        $cmd_string .= "echo " . $emb . ' ' . $cmd . ' ' . $emb . "; echo; $cmd 2>&1; echo;";
+                        $this->Cmd->exe("'( echo " . $emb . ' ' . $cmd . ' ' . $emb . "; echo; $cmd 2>&1 || echo FAILED; echo; )' >> $this->rsyncdir/meta/" . $filebase . ".disk_layout.txt", true);
                     }
 
-                    $this->Cmd->exe("'( " . $cmd_string . " echo  " . $emb . " fdisk " . $emb . "; for disk in $(ls /dev/sd[a-z] 2>/dev/null) ; do fdisk -l \$disk 2>&1 && echo; done )' > $this->rsyncdir/meta/" . $filebase . ".disk_layout.txt", true);
+                    $this->Cmd->exe("'( echo " . $emb . " fdisk " . $emb . "; echo; for disk in $(ls /dev/sd[a-z] 2>/dev/null) ; do fdisk -l \$disk 2>&1 || echo FAILED ;echo ; done )' >> $this->rsyncdir/meta/" . $filebase . ".disk_layout.txt", true);
 
-                    if ($this->Cmd->is_error())
+                    if (!$this->Cmd->is_error())
                     {
-                        $this->App->warn('Failed to gather information about disk layout!');
+                        $this->App->out("OK!", 'simple-success');
                     }
                     else
                     {
-                        $this->App->out("Write to file " . $this->Session->get('meta.path') . $filebase . ".disk_layout.txt...");
-                        $this->App->out();
-                        $this->App->out("OK!", 'simple-success');
+                        $this->App->notice('Disk layout error! Info may be incomplete!');
                     }
                 }
             }
@@ -556,9 +560,13 @@ class Backup
                         // get uuid
                         $output = $this->Cmd->exe("blkid $device", true);
                         preg_match('/UUID=\"([^\" ]+)\"/', $output, $matches);
-                        $uuid = $matches[1];
 
-                        $this->Cmd->exe("echo 'mkfs -U $uuid --type $type $device' | $tee_cmd >> " . $this->Session->get('scripts.path') . $filebase . '.' . $restore_type . '.sh');
+                        if(!empty($marches[1]))
+                        {
+                            $uuid = $matches[1];
+
+                            $this->Cmd->exe("echo 'mkfs -U $uuid --type $type $device' | $tee_cmd >> " . $this->Session->get('scripts.path') . $filebase . '.' . $restore_type . '.sh');
+                        }
                         //store mounts
                         $mounts [$pieces[0]] = $pieces[1];
                     }
