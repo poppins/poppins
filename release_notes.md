@@ -1,3 +1,93 @@
+# RELEASE 0.4
+
+DATE: 2019-07-15
+
+## NEW FEATURES
+
+### INI FILE
+
+The following ini configuration directives need to be ADDED to the config file.
+
+See example.poppins.ini:
+
+    ...
+    [remote]
+    ; Ssh remote port, default is 22
+    port = 22
+    ...
+    [meta]
+    ...
+    ; include restore scripts
+    restore-scripts = yes
+    ...
+    [rsync]
+    ...
+    ; add timestamps to every line of rsync output
+    timestamps = yes
+    ...
+    [mysql]
+    ...
+    ; include specific databases
+    ; not supported in combination with multiple .my.cnfs
+    ; you may use a regular expressions (Perl synxtax) within slashes "/"
+    ; e.g. '/^drupal_.*/' # all databases starting with string 'drupal_'
+    ; default is every database except information_schema
+    ; included-databases = 'wordpress_1,wordpress_2,/^drupal_.*$/'
+    
+    ; exclude databases - see previously
+    ; excluded-databases = '/^drupal_test.*/'
+    
+    ; ignore specific tables within the databases
+    ; Use dot notation "database.table" or regex "/<REGEX>/" (Perl synxtax)
+    ; e.g. '/database1\.tbl.*/' # all tables in database1 starting with string tbl
+    ; default is every table except mysql.event
+    ; ignore-tables = '/^wordpress1\.test_.+/'
+    
+    ; include specific tables in "tables" or "csv" output
+    ; not supported in combination with multiple .my.cnfs
+    ; Use dot notation "database.table" or regex "/<REGEX>/" (Perl synxtax)
+    ; e.g. '/^database1\.tbl.*$/' # all tables in database1 starting with string tbl
+    ; included-tables = '/^wordpress4\.tbl_.+/'
+    
+    ; exclude tables - see previously
+    ; excluded-tables = ''
+    
+    ; output types: databases dumps, table dumps or tab seperated file (csv)
+    ; use values database, table or csv (or combination)
+    output = 'database,table,csv'
+
+## WHAT HAS CHANGED?
+
+### MAJOR CHANGES
+
+* Include or exclude MySQL databases and/or tables based on regular expressions.
+* MySQL export options: database dump, separate table dumps and/or csv.
+* Added restore scripts to help with restoring backups.
+* Keep snapshots with underscore indefinitely. Ignore these snapshots from rotation.
+
+### MINOR CHANGES
+
+* Rsync error 24 triggers a notice, no longer a warning.
+* Show version hash when calling Poppins version.
+* Run remote ssh session on a different port.
+
+## WHAT HAS BEEN FIXED?
+
+* Small bugfixes and cosmetic changes
+
+## KNOWN ISSUES
+
+* Validation of ini files is imperfect because of the lack of type support of
+the function parse_ini_file(). As of PHP 5.6, INI_SCANNER_TYPED needs to be
+implemented when PHP 5.6+ is available on Debian and CentOS latest releases.
+
+## INSTALLATION
+
+To upgrade, run following command in the poppins directory:
+
+    hg pull -u
+
+------------------------------------------------------------------------------------------------------------------------
 # RELEASE 0.3
 
 DATE: 2017-06-30
@@ -36,7 +126,7 @@ See example.poppins.ini:
 
 * Cleanup script added to remove old log files. See scripts directory.
 * Validation of trailing slashes in exluded/included sections for consistency.
-* Validation of relative paths in excluded section as the exclude path is always treated as a relative path by rsync. 
+* Validation of relative paths in excluded section as the exclude path is always treated as a relative path by rsync.
 
 ## WHAT HAS BEEN FIXED?
 
@@ -88,7 +178,7 @@ See example.poppins.ini:
     ; default is 0
     retry-timeout = 10
     ...
-        
+
 The following directives need to be REMOVED:
 
     ...
@@ -97,7 +187,7 @@ The following directives need to be REMOVED:
     ; for these filesystems. Otherwise, use default.
     filesystem = 'BTRFS'
     ...
-        
+
 ### NEW CLI OPTIONS
 
 The following cli options have been added:
@@ -110,17 +200,17 @@ The following cli options have been added:
 You may add a tag to a poppins run, e.g. a hash or timestamp:
 
     poppins -c example.poppins.ini -t POPPINS.RUN.$(date +%Y%m%d)
-        
+
 If runs are tagged, you can search through your log files, e.g. search warnings or errors:
 
     zgrep -l POPPINS.RUN.20160624 /home/poppins/poppins.d/logs/*gz | grep -E 'warning|error' | xargs zcat
-    
+
 In cron you can add a timestamp like so:
 
     TIMESTAMP="date +%Y%m%d"
     # m h  dom mon dow   command
     1 1 * * * /usr/local/bin/poppins -c /home/poppins/poppins.d/conf/example.poppins.ini -t POPPINS.RUN.$($TIMESTAMP)
-    
+
 ## WHAT HAS CHANGED?
 
 ### MAJOR CHANGES
@@ -128,7 +218,7 @@ In cron you can add a timestamp like so:
 * The "filesystem" directive in the [local] section was removed as it is too ambiguous. It is replaced by the "snapshot-backend" directive. Rotation logic is not necessarily related to filesystem.
 * Local rsync (no ssh connection) is supported, enabling you to schedule a backup on your local machine. E.g. using an external drive for backups.
 * Ssh connection attempts and retry timeouts implemented.
-* Strong validation of the ini file was added. 
+* Strong validation of the ini file was added.
     * Illegal or potentially dangerous characters (such as '*') are not allowed.
     * Quotes in 'yes' and 'no' are deprecated. Do not use quotes in booleans.
 
@@ -147,8 +237,8 @@ In cron you can add a timestamp like so:
 
 ## KNOWN ISSUES
 
-* Validation of ini files is imperfect because of the lack of type support of 
-the function parse_ini_file(). As of PHP 5.6, INI_SCANNER_TYPED needs to be 
+* Validation of ini files is imperfect because of the lack of type support of
+the function parse_ini_file(). As of PHP 5.6, INI_SCANNER_TYPED needs to be
 implemented when PHP 5.6+ is available on Debian and CentOS latest releases.
 
 ## INSTALLATION
