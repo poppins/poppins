@@ -884,9 +884,16 @@ class Application
                             {
                                 $default_displayed = ($directive['default'])? 'yes':'no';
                             }
+                            # this is not supported - json_decode function sets integers as strings
+                            elseif(is_int($directive['default']))
+                            {
+                                $default_displayed = (empty($directive['default']))? "":$directive['default'];
+                            }
                             else
                             {
-                                $default_displayed = (empty($directive['default']))? "''":$directive['default'];
+                                // TODO - add quotes if a distinction can be made between integers and strings
+                                # $default_displayed = (empty($directive['default']))? "''":"'".$directive['default']."'";
+                                $default_displayed = (empty($directive['default']))? "":$directive['default'];
                             }
                             // ignore some directives e.g. mysql include/exclude stuff
                             if (!isset($directive['ignore-missing']) || $directive['ignore-missing'] !== true)
