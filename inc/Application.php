@@ -673,7 +673,7 @@ class Application
 
                                     # warning
                                     $message .= 'Converting to boolean (yes)...';
-                                    $this->warn($message);
+                                    $this->notice($message);
                                 }
                                 elseif (in_array($value, ['off', 'no', 'false', 0]))
                                 {
@@ -682,7 +682,7 @@ class Application
 
                                     # warning
                                     $message .= 'Converting to boolean (no)...';
-                                    $this->warn($message);
+                                    $this->notice($message);
                                 }
                                 # we cannot convert it
                                 else
@@ -714,7 +714,7 @@ class Application
                                 if (preg_match("/^[0-9]+$/", $value))
                                 {
                                     $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an integer! Converting to integer...';
-                                    $this->warn($message);
+                                    $this->notice($message);
 
                                     # convert to integer
                                     $this->Config->set([$section['name'], $directive['name']], intval($value));
