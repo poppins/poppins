@@ -60,7 +60,7 @@ See example.poppins.ini:
 
 ### MAJOR CHANGES
 
-* Include or exclude MySQL databases and/or tables based on regular expressions.
+* Include or exclude specific databases or tables, based on regular expressions.
 * MySQL export options: database dump, separate table dumps and/or csv.
 * Added restore scripts to help with restoring backups.
 * Keep snapshots with underscore indefinitely. Ignore these snapshots from rotation.

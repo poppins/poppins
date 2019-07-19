@@ -882,16 +882,16 @@ class Application
                             //convert boolean to yes/no
                             if(is_bool($directive['default']))
                             {
-                                $default = ($directive['default'])? 'yes':'no';
+                                $default_displayed = ($directive['default'])? 'yes':'no';
                             }
                             else
                             {
-                                $default = (empty($directive['default']))? 0:$directive['default'];
+                                $default_displayed = (empty($directive['default']))? "''":$directive['default'];
                             }
                             // ignore some directives e.g. mysql include/exclude stuff
                             if (!isset($directive['ignore-missing']) || $directive['ignore-missing'] !== true)
                             {
-                                $this->notice($message.' Using default value ('.$default.').');
+                                $this->notice($message.' Using default value ('.$default_displayed.').');
                             }
                         }
                         else
