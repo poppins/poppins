@@ -97,7 +97,7 @@ class DatabaseDumper extends Dumper
             return $this->Session->get('cache.discovered-databases.'.$this->config_file);
         }
 
-        $databases = $this->Cmd->exe("'$this->mysql_executable --skip-column-names -e \"show databases\" | grep -v \"^information_schema$\"'", true);
+        $databases = $this->Cmd->exe("'$this->mysql_executable --skip-column-names -e \"show databases\" | grep -v \"^sys$\" | grep -v \"^information_schema$\"'", true);
 
         // create array
         $databases = explode("\n", $databases);
