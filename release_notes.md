@@ -1,6 +1,6 @@
 # RELEASE 0.4
 
-DATE: 2019-07-15
+DATE: 2019-07-19
 
 ## NEW FEATURES
 
@@ -67,6 +67,7 @@ See example.poppins.ini:
 
 ### MINOR CHANGES
 
+* Type support/validation enabled in config file
 * Rsync error 24 triggers a notice, no longer a warning.
 * Show version hash when calling Poppins version.
 * Run remote ssh session on a different port.
@@ -76,10 +77,6 @@ See example.poppins.ini:
 * Small bugfixes and cosmetic changes
 
 ## KNOWN ISSUES
-
-* Validation of ini files is imperfect because of the lack of type support of
-the function parse_ini_file(). As of PHP 5.6, INI_SCANNER_TYPED needs to be
-implemented when PHP 5.6+ is available on Debian and CentOS latest releases.
 
 ## INSTALLATION
 

@@ -342,10 +342,20 @@ class Application
                 $i++;
             }
 
-            // parse config
-            $config = parse_ini_file($configfile, 1);
+            #####################################
+            # PARSE CONFIG
+            #####################################
+            $typed = true;
 
-            // TODO PHP > 5.6 - $config = parse_ini_file($configfile, 1, INI_SCANNER_TYPED);
+            if ($typed)
+            {
+                $config = parse_ini_file($configfile, 1, INI_SCANNER_TYPED);
+            }
+            else
+            {
+                $config = parse_ini_file($configfile, 1);
+            }
+
             // this variable will be false in case of an error
             if(!$config)
             {
@@ -440,7 +450,6 @@ class Application
             }
         }
 
-//        dd($this->Config->get());
         #####################################
         # CHECK CONFIGURATION SYNTAX
         #####################################
@@ -652,20 +661,45 @@ class Application
                         #####################################
                         if (isset($directive['validate']['boolean']))
                         {
-                            $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not a valid boolean. Use values yes/no without quotes!';
-                            if (in_array($value, ['yes', 'true']))
+                            $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not a valid boolean. Use values yes/no without quotes! ';
+
+                            if (!is_bool($value))
                             {
-                                $this->Config->set([$section['name'], $directive['name']], '1');
-                                $this->warn($message);
-                            }
-                            elseif (in_array($value, ['no', '0', 'false']))
-                            {
-                                $this->Config->set([$section['name'], $directive['name']], '');
-                                $this->warn($message);
-                            }
-                            elseif (!in_array($value, ['', '1']))
-                            {
-                                $this->fail($message);
+                                # this should actually be the default behaviour if parse_ini_file is set to typed
+                                if (in_array($value, ['on', 'yes', 'true', 1]))
+                                {
+                                    # convert to boolean
+                                    $this->Config->set([$section['name'], $directive['name']], true);
+
+                                    # warning
+                                    $message .= 'Converting to boolean (yes)...';
+                                    $this->warn($message);
+                                }
+                                elseif (in_array($value, ['off', 'no', 'false', 0]))
+                                {
+                                    # convert to boolean
+                                    $this->Config->set([$section['name'], $directive['name']], false);
+
+                                    # warning
+                                    $message .= 'Converting to boolean (no)...';
+                                    $this->warn($message);
+                                }
+                                # we cannot convert it
+                                else
+                                {
+                                    switch ($directive['validate']['boolean'])
+                                    {
+                                        case 'error':
+                                            $this->fail($message);
+                                            break;
+                                        case 'warning':
+                                            $this->warn($message);
+                                            break;
+                                        case 'notice':
+                                            $this->notice($message);
+                                            break;
+                                    }
+                                }
                             }
                         }
 
@@ -674,16 +708,33 @@ class Application
                         #####################################
                         if (isset($directive['validate']['integer']))
                         {
-                            if (!preg_match("/^[0-9]+$/", $value))
+                            if(!is_integer($value))
                             {
-                                $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an integer!';
-                                if ($directive['validate']['integer'] == 'warning')
+                                # it is a string, but at least it is an integer
+                                if (preg_match("/^[0-9]+$/", $value))
                                 {
+                                    $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an integer! Converting to integer...';
                                     $this->warn($message);
+
+                                    # convert to integer
+                                    $this->Config->set([$section['name'], $directive['name']], intval($value));
                                 }
                                 else
                                 {
-                                    $this->fail($message);
+                                    $message = 'Directive ' . $directive['name'] . ' [' . $section['name'] . '] is not an integer!';
+
+                                    switch ($directive['validate']['integer'])
+                                    {
+                                        case 'error':
+                                            $this->fail($message);
+                                            break;
+                                        case 'warning':
+                                            $this->warn($message);
+                                            break;
+                                        case 'notice':
+                                            $this->notice($message);
+                                            break;
+                                    }
                                 }
                             }
                         }
@@ -975,7 +1026,7 @@ class Application
         if($this->Config->get('remote.ssh'))
         {
             // ssh options
-            $ssh_port  = ($this->Config->get('remote.port'))? $this->Config->get('remote.port'):"22";
+            $ssh_port  = ($this->Config->get('remote.port'))? $this->Config->get('remote.port'):22;
 
             $this->Session->Set('ssh.options', "-p $ssh_port -o BatchMode=yes -o ConnectTimeout=15 -o TCPKeepAlive=yes -o ServerAliveInterval=30");
             $this->out('Check remote parameters...');
