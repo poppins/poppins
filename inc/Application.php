@@ -1351,6 +1351,8 @@ class Application
         #####################################
         # CHECK IF RSYNC DIR IS CLEAN
         #####################################
+        $unclean_files = [];
+        // files subdirectory
         $dir = $this->Config->get('local.rsyncdir').'/files';
         if(file_exists($dir))
         {
@@ -1370,6 +1372,7 @@ class Application
         #####################################
         # CHECK IF MYSQL DIR IS CLEAN
         #####################################
+        $unclean_files = [];
         // when not enabled, mysql dir should be empty
         if(!$this->Config->get('mysql.enabled'))
         {
@@ -1391,6 +1394,7 @@ class Application
         #####################################
         # CHECK IF ARCHIVE DIR IS CLEAN
         #####################################
+        $unclean_files = [];
         //check if archive dir is clean
         $dir = $this->Config->get('local.hostdir') . '/archive';
         if(file_exists($dir))
@@ -1402,14 +1406,14 @@ class Application
             if ($this->Config->get('local.snapshot-backend') != 'zfs')
             {
                 $unclean_files = Validator::scan_dir_unclean_files($dir, $whitelist);
-            }
 
-            // check if there are any
-            if (count($unclean_files))
-            {
-                foreach ($unclean_files as $file => $type)
+                // check if there are any
+                if (count($unclean_files))
                 {
-                    $this->notice("Archive directory $dir not clean, unknown $type '$file'. Remove or rename to '_$file'..");
+                    foreach ($unclean_files as $file => $type)
+                    {
+                        $this->notice("Archive directory $dir not clean, unknown $type '$file'. Remove or rename to '_$file'..");
+                    }
                 }
             }
         }
