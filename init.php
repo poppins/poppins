@@ -18,7 +18,7 @@ $Session->set('chrono.session.start', date('U'));
 // version
 $mercurial_version = trim(shell_exec('cd "'.dirname(__FILE__).'";hg parent --template "{rev}" 2>/dev/null;'));
 $mercurial_hash = trim(shell_exec('cd "'.dirname(__FILE__).'";hg id -i 2>/dev/null;'));
-$full_version = ($mercurial_version)? $_poppins_version.'.'.$mercurial_version.' '.$mercurial_hash:$_poppins_version;
+$full_version = ($mercurial_version)? $_poppins_version.'.'.$mercurial_version.' '.$mercurial_hash:$_poppins_version.' (mercurial not available)';
 $Session->set('version', $full_version);
 // supported intervals
 $Session->set('intervals', ['incremental', 'minutely', 'hourly', 'daily', 'weekly', 'monthly', 'yearly']);
