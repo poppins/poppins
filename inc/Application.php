@@ -1539,7 +1539,7 @@ class Application
                 {
                     foreach (['databases', 'tables'] as $object)
                     {
-                        if ($this->Config->is_set('mysql.' . $include_type . '-' . $object))
+                        if ($this->Config->get('mysql.' . $include_type . '-' . $object))
                         {
                             $this->fail("Cannot configure $include_type-$object while using multiple mysql config files!");
                         }
