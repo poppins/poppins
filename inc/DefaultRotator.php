@@ -26,6 +26,17 @@ class DefaultRotator extends Rotator
      */
     function add($dir, $parent)
     {
+        // check permissions
+        if (!is_writable($this->archive_dir."/$parent"))
+        {
+            $this->App->fail('Cannot add snapshot! Archive dir '.$dir.' is not writable!');
+        }
+
+        if (!is_executable($this->archive_dir."/$parent"))
+        {
+            $this->App->fail('Cannot add snapshot! Archive dir '.$dir.' is not executable!');
+        }
+
         $cmd = "{CP} -la $this->rsyncdir ". $this->archive_dir."/$parent/$dir";
         $this->App->out('Create hardlink copy: '.$this->Cmd->parse($cmd));
         return $this->Cmd->exe("$cmd");
@@ -35,7 +46,7 @@ class DefaultRotator extends Rotator
      * Creates a command to remove a snapshot from a directory
      *
      * @param $snapshot The snapshot directory
-     * @param $parent  The parent directory
+     * @param $type  The snapshot type
      * @return string The command
      */
     function remove($snapshot, $type)

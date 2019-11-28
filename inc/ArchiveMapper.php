@@ -60,6 +60,9 @@ class ArchiveMapper
         // get listing
         foreach($this->get_archive_dirs() as $dir)
         {
+            // add dir to snapshots
+            $this->snapshots[$dir] = [];
+
             //create whitelist for validation
             $unclean_files = [];
 

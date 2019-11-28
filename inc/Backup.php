@@ -214,7 +214,7 @@ class Backup
             $this->Cmd->exe("'test -x $script'", true);
             if ($this->Cmd->is_error())
             {
-                $message = 'Remote '.$type.'-backup script is not an executable script!';
+                $message = 'Remote '.$type.'-backup script '.$script.' is not an executable script!';
                 if ($this->Config->get('remote.'.$type.'-backup-onfail') == 'abort')
                 {
                     $this->App->fail($message);

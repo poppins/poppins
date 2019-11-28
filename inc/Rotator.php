@@ -176,6 +176,7 @@ class Rotator
         $actions = [];
         $actions['add'] = [];
         $actions['remove'] = [];
+
         //rotation
         foreach ($arch2 as $type => $snapshots)
         {
@@ -192,6 +193,7 @@ class Rotator
                 $actions['remove'][$type] = $arch1[$type];
             }
         }
+
         //determine actions to take 
         foreach (array_keys($actions) as $action)
         {
