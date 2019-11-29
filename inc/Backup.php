@@ -297,23 +297,23 @@ class Backup
         #####################################
         # HARDWARE INFO
         #####################################
-//        if ($this->Config->get('meta.remote-hardware-layout'))
-//        {
-//            // create the file
-//            $this->App->out("Write to file " . $this->Session->get('meta.path') . $filebase . ".hardware_layout.txt...");
-//            $this->App->out();
-//            $this->Cmd->exe(" > $this->rsync_dir/meta/" . $filebase . ".hardware_layout.txt", false);
-//
-//            $cmds = [];
-//            $cmds [] = 'cat /proc/meminfo';
-//            $cmds [] = 'cat /proc/cpuinfo';
-//
-//            //iterate commands and redirect to file
-//            foreach ($cmds as $cmd)
-//            {
-//                $this->Cmd->exe("'( echo " . $emb . ' ' . $cmd . ' ' . $emb . "; echo; $cmd 2>&1 || echo FAILED; echo; )' >> $this->rsync_dir/meta/" . $filebase . ".hardware_layout.txt", true);
-//            }
-//        }
+        if ($this->Config->get('meta.remote-hardware-layout'))
+        {
+            // create the file
+            $this->App->out("Write to file " . $this->Session->get('meta.path') . $filebase . ".hardware_layout.txt...");
+            $this->App->out();
+            $this->Cmd->exe(" > $this->rsync_dir/meta/" . $filebase . ".hardware_layout.txt", false);
+
+            $cmds = [];
+            $cmds [] = 'cat /proc/meminfo';
+            $cmds [] = 'cat /proc/cpuinfo';
+
+            //iterate commands and redirect to file
+            foreach ($cmds as $cmd)
+            {
+                $this->Cmd->exe("'( echo " . $emb . ' ' . $cmd . ' ' . $emb . "; echo; $cmd 2>&1 || echo FAILED; echo; )' >> $this->rsync_dir/meta/" . $filebase . ".hardware_layout.txt", true);
+            }
+        }
 
         #####################################
         # DISK LAYOUT
