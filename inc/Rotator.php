@@ -55,9 +55,9 @@ class Rotator
         //directories
         $this->archive_dir = $this->Config->get('local.hostdir') . '/archive';
 
-        $this->newdir = $this->Config->get('local.hostdir-name') . '.' . $this->Session->get('rsync.cdatestamp') . '.poppins';
+        $this->new_dir = $this->Config->get('local.hostdir-name') . '.' . $this->Session->get('rsync.cdatestamp') . '.poppins';
 
-        $this->rsyncdir = $this->Config->get('local.rsyncdir');
+        $this->rsync_dir = $this->Config->get('local.rsync_dir');
 
         $this->validate = true;
     }
@@ -104,6 +104,7 @@ class Rotator
                 $end[$type] = (end($arch2[$type]));
             }
         }
+
         #####################################
         # COMPARE DATESTAMPS
         #####################################
@@ -113,7 +114,7 @@ class Rotator
             //no datestamp comparison needed
             if ($type == 'incremental')
             {
-                $arch2[$type] [] = $this->newdir;
+                $arch2[$type] [] = $this->new_dir;
             }
             //datestamp comparison
             else
@@ -148,14 +149,14 @@ class Rotator
                             $diff = $cdatestamp2unix - $ddatestamp2unix;
                             if ($this->time_exceed($diff, $type))
                             {
-                                $arch2[$type] [] = $this->newdir;
+                                $arch2[$type] [] = $this->new_dir;
                             }
                         }
                     }
                 }
                 else
                 {
-                    $arch2[$type] [] = $this->newdir;
+                    $arch2[$type] [] = $this->new_dir;
                 }
             }
         }

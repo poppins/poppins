@@ -12,11 +12,20 @@ class BtrfsBackup extends Backup
 {
 
     /**
-     * Create the syncdir
+     * Validate sync dir
      */
-    function create_syncdir()
+    function validate_sync_dir()
     {
-        $this->Cmd->exe("btrfs subvolume create " . $this->rsyncdir);
+        parent::validate_sync_dir();
+
+        // check all btrfs subvolumes
+        $output = $this->Cmd->exe('btrfs subvolume list -o / | grep '.trim($this->rsync_dir, '/'));
+
+        if ($output == '')
+        {
+            $this->App->fail("Rsync dir is not a subvolume!");
+        }
+
     }
 
 }

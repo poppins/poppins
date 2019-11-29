@@ -27,8 +27,8 @@ class ZfsRotator extends Rotator
      */
     function add($dir, $parent)
     {
-        $rsyncdir = preg_replace('/^\//', '', $this->rsyncdir);
-        $cmd = "zfs snapshot $rsyncdir@$parent-$dir";
+        $rsync_dir = preg_replace('/^\//', '', $this->rsync_dir);
+        $cmd = "zfs snapshot $rsync_dir@$parent-$dir";
         $this->App->out("Create zfs snapshot: $cmd");
         return $this->Cmd->exe("$cmd");
     }
@@ -39,10 +39,10 @@ class ZfsRotator extends Rotator
     function finalize()
     {
         //create a symlink to .zfs
-        if(file_exists($this->rsyncdir.'/.zfs/snapshot') && !file_exists($this->Config->get('local.hostdir').'/archive'))
+        if(file_exists($this->rsync_dir.'/.zfs/snapshot') && !file_exists($this->Config->get('local.hostdir').'/archive'))
         {
             $this->App->out("Create an archive dir symlink to zfs snapshots...");
-            $cmd = 'ln -s '.$this->rsyncdir.'/.zfs/snapshot '.$this->Config->get('local.hostdir').'/archive';
+            $cmd = 'ln -s '.$this->rsync_dir.'/.zfs/snapshot '.$this->Config->get('local.hostdir').'/archive';
             $this->Cmd->exe("$cmd");
 
         }
@@ -57,8 +57,8 @@ class ZfsRotator extends Rotator
      */
     function remove($snapshot, $type)
     {
-        $rsyncdir = preg_replace('/^\//', '', $this->rsyncdir);
-        $cmd = "zfs destroy $rsyncdir@$snapshot";
+        $rsync_dir = preg_replace('/^\//', '', $this->rsync_dir);
+        $cmd = "zfs destroy $rsync_dir@$snapshot";
         $this->App->out("Remove zfs snapshot: $cmd");
         return $this->Cmd->exe("$cmd");
     }

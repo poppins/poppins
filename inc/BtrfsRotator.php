@@ -26,7 +26,7 @@ class BtrfsRotator extends Rotator
      */
     function add($dir, $parent)
     {
-        $cmd = "btrfs subvolume snapshot -r $this->rsyncdir ". $this->archive_dir."/$parent/$dir";
+        $cmd = "btrfs subvolume snapshot -r $this->rsync_dir ". $this->archive_dir."/$parent/$dir";
         $this->App->out("Create btrfs snapshot: $cmd");
         return $this->Cmd->exe("$cmd");
     }

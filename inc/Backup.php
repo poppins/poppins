@@ -23,11 +23,11 @@ class Backup
     // Options class - options passed by getopt and ini file
     protected $Options;
 
-    // Settings class - application specific settings
-    protected $Settings;
+    // Session class - session variables
+    protected $Session;
 
     //rsync
-    protected $rsyncdir;
+    protected $rsync_dir;
     protected $rsync_success = false;
 
     /**
@@ -52,7 +52,7 @@ class Backup
         // App specific settings
         $this->Session = Session::get_instance();
 
-        $this->rsyncdir = $this->Config->get('local.rsyncdir');
+        $this->rsync_dir = $this->Config->get('local.rsync_dir');
     }
 
     /**
@@ -65,13 +65,16 @@ class Backup
 
         // remote system info
         $this->meta();
+
         // mysql
         if ($this->Config->get('mysql.enabled'))
         {
             $this->databases();
         }
+
         // rsync
         $this->rsync();
+
         // post backup job
         $this->wrap_up();
     }
@@ -280,14 +283,38 @@ class Backup
             return;
         }
         // set paths
-        $this->Session->set('meta.path', $this->rsyncdir . '/meta/');
-        $this->Session->set('restore.path', $this->rsyncdir . '/restore/');
-        $this->Session->set('scripts.path', $this->rsyncdir . '/restore/scripts/');
-        $this->Session->set('restore.script.local', $this->rsyncdir . '/restore/'.$filebase.'.restore.sh');
+        $this->Session->set('meta.path', $this->rsync_dir . '/meta/');
+        $this->Session->set('restore.path', $this->rsync_dir . '/restore/');
+        $this->Session->set('scripts.path', $this->rsync_dir . '/restore/scripts/');
+        $this->Session->set('restore.script.local', $this->rsync_dir . '/restore/'.$filebase.'.restore.sh');
         // other variables
         $ssh_connection = ($this->Config->get('remote.ssh'))? $this->Config->get('remote.user') . "@" . $this->Config->get('remote.host') :'';
         $rsync_seperator = ($this->Config->get('remote.ssh'))? ':':'';
         $tee_cmd = "tee -a ".$this->Session->get('restore.script.local');
+
+        $emb = '%%%%%%';
+
+        #####################################
+        # HARDWARE INFO
+        #####################################
+//        if ($this->Config->get('meta.remote-hardware-layout'))
+//        {
+//            // create the file
+//            $this->App->out("Write to file " . $this->Session->get('meta.path') . $filebase . ".hardware_layout.txt...");
+//            $this->App->out();
+//            $this->Cmd->exe(" > $this->rsync_dir/meta/" . $filebase . ".hardware_layout.txt", false);
+//
+//            $cmds = [];
+//            $cmds [] = 'cat /proc/meminfo';
+//            $cmds [] = 'cat /proc/cpuinfo';
+//
+//            //iterate commands and redirect to file
+//            foreach ($cmds as $cmd)
+//            {
+//                $this->Cmd->exe("'( echo " . $emb . ' ' . $cmd . ' ' . $emb . "; echo; $cmd 2>&1 || echo FAILED; echo; )' >> $this->rsync_dir/meta/" . $filebase . ".hardware_layout.txt", true);
+//            }
+//        }
+
         #####################################
         # DISK LAYOUT
         #####################################
@@ -309,20 +336,18 @@ class Backup
                     $cmds [] = 'blkid';
                     $cmds [] = 'lsblk -fi';
 
-                    $emb = '%%%%%%';
-
                     // create the file
                     $this->App->out("Write to file " . $this->Session->get('meta.path') . $filebase . ".disk_layout.txt...");
                     $this->App->out();
-                    $this->Cmd->exe(" > $this->rsyncdir/meta/" . $filebase . ".disk_layout.txt", false);
+                    $this->Cmd->exe(" > $this->rsync_dir/meta/" . $filebase . ".disk_layout.txt", false);
 
                     //iterate commands and redirect to file
                     foreach ($cmds as $cmd)
                     {
-                        $this->Cmd->exe("'( echo " . $emb . ' ' . $cmd . ' ' . $emb . "; echo; $cmd 2>&1 || echo FAILED; echo; )' >> $this->rsyncdir/meta/" . $filebase . ".disk_layout.txt", true);
+                        $this->Cmd->exe("'( echo " . $emb . ' ' . $cmd . ' ' . $emb . "; echo; $cmd 2>&1 || echo FAILED; echo; )' >> $this->rsync_dir/meta/" . $filebase . ".disk_layout.txt", true);
                     }
 
-                    $this->Cmd->exe("'( echo " . $emb . " fdisk " . $emb . "; echo; for disk in $(ls /dev/sd[a-z] 2>/dev/null) ; do fdisk -l \$disk 2>&1 || echo FAILED ;echo ; done )' >> $this->rsyncdir/meta/" . $filebase . ".disk_layout.txt", true);
+                    $this->Cmd->exe("'( echo " . $emb . " fdisk " . $emb . "; echo; for disk in $(ls /dev/sd[a-z] 2>/dev/null) ; do fdisk -l \$disk 2>&1 || echo FAILED ;echo ; done )' >> $this->rsync_dir/meta/" . $filebase . ".disk_layout.txt", true);
 
                     if (!$this->Cmd->is_error())
                     {
@@ -439,7 +464,7 @@ class Backup
                 $this->Cmd->exe("echo '################################################' >> " . $this->Session->get('restore.script.local'));
                 $content = [];
                 $content [] = '# Rsync both the meta and restore directories to the rescue system.';
-                $content [] = 'rsync -av ' . $this->rsyncdir . '/meta ' . $this->rsyncdir . '/restore ' . $ssh_connection . $rsync_seperator . "'/tmp'";
+                $content [] = 'rsync -av ' . $this->rsync_dir . '/meta ' . $this->rsync_dir . '/restore ' . $ssh_connection . $rsync_seperator . "'/tmp'";
                 $this->Cmd->exe("echo '" . implode("\n", $content) . "' >> " . $this->Session->get('restore.script.local'));
                 #####################################
                 # BACKUP PARTITION TABLE
@@ -628,32 +653,13 @@ class Backup
     function prepare()
     {
         #####################################
-        # CREATE SYNC DIR
+        # VALIDATE RSYNC DIR
         #####################################
-        if (!file_exists($this->rsyncdir))
-        {
-            $this->App->out("Create sync dir $this->rsyncdir...");
-            $this->create_syncdir();
-        }
+        // validate rsync dir
+        $this->validate_sync_dir();
+
         #####################################
-        # CREATE OTHER DIRS
-        #####################################
-        $dirs = ['meta', 'files', 'restore', 'restore/scripts'];
-        if ($this->Config->get('mysql.enabled'))
-        {
-            $dirs [] = 'mysql';
-        }
-        // create directories
-        foreach ($dirs as $dir)
-        {
-            if (!file_exists($this->rsyncdir . '/' . $dir))
-            {
-                $this->App->out("Create $dir dir $this->rsyncdir/$dir...");
-                $this->Cmd->exe("mkdir -p $this->rsyncdir/$dir");
-            }
-        }
-        #####################################
-        # EMPTY DIRS
+        # EMPTY META DIRS
         #####################################
         if (!$this->Options->is_set('n'))
         {
@@ -661,9 +667,9 @@ class Backup
             // empty dirs
             foreach ($dirs as $dir)
             {
-                $this->App->out("Empty meta directory " . $this->rsyncdir . '/' . $dir . "...");
+                $this->App->out("Empty meta directory " . $this->rsync_dir . '/' . $dir . "...");
                 // take precautions when executing an rm command!
-                foreach([$this->rsyncdir, $dir] as $variable)
+                foreach([$this->rsync_dir, $dir] as $variable)
                 {
                     $variable = trim($variable);
                     if (!$variable || empty($variable) || $variable == '' || preg_match('/^\/+$/', $variable))
@@ -671,7 +677,7 @@ class Backup
                         $this->App->fail('Cannot execute a rm command as a variable is empty!');
                     }
                 }
-                $this->Cmd->exe("rm -f " . $this->rsyncdir . '/' . $dir . "/* 2>/dev/null");
+                $this->Cmd->exe("rm -f " . $this->rsync_dir . '/' . $dir . "/* 2>/dev/null");
             }
         }
         #####################################
@@ -849,9 +855,9 @@ class Backup
             $excluded = [];
             if ($this->Config->get(['excluded', $source]))
             {
-                $exludedirs = explode(',', $this->Config->get(['excluded', $source]));
+                $excluded_dirs = explode(',', $this->Config->get(['excluded', $source]));
 
-                foreach ($exludedirs as $d)
+                foreach ($excluded_dirs as $d)
                 {
                     $excluded [] = "--exclude=$d";
                 }
@@ -860,21 +866,21 @@ class Backup
             $excluded = implode(' ', $excluded);
             //output command
             $this->App->out("rsync '$source' @ " . date('Y-m-d H:i:s') . "...", 'indent');
-            if (!is_dir("$this->rsyncdir/files/$target"))
+            if (!is_dir("$this->rsync_dir/files/$target"))
             {
-                $this->App->out("Create target dir $this->rsyncdir/files/$target...");
-                $this->Cmd->exe("mkdir -p $this->rsyncdir/files/$target");
+                $this->App->out("Create target dir $this->rsync_dir/files/$target...");
+                $this->Cmd->exe("mkdir -p $this->rsync_dir/files/$target");
             }
             //check trailing slash
-            $sourcedir = (preg_match('/\/$/', $source)) ? $source : "$source/";
-            $targetdir = "$this->rsyncdir/files/$target/";
+            $source_dir = (preg_match('/\/$/', $source)) ? $source : "$source/";
+            $target_dir = "$this->rsync_dir/files/$target/";
             //slashes are protected by -s option in rsync
-            $sourcedir = stripslashes($sourcedir);
-            $targetdir = stripslashes($targetdir);
+            $source_dir = stripslashes($source_dir);
+            $target_dir = stripslashes($target_dir);
             $ssh_connection = ($this->Config->get('remote.ssh'))? $this->Config->get('remote.user') . "@" . $this->Config->get('remote.host'):'';
             $rsync_seperator = ($this->Config->get('remote.ssh'))? ':':'';
             // the rsync command
-            $cmd = "rsync $rsync_options $excluded " .$ssh_connection. $rsync_seperator. "\"$sourcedir\" '$targetdir' 2>&1";
+            $cmd = "rsync $rsync_options $excluded " .$ssh_connection. $rsync_seperator. "\"$source_dir\" '$target_dir' 2>&1";
             $this->App->out($cmd);
             //obviously try rsync at least once :)
             $attempts = 1;
@@ -901,7 +907,7 @@ class Backup
                 {
                     $message = $this->get_rsync_status($this->Cmd->exit_status);
                     $message = (empty($message)) ? '' : ': "' . $message . '".';
-                    $this->App->notice("Rsync of $sourcedir directory exited with a non-zero status! Non fatal, will continue. Exit status: " . $this->Cmd->exit_status . $message);
+                    $this->App->notice("Rsync of $source_dir directory exited with a non-zero status! Non fatal, will continue. Exit status: " . $this->Cmd->exit_status . $message);
                     $this->rsync_success = true;
                     break;
                 }
@@ -910,7 +916,7 @@ class Backup
                 {
                     $message = $this->get_rsync_status($this->Cmd->exit_status);
                     $message = (empty($message)) ? '' : ': "' . $message . '".';
-                    $this->App->warn("Rsync of $sourcedir directory attempt $i/$attempts exited with a non-zero status! Fatal, will abort. Exit status " . $this->Cmd->exit_status . $message);
+                    $this->App->warn("Rsync of $source_dir directory attempt $i/$attempts exited with a non-zero status! Fatal, will abort. Exit status " . $this->Cmd->exit_status . $message);
                     $message = [];
                     if ($i != $attempts)
                     {
@@ -933,7 +939,7 @@ class Backup
             {
                 $message = $this->get_rsync_status($this->Cmd->exit_status);
                 $message = (empty($message)) ? '' : ': "' . $message . '".';
-                $output = "Rsync of $sourcedir directory failed! Aborting! Exit status " . $this->Cmd->exit_status . $message;
+                $output = "Rsync of $source_dir directory failed! Aborting! Exit status " . $this->Cmd->exit_status . $message;
                 $this->App->warn($output);
                 // record failed process
                 $failed_rsync_process = true;
@@ -947,13 +953,25 @@ class Backup
                 #####################################
                 $tee_cmd = "tee -a ".$this->Session->get('restore.script.local');
                 $rsync_options2 = preg_replace('/\s+/', ' ', preg_replace('/-e \".+\"/', '-e ssh', $rsync_options));
-                $this->Cmd->exe("echo rsync ".$rsync_options2." \'$targetdir\' " .$ssh_connection. $rsync_seperator. "\'/mnt/poppins$sourcedir\' | $tee_cmd  >> ".$this->Session->get('scripts.path').$filebase.'.'.$restore_type.'.sh');
+                $this->Cmd->exe("echo rsync ".$rsync_options2." \'$target_dir\' " .$ssh_connection. $rsync_seperator. "\'/mnt/poppins$source_dir\' | $tee_cmd  >> ".$this->Session->get('scripts.path').$filebase.'.'.$restore_type.'.sh');
             }
         }
         // abort if one rsync process has failed
         if($failed_rsync_process)
         {
             $this->App->fail('An rsync process has failed!');
+        }
+    }
+
+    /**
+     * Vaidate rsync dir
+     */
+    function validate_sync_dir()
+    {
+        // check if rsync dir exists
+        if (!file_exists($this->rsync_dir))
+        {
+            $this->App->fail("Rsync dir does not exist!");
         }
     }
 

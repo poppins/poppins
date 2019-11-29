@@ -1001,25 +1001,14 @@ class Application
             }
         }
 
+        $DirectoryStructure = DirectoryStructureFactory::create($this);
+
         #####################################
-        # SET LOG DIR
+        # SETUP LOG DIR
         #####################################
-        //check log dir early so we can log stuff
-        $this->out('Check logdir...');
-        $logdir = $this->Config->get('local.logdir');
-        //validate dir, create if required
-        if($logdir)
-        {
-            if (!file_exists($logdir))
-            {
-                $this->out('Create logdir  ' . $logdir . '...');
-                $this->Cmd->exe("mkdir -p " . $logdir);
-                if ($this->Cmd->is_error())
-                {
-                    $this->fail('Cannot create log dir ' . $logdir);
-                }
-            }
-        }
+        //set log dir
+        $this->out('Setup log dir..');
+        $DirectoryStructure->setup_log_dir();
 
         #####################################
         # SET SSH CONNECTION
@@ -1104,6 +1093,7 @@ class Application
                 break;
             }
         }
+
         //check pre backup script
         if(!$this->Config->is_set('remote.pre-backup-script'))
         {
@@ -1181,179 +1171,36 @@ class Application
             }
         }
 
-        #####################################
-        # SET ROOT DIR
-        #####################################
-        $this->out('Check rootdir...');
-        $rootdir = $this->Config->get('local.rootdir');
-        $snapshots_backend = $this->Config->get('local.snapshot-backend');
-        //root dir must exist!
-        if (!file_exists($rootdir))
-        {
-            $this->fail("Root dir '" . $rootdir . "' does not exist!");
-        }
-        //check filesystem
-        else
-        {
-            $this->out('Check root dir filesystem type...');
-            $filesystem_type = $this->Cmd->exe("df -T $rootdir | tail -1 | tr -s ' ' | cut -d' ' -f2");
-            $this->out($filesystem_type, 'simple-indent');
-            $allowed_fs_types = ['ext2', 'ext3', 'ext4', 'btrfs', 'zfs', 'xfs', 'ufs', 'jfs', 'nfs', 'gfs', 'ocfs', 'fuse.osxfs', 'fuse.vmhgfs-fuse'];
-            if (!in_array($filesystem_type, $allowed_fs_types))
-            {
-                $this->fail('Filesystem type of root dir "'.$filesystem_type.'"" not supported! Supported: '.implode('/', $allowed_fs_types));
-            }
-        }
-        //check filesystem config
-        $this->out('Check filesystem config...');
-        $supported_snapshot_backends = ['default', 'zfs', 'btrfs'];
-        if(!in_array($snapshots_backend, $supported_snapshot_backends))
-        {
-            $this->fail('Local filesystem not supported! Supported: '.implode(",", $supported_snapshot_backends));
-        }
-        // validate filesystem
-        switch($snapshots_backend)
-        {
-            case 'zfs':
-            case 'btrfs':
-                if($filesystem_type != $snapshots_backend)
-                {
-                    $this->fail('Rootdir is not a '.$snapshots_backend.' filesystem!');
-                }
-                break;
-            default:
-        }
-        //validate root dir and create if required
-        switch ($snapshots_backend)
-        {
-            //if using zfs, we want a mount point
-            case 'zfs':
-                //check if mount point
-                $rootdir_check = $this->Cmd->exe("zfs get -H -o value mountpoint ".$rootdir);
-                if($rootdir_check != $rootdir)
-                {
-                    $this->fail("No zfs mount point " . $rootdir . " found!");
-                }
-                //validate if dataset name and mountpoint are the same
-                $zfs_info = $this->Cmd->exe("zfs list | grep '".$rootdir."$'");
-                $a = explode(' ', $zfs_info);
-                if('/'.reset($a) != end($a))
-                {
-                    $this->fail('zfs name and mountpoint do not match!');
-                }
-                break;
-            default:
-                if (!file_exists($rootdir))
-                {
-                    $this->Cmd->exe("mkdir -p " . $rootdir);
-                    if ($this->Cmd->is_error())
-                    {
-                        $this->fail("Could not create directory:  " . $rootdir . "!");
-                    }
-                }
-        }
+        // creation of these directories must be in exact order!
 
         #####################################
-        # SET HOST DIR
+        # SETUP ROOT DIR
         #####################################
-        $this->out('Set hostdir...');
-        if($this->Config->get('local.hostdir-name'))
-        {
-            $dirname = $this->Config->get('local.hostdir-name');
-        }
-        elseif($this->Config->get('remote.host'))
-        {
-            $dirname = $this->Config->get('remote.host');
-        }
-        else
-        {
-            $this->fail('Cannot create hostdir! hostdir-name [local] or host [remote] not configured!');
-        }
-        $this->Config->set('local.hostdir-name', $dirname);
-        //check if no slashes
-        if (preg_match('/^\//', $this->Config->get('local.hostdir-name')))
-        {
-            $this->fail("hostname may not contain slashes!");
-        }
+        //set root dir
+        $this->out('Setup root dir..');
+        $DirectoryStructure->setup_root_dir();
 
         #####################################
-        # SETUP LOCAL DIRS
+        # SETUP HOST DIR
         #####################################
-        $this->out('Setup local directories...');
-        $this->Config->set('local.hostdir', $this->Config->get('local.rootdir') . '/' . $this->Config->get('local.hostdir-name'));
-        //validate host dir and create if required
-        switch ($this->Config->get('local.snapshot-backend'))
-        {
-            //if using zfs, we want to check if a filesystem is in place, otherwise, create it
-            case 'zfs':
-                $hostdir_check = $this->Cmd->exe("zfs get -H -o value mountpoint " . $this->Config->get('local.hostdir'));
-                if ($hostdir_check != $this->Config->get('local.hostdir'))
-                {
-                    if ($this->Config->get('local.hostdir-create'))
-                    {
-                        $zfs_fs = preg_replace('/^\//', '', $this->Config->get('local.hostdir'));
-                        $this->out("zfs filesystem " . $zfs_fs . " does not exist, creating zfs filesystem..");
-                        $this->Cmd->exe("zfs create " . $zfs_fs);
-                        if ($this->Cmd->is_error())
-                        {
-                            $this->fail("Could not create zfs filesystem:  " . $zfs_fs . "!");
-                        }
-                    }
-                    else
-                    {
-                        $this->fail("Directory " . $this->Config->get('local.hostdir') . " does not exist! Directive not set to create it (no)..");
-                    }
-                }
-                //validate if dataset name and mountpoint are the same
-                $zfs_info = $this->Cmd->exe("zfs list | grep '".$this->Config->get('local.hostdir')."$'");
-                $a = explode(' ', $zfs_info);
-                if ('/' . reset($a) != end($a))
-                {
-                    $this->fail('zfs name and mountpoint do not match!');
-                }
-                break;
-            default:
-                //check if dir exists
-                if (!file_exists($this->Config->get('local.hostdir')))
-                {
-                    if ($this->Config->get('local.hostdir-create'))
-                    {
-                        $this->out("Directory " . $this->Config->get('local.hostdir') . " does not exist, creating it..");
-                        $this->Cmd->exe("mkdir -p " . $this->Config->get('local.hostdir'));
-                        if ($this->Cmd->is_error())
-                        {
-                            $this->fail("Could not create directory:  " . $this->Config->get('local.hostdir') . "!");
-                        }
-                    }
-                    else
-                    {
-                        $this->fail("Directory " . $this->Config->get('local.hostdir') . " does not exist! Directive not set to create it..");
-                    }
-                }
-                break;
-        }
+        //set host dir - set up as early as possible!
+        $this->out('Setup host dir..');
+        $DirectoryStructure->setup_host_dir();
 
         #####################################
-        # SET RSYNC DIR
+        # SETUP RSYNC DIR
         #####################################
         //set syncdir
-        switch($this->Config->get('local.snapshot-backend'))
-        {
-            case 'zfs':
-            case 'btrfs':
-                $rsyncdir = 'rsync.'.strtolower($this->Config->get('local.snapshot-backend'));
-                break;
-            default:
-                $rsyncdir = 'rsync.dir';
-        }
-        $this->Config->set('local.rsyncdir',  $this->Config->get('local.hostdir').'/'.$rsyncdir);
+        $this->out('Setup rsync dir..');
+        $DirectoryStructure->setup_rsync_dir();
+        $DirectoryStructure->setup_rsync_sub_dirs();
 
         #####################################
         # CHECK IF RSYNC DIR IS CLEAN
         #####################################
         $unclean_files = [];
         // files subdirectory
-        $dir = $this->Config->get('local.rsyncdir').'/files';
+        $dir = $this->Config->get('local.rsync_dir').'/files';
         if(file_exists($dir))
         {
             $whitelist = array_map('stripslashes', array_values($this->Config->get('included')));
@@ -1376,7 +1223,7 @@ class Application
         // when not enabled, mysql dir should be empty
         if(!$this->Config->get('mysql.enabled'))
         {
-            $dir = $this->Config->get('local.rsyncdir').'/mysql';
+            $dir = $this->Config->get('local.rsync_dir').'/mysql';
             if(file_exists($dir))
             {
                 $whitelist = [];
@@ -1501,14 +1348,17 @@ class Application
                 #####################################
                 # SETUP MYSQLDUMP DIR
                 #####################################
-                $rsyncdir = $this->Config->get('local.rsyncdir');
-                $mysqldump_dir = "$rsyncdir/mysql/$instance";
+                $rsync_dir = $this->Config->get('local.rsync_dir');
+                $mysqldump_dir = "$rsync_dir/mysql/$instance";
+
                 // check if dir exists
                 if (!is_dir($mysqldump_dir))
                 {
                     $this->out("Create directory $mysqldump_dir...");
                     $this->Cmd->exe("mkdir -p $mysqldump_dir");
-                } // empty the dir unless dry run
+                }
+
+                // empty the dir unless dry run
                 elseif(!$this->Options->is_set('n'))
                 {
                     $this->out("Empty directory $mysqldump_dir...");
@@ -1778,12 +1628,12 @@ class Application
                 $this->out('Disk Usage', 'header');
                 // disk usage dirs
                 $dirs = [];
-                // $dirs ['rsync directory (total size)'] []= $this->Config->get('local.rsyncdir');
-                $dirs ['/files'] []= $this->Config->get('local.rsyncdir').'/files';
+                // $dirs ['rsync directory (total size)'] []= $this->Config->get('local.rsync_dir');
+                $dirs ['/files'] []= $this->Config->get('local.rsync_dir').'/files';
                 if($this->Config->get('mysql.enabled'))
                 {
                     // total mysql
-                    $path = $this->Config->get('local.rsyncdir').'/mysql';
+                    $path = $this->Config->get('local.rsync_dir').'/mysql';
                     $dirs ['/mysql'] []= $path;
                     // mysqldumps seperately
                     $scan = scandir($path);
@@ -1805,19 +1655,19 @@ class Application
                 }
                 // iterate all directories
                 $i = 1;
-                foreach($dirs as $section => $subdirs)
+                foreach($dirs as $section => $sub_dirs)
                 {
                     $this->out("Disk usage of $section...");
-                    foreach($subdirs as $subdir)
+                    foreach($sub_dirs as $sub_dir)
                     {
-                        if (file_exists($subdir))
+                        if (file_exists($sub_dir))
                         {
-                            $du = $this->Cmd->exe("du -sh $subdir");
+                            $du = $this->Cmd->exe("du -sh $sub_dir");
                             $this->out("$du");
                         }
                         else
                         {
-                            $this->warn('Cannot determine disk usage of ' . $subdir);
+                            $this->warn('Cannot determine disk usage of ' . $sub_dir);
                         }
                     }
                     // space

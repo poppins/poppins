@@ -98,7 +98,7 @@
       "name":"meta",
       "directives":[
         {
-          "name":"remote-disk-layout",
+          "name":"remote-hardware-layout",
           "default":true,
           "validate":{"boolean":"error"}
         },

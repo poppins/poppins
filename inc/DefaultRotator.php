@@ -37,7 +37,7 @@ class DefaultRotator extends Rotator
             $this->App->fail('Cannot add snapshot! Archive dir '.$dir.' is not executable!');
         }
 
-        $cmd = "{CP} -la $this->rsyncdir ". $this->archive_dir."/$parent/$dir";
+        $cmd = "{CP} -la $this->rsync_dir ". $this->archive_dir."/$parent/$dir";
         $this->App->out('Create hardlink copy: '.$this->Cmd->parse($cmd));
         return $this->Cmd->exe("$cmd");
     }

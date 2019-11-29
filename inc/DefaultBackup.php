@@ -16,12 +16,4 @@ require_once dirname(__FILE__).'/Backup.php';
 class DefaultBackup extends Backup
 {
 
-    /**
-     * Create the syncdir
-     */
-    function create_syncdir()
-    {
-        $this->Cmd->exe("mkdir -p " . $this->rsyncdir);
-    }
-
 }

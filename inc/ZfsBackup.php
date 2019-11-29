@@ -20,13 +20,4 @@ require_once dirname(__FILE__).'/Backup.php';
 class ZfsBackup extends Backup
 {
 
-/**
-* Create the syncdir
-*/
-function create_syncdir()
-{
-$rsyncdir = preg_replace('/^\//', '', $this->rsyncdir);
-$this->Cmd->exe("zfs create " . $rsyncdir);
-}
-
 }
