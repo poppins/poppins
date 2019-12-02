@@ -304,9 +304,7 @@ class Backup
             $this->App->out();
             $this->Cmd->exe(" > $this->rsync_dir/meta/" . $filebase . ".hardware_layout.txt", false);
 
-            $cmds = [];
-            $cmds [] = 'cat /proc/meminfo';
-            $cmds [] = 'cat /proc/cpuinfo';
+            $cmds = ['free -h','lscpu','lsscsi' ,'lspci' ,'lsusb'];
 
             //iterate commands and redirect to file
             foreach ($cmds as $cmd)
