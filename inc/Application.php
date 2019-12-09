@@ -1446,21 +1446,50 @@ class Application
         $this->out(trim(implode("\n", $output)));
         $this->out();
         $this->out('OK!', 'simple-success');
-
+        $this->out();
         #####################################
         # CREATE LOCK FILE
         #####################################
-        # check for lock
-        if (file_exists($this->Config->get('local.hostdir') . "/LOCK"))
+        // lock file
+        $lock_file = $this->Config->get('local.hostdir') . "/LOCK";
+
+        // check for lock
+        // ignore lock file in debug mode
+        if($this->Options->is_set('d'))
         {
-            $this->fail("LOCK file " . $this->Config->get('local.hostdir') . "/LOCK exists!", 'LOCKED');
+            $this->out('Debug mode. Skip LOCK file check...');
         }
-        else
+        elseif (file_exists($lock_file))
         {
-            $this->out();
-            $this->out('Create LOCK file...');
-            $this->Cmd->exe("touch " . $this->Config->get('local.hostdir') . "/LOCK");
+
+
+            // output is something like this: 260277.97 72804.11
+            $file_contents   = @file_get_contents('/proc/uptime');
+
+            // could not determine uptime, feature not supported
+            if (empty($file_contents))
+            {
+                $this->fail("LOCK file " .$lock_file. " exists!", 'LOCKED');
+            }
+
+            $uptime_in_seconds  = (int) floatval($file_contents);
+            $current_time_unix_timestamp = date('U');
+            $boot_time_unix_timestamp = $current_time_unix_timestamp - $uptime_in_seconds;
+            $lock_file_modified_unix_timestamp =  date ("U", filemtime($lock_file));
+
+            if ($boot_time_unix_timestamp < $lock_file_modified_unix_timestamp)
+            {
+                // lock file is present, delete it
+                $this->fail("LOCK file " .$lock_file. " exists!", 'LOCKED');
+            }
+
+            //create lock file if we got this far
+            $this->out('System has rebooted. Remove old LOCK file...');
         }
+
+        // create or modify create time
+        $this->out('Create new LOCK file...');
+        $this->Cmd->exe("touch " . $lock_file);
     }
 
     /**
