@@ -1530,16 +1530,22 @@ class Application
         $content = [];
         $fgcolor = false;
         $bgcolor = false;
+
+        $header_length = 90;
+        $arrow_length = 5;
+
         switch ($type)
         {
             case 'error':
                 $fgcolor = 'light_red';
-                $l1 = '$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ FATAL ERROR $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$';
-                $l2 = '$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$';
+                $symbol = "$";
+                $line1 = str_pad(strtoupper(' FATAL ERROR '), $header_length, $symbol, STR_PAD_BOTH);
+                $line2 = '';
+                foreach(range(1,$header_length) as $i) $line2 .= $symbol;
                 $content [] = '';
-                $content [] = $l1;
-                $content [] = wordwrap($message, 80);
-                $content [] = $l2;
+                $content [] = $line1;
+                $content [] = wordwrap($message, $header_length);
+                $content [] = $line2;
                 $content [] = '';
                 break;
             case 'final-error':
@@ -1555,27 +1561,37 @@ class Application
                 $content [] = '';
                 break;
             case 'header':
-                $l = "-----------------------------------------------------------------------------------------";
+                $line = '';
+                $symbol = "-";
+                foreach(range(1,$header_length) as $i) $line .= $symbol;
                 $content [] = '';
-                $content [] = $l;
-                $content [] = strtoupper($message);
-                $content [] = $l;
+                $content [] = $line;
+                $content [] = str_pad(strtoupper(' '.$message.' '), $header_length, $symbol, STR_PAD_BOTH);
+                $content [] = $line;
                 break;
             case 'indent':
                 $fgcolor = 'cyan';
-                $content [] = "-----------> " . $message;
+                $arrow = '';
+                foreach(range(1,$arrow_length) as $i) $arrow .= '-';
+                $content [] = $arrow."> " . $message;
                 break;
             case 'indent-error':
                 $fgcolor = 'light_red';
-                $content [] = "-----------> " . $message;
+                $arrow = '';
+                foreach(range(1,$arrow_length) as $i) $arrow .= '-';
+                $content [] = $arrow."> " . $message;
                 break;
             case 'indent-notice':
                 $fgcolor = 'blue';
-                $content [] = "-----------> " . $message;
+                $arrow = '';
+                foreach(range(1,$arrow_length) as $i) $arrow .= '-';
+                $content [] = $arrow."> " . $message;
                 break;
             case 'indent-warning':
                 $fgcolor = 'brown';
-                $content [] = "-----------> " . $message;
+                $arrow = '';
+                foreach(range(1,$arrow_length) as $i) $arrow .= '-';
+                $content [] = $arrow."> " . $message;
                 break;
             case 'simple-error':
                 $fgcolor = 'light_red';
@@ -1602,29 +1618,35 @@ class Application
                 $content [] = $message;
                 break;
             case 'title':
-                $l = "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%";
-                $content [] = $l;
-                $content [] = $message;
-                $content [] = $l;
+                $symbol = "%";
+                $line = '';
+                foreach(range(1,$header_length) as $i) $line .= $symbol;
+                $content [] = $line;
+                $content [] = str_pad(' '.$message.' ', $header_length, $symbol, STR_PAD_BOTH);
+                $content [] = $line;
                 break;
             case 'notice':
                 $fgcolor = 'blue';
-                $l1 = '++++++++++++++++++++++++++++++++++++ NOTICE ++++++++++++++++++++++++++++++++++++++++++++++';
-                $l2 = '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++';
+                $symbol = "+";
+                $line1 = str_pad(strtoupper(' NOTICE '), $header_length, $symbol, STR_PAD_BOTH);
+                $line2 = '';
+                foreach(range(1,$header_length) as $i) $line2 .= $symbol;
                 $content [] = '';
-                $content [] = $l1;
-                $content [] = wordwrap($message, 85);
-                $content [] = $l2;
+                $content [] = $line1;
+                $content [] = wordwrap($message, $header_length);
+                $content [] = $line2;
                 $content [] = '';
                 break;
             case 'warning':
                 $fgcolor = 'brown';
-                $l1 = '|||||||||||||||||||||||||||||||||||| WARNING |||||||||||||||||||||||||||||||||||||||||||||';
-                $l2 = '||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||';
+                $symbol = "|";
+                $line1 = str_pad(strtoupper(' WARNING '), $header_length, $symbol, STR_PAD_BOTH);
+                $line2 = '';
+                foreach(range(1,$header_length) as $i) $line2 .= $symbol;
                 $content [] = '';
-                $content [] = $l1;
-                $content [] = wordwrap($message, 85);
-                $content [] = $l2;
+                $content [] = $line1;
+                $content [] = wordwrap($message, $header_length);
+                $content [] = $line2;
                 $content [] = '';
                 break;
             case 'default':
@@ -1727,6 +1749,34 @@ class Application
             $this->out(implode("\n", $output));
         }
         #####################################
+        # TIMED RUNS
+        #####################################
+        $this->out('Runs', 'header');
+        // mark time
+        $this->Session->set('chrono.session.stop', date('U'));
+        // output all times
+        foreach($this->Session->get('chrono') as $type => $times)
+        {
+            // skip if no end time
+            if(!$this->Session->is_set(['chrono', $type, 'stop']))
+            {
+                continue;
+            }
+            // title
+            $this->out($type);
+            // create message
+            $message = [];
+            foreach(['start', 'stop'] as $s)
+            {
+                $message []= $s.': '.date('Y-m-d H:i:s', $this->Session->get(['chrono', $type, $s]));
+            }
+            $lapse = ($this->Session->get(['chrono', $type, 'stop']) - $this->Session->get(['chrono', $type, 'start']));
+            $this->Session->set(['chrono', $type, 'lapse'], gmdate('H:i:s', $lapse));
+            $message []= 'elapsed (HH:MM:SS): '.$this->Session->get(['chrono', $type, 'lapse']);
+            $this->out(implode(', ', $message), 'simple-indent');
+            $this->out();
+        }
+        #####################################
         # SUMMARY
         #####################################
         $this->out('Summary', 'header');
@@ -1816,34 +1866,7 @@ class Application
             $tag = '(untagged)';
         }
         $this->out("Session tagged as: $tag");
-        #####################################
-        # TIMING
-        #####################################
-        $this->out('Timing', 'header');
-        // mark time
-        $this->Session->set('chrono.session.stop', date('U'));
-        // output all times
-        foreach($this->Session->get('chrono') as $type => $times)
-        {
-            // skip if no end time
-            if(!$this->Session->is_set(['chrono', $type, 'stop']))
-            {
-                continue;
-            }
-            // title
-            $this->out($type);
-            // create message
-            $message = [];
-            foreach(['start', 'stop'] as $s)
-            {
-                $message []= $s.': '.date('Y-m-d H:i:s', $this->Session->get(['chrono', $type, $s]));
-            }
-            $lapse = ($this->Session->get(['chrono', $type, 'stop']) - $this->Session->get(['chrono', $type, 'start']));
-            $this->Session->set(['chrono', $type, 'lapse'], gmdate('H:i:s', $lapse));
-            $message []= 'elapsed (HH:MM:SS): '.$this->Session->get(['chrono', $type, 'lapse']);
-            $this->out(implode(', ', $message), 'simple-indent');
-            $this->out();
-        }
+
         //final header
         $this->out($this->Session->get('appname').' v'.$this->Session->get('version'). " - SCRIPT ENDED " . date('Y-m-d H:i:s'), 'title');
         #####################################
