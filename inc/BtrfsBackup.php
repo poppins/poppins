@@ -18,8 +18,12 @@ class BtrfsBackup extends Backup
     {
         parent::validate_sync_dir();
 
-        // check all btrfs subvolumes
-        $output = $this->Cmd->exe('btrfs subvolume list -o / | grep '.trim($this->rsync_dir, '/'));
+        // check if rsync directory is part of btrfs file system
+        $rsync_dir_stripped= str_replace( $this->Config->get('local.rootdir'), '', $this->rsync_dir, );
+
+        $cmd = "btrfs subvolume list $this->rsync_dir | grep " . $rsync_dir_stripped . "$" ;
+
+        $output = $this->Cmd->exe($cmd);
 
         if ($output == '')
         {
