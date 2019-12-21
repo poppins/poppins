@@ -16,15 +16,15 @@ Written by Bruno Dooms, Frank Van Damme
 ### Install ###
 Step 1. Make sure following packages are installed on the backup server: 
 
-    mercurial, php5-cli (php-cli), rsync, ssh, grep, gzip, moreutils
+    git, php5-cli (php-cli), rsync, ssh, grep, gzip, moreutils
 
 Step 2. Verify if the timezone is configured correctly in php. Look for a php.ini file in the /etc directory. For example:
 
     date.timezone = Europe/Brussels
 
-Step 3. Download the source code with the hg command. 
+Step 3. Download the source code with the git command. 
 
-    hg clone https://bitbucket.org/poppins/poppins /opt/poppins
+    git clone https://github.com/poppins/poppins.git /opt/poppins
 
 Step 4. Make a link to init.php in /usr/local/bin.
 
@@ -44,9 +44,9 @@ Step 7. Establish a passwordless ssh login to the client using ssh-keygen & ssh-
 If using mysql backups, credentials must be provided in the .my.cnf file. See config.
 
 ### Upgrade ###
-Navigate to the poppins source directory and pull the code with the hg command: 
+Navigate to the poppins source directory and pull the code with the git command: 
 
-    hg pull -u
+    git pull
 
 
 ### Configuration ###
