@@ -1,17 +1,11 @@
 # README #
 ### Copyright ###
-Poppins 
 
-Copyright (C) 2015 Free Software Foundation, Inc.
-License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
-This is free software: you are free to change and redistribute it.
-There is NO WARRANTY, to the extent permitted by law.
-
-Written by Bruno Dooms, Frank Van Damme
+See LICENSE
 
 ### Summary ###
 * Quick summary: Poppins - backup script with incremental snapshots. 
-* Version: Poppins version 0.2 beta
+* Version: Poppins version 0.5
 
 ### Install ###
 Step 1. Make sure following packages are installed on the backup server: 
@@ -53,40 +47,8 @@ Navigate to the poppins source directory and pull the code with the git command:
 All configuration in {filename}.poppins.ini. See example.poppins.ini for instructions.
 
 ### Deployment ###
-SYNOPSIS
 
-    poppins -c {configfile} [--color] [-d] [-h] [-n] [-t {tag}] [-v] [--long-options]
-
-DESCRIPTION
-
-Poppins has one required option, "-c", the configfile. An example can be found in the poppins source directory. You must name it {filename}.poppins.ini. Options in the ini file may be overridden by cli options. See example.
-
-EXAMPLES
-
-    poppins -c example.poppins.ini --remote-host=webserver1 --color
-
-OPTIONS
-
-    -c {configfile}
-        Required configuration file.
-
-     --color
-         Output in pretty colors.
-
-    -d
-        Debugmode. Output all commands ran by Poppins.
-
-    -h, --help
-        Print this help page.
-
-    -t {tag}
-        Add a tag to the application log file.
-        
-    -n
-        Dry run
-
-    -v
-        Print Poppins version.
+See USAGE
 
 ### Cleaning up old log files ###
 

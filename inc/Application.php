@@ -183,29 +183,49 @@ class Application
         $cli_options = getopt(implode('', $cli_short_options), $cli_long_options);
         $this->Options->update($cli_options);
 
+        // file paths
+        $usage_file_path = dirname(__FILE__).'/../docs/USAGE';
+        $license_file_path = dirname(__FILE__).'/../docs/LICENSE';
+
         // if no options are supplied, show documentation
         if (!count($this->Options->get()))
         {
-            $content = file_get_contents(dirname(__FILE__).'/../documentation.txt');
-            preg_match('/SYNOPSIS\n(.*?)\n/s', $content, $match);
-            $this->abort("Usage: " . trim($match[1]));
+            $usage = file_get_contents($usage_file_path);
+            preg_match('/SYNOPSIS\n(.*?)\n/s', $usage, $match);
+            $content = "Usage: " . trim($match[1]);
+
+            // display usage
+            $this->abort($content);
         }
         // -h show help
         elseif($this->Options->is_set('h') || $this->Options->is_set('help'))
         {
-            print $this->Session->get('appname').' '.$this->Session->get('version')."\n\n";
-            $content = file_get_contents(dirname(__FILE__).'/../documentation.txt');
-            print "$content\n";
-            exit();
+            $content = [];
+            $content []= $this->Session->get('appname').' '.$this->Session->get('version');
+            $content []= '';
+
+            // get documentation
+            $documentation = file_get_contents($usage_file_path);
+            $content []= trim($documentation);
+
+            // display documentation
+            $this->abort(implode("\n", $content), 0);
         }
         // -v show version
         elseif($this->Options->is_set('v') || $this->Options->is_set('version'))
         {
-            print $this->Session->get('appname').' version '.$this->Session->get('version')."\n";
-            $content = file_get_contents(dirname(__FILE__).'/../license.txt');
+            $content = [];
+            $content []= $this->Session->get('appname').' version '.$this->Session->get('version');
+            $content []= '';
 
-            //abort without error code
-            $this->abort($content, 0);
+            // get license
+            $license = file_get_contents( $license_file_path);
+            // get latest year, e.g. Copyright (C) 2019 Free Software Foundation
+            $license = preg_replace('/[0-9]{4} Free Software Foundation/',  date("Y").' Free Software Foundation', $license);
+            $content []= $license;
+
+            // display version
+            $this->abort(implode("\n", $content), 0);
         }
         // -t add a tag to the run
         if ($this->Options->is_set('t'))

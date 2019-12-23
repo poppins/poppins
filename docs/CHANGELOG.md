@@ -1,10 +1,21 @@
+# RELEASE 0.5
+
+DATE: 2019-12-23
+
+## NEW FEATURES
+
+## WHAT HAS CHANGED?
+
+The Poppins repository has been moved to github. Mercurial is no longer supported.
+
+------------------------------------------------------------------------------------------------------------------------
 # RELEASE 0.4
 
 DATE: 2019-07-19
 
 ## NEW FEATURES
 
-### INI FILE
+### Ini file
 
 The following ini configuration directives need to be ADDED to the config file.
 
@@ -58,14 +69,14 @@ See example.poppins.ini:
 
 ## WHAT HAS CHANGED?
 
-### MAJOR CHANGES
+### Major Changes
 
 * Include or exclude specific databases or tables, based on regular expressions.
 * Database export options: database dumps, table dumps or csv export.
 * Added restore scripts to help with restoring backups.
 * Keep snapshots with underscore indefinitely. Ignore these snapshots from rotation.
 
-### MINOR CHANGES
+### Minor Changes
 
 * Type support/validation enabled in config file
 * Rsync error 24 triggers a notice, no longer a warning.
@@ -91,7 +102,7 @@ DATE: 2017-06-30
 
 ## NEW FEATURES
 
-### INI FILE
+### Ini file
 
 The following ini configuration directives need to be ADDED to the config file.
 
@@ -113,13 +124,13 @@ See example.poppins.ini:
 
 ## WHAT HAS CHANGED?
 
-### MAJOR CHANGES
+### Major Changes
 
 * Directive "cross-filesystem-boundaries" is added to the rsync section. A warning is triggered when trying to cross mounted filesystem boundaries if this option is set to "no", which is the default. You must explicitly exclude these directories or set the option to "yes".
 * Notices are introduced. Less important messages (dir not clean, incomplete configuration, duplicate mysql config file) will be considered notices rather than warnings.
 * Post backup script added. May or not be run depending on a successful rsync run.
 
-### MINOR CHANGES
+### Minor Changes
 
 * Cleanup script added to remove old log files. See scripts directory.
 * Validation of trailing slashes in exluded/included sections for consistency.
@@ -148,7 +159,7 @@ DATE: 2016-07-01
 
 ## NEW FEATURES
 
-### INI FILE
+### Ini file
 
 The following ini configuration directives need to be ADDED to the config file.
 
@@ -185,14 +196,14 @@ The following directives need to be REMOVED:
     filesystem = 'BTRFS'
     ...
 
-### NEW CLI OPTIONS
+### New cli options
 
 The following cli options have been added:
 
 * --color: add colors to cli output
 * -t {tag}: add an optional tag to poppins log file
 
-### TAGGING
+### Tagging
 
 You may add a tag to a poppins run, e.g. a hash or timestamp:
 
@@ -210,7 +221,7 @@ In cron you can add a timestamp like so:
 
 ## WHAT HAS CHANGED?
 
-### MAJOR CHANGES
+### Major Changes
 
 * The "filesystem" directive in the [local] section was removed as it is too ambiguous. It is replaced by the "snapshot-backend" directive. Rotation logic is not necessarily related to filesystem.
 * Local rsync (no ssh connection) is supported, enabling you to schedule a backup on your local machine. E.g. using an external drive for backups.
@@ -219,7 +230,7 @@ In cron you can add a timestamp like so:
     * Illegal or potentially dangerous characters (such as '*') are not allowed.
     * Quotes in 'yes' and 'no' are deprecated. Do not use quotes in booleans.
 
-### MINOR CHANGES
+### Minor Changes
 
 * Allow unicode characters in the ini file.
 * Warn if host directories (e.g. rsync dir, archive dir, snapshot dirs, mysql dir) contain unknown (not configured) files/directories.

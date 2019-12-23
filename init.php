@@ -1,11 +1,11 @@
 #!/usr/bin/php
 <?php
-$_poppins_version = '0.4';
+$_poppins_version = '0.5';
 #####################################
 # LIB
 #####################################
 require_once('inc/lib.inc.php');
-##################################
+#####################################
 # SETTINGS
 #####################################
 // In Mary Poppins, Mary, Bert, and the children ride a merry-go-round, then leave
@@ -15,10 +15,25 @@ $Session = Session::get_instance();
 $Session->set('appname', 'Poppins');
 // set start time
 $Session->set('chrono.session.start', date('U'));
-// version
-$mercurial_version = trim(shell_exec('cd "'.dirname(__FILE__).'";hg parent --template "{rev}" 2>/dev/null;'));
-$mercurial_hash = trim(shell_exec('cd "'.dirname(__FILE__).'";hg id -i 2>/dev/null;'));
-$full_version = ($mercurial_version)? $_poppins_version.'.'.$mercurial_version.' '.$mercurial_hash:$_poppins_version.' (mercurial not available)';
+#####################################
+# VERSION
+#####################################
+// check if git is installed
+$git_installed = (!empty(trim(shell_exec('git --version 2>/dev/null;'))))? true:false;
+// display full version if git is installed
+if($git_installed)
+{
+    $git_commits = trim(shell_exec('cd "'.dirname(__FILE__).'"; git rev-list HEAD | wc -l 2>/dev/null;'));
+    $git_branch = trim(shell_exec('cd "'.dirname(__FILE__).'";git rev-parse --abbrev-ref HEAD 2>/dev/null;'));
+    $git_hash = trim(shell_exec('cd "'.dirname(__FILE__).'"; git rev-parse --short HEAD 2>/dev/null;'));
+    // full version
+    $full_version = $_poppins_version.'.'.$git_commits.' '.$git_branch.' '.$git_hash;
+}
+// display short version
+else
+{
+    $full_version = $_poppins_version.' (install git to display full version!)';
+}
 $Session->set('version', $full_version);
 // supported intervals
 $Session->set('intervals', ['incremental', 'minutely', 'hourly', 'daily', 'weekly', 'monthly', 'yearly']);
