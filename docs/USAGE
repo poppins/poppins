@@ -1,5 +1,3 @@
-Poppins documentation
-
 NAME
     poppins - backup script with incremental snapshots
 
@@ -30,5 +28,5 @@ OPTIONS
     -t {tag}
         Add a tag to the application log file.
 
-    -v
+    -v, --version
         Print Poppins version.
