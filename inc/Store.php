@@ -130,6 +130,19 @@ class Store
         return $this->stored;
     }
 
+//    /**
+//     * Generic function which unsets a value based on an index,
+//     * dotted string or array
+//     *
+//     * @param $index Unset the key (array or dotted string)
+//     * @return bool Success
+//     */
+//    // TODO
+//    public function unset($index)
+//    {
+//
+//    }
+
 }
 
 

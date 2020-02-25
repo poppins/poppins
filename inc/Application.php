@@ -201,7 +201,7 @@ class Application
         elseif($this->Options->is_set('h') || $this->Options->is_set('help'))
         {
             $content = [];
-            $content []= $this->Session->get('appname').' '.$this->Session->get('version');
+            $content []= $this->Session->get('appname').' '.$this->Session->get('version.git');
             $content []= '';
 
             // get documentation
@@ -215,7 +215,7 @@ class Application
         elseif($this->Options->is_set('v') || $this->Options->is_set('version'))
         {
             $content = [];
-            $content []= $this->Session->get('appname').' version '.$this->Session->get('version');
+            $content []= $this->Session->get('appname').' version '.$this->Session->get('version.git');
             $content []= '';
 
             // get license
@@ -240,7 +240,7 @@ class Application
         # TOP HEADER
         #####################################
         // add version and time to header
-        $this->out($this->Session->get('appname').' v'.$this->Session->get('version')." - SCRIPT STARTED " . date('Y-m-d H:i:s', $this->Session->get('chrono.session.start')), 'title');
+        $this->out($this->Session->get('appname').' v'.$this->Session->get('version.git')." - SCRIPT STARTED " . date('Y-m-d H:i:s', $this->Session->get('chrono.session.start')), 'title');
 
         // -n dry run
         if($this->Options->is_set('n'))
@@ -275,10 +275,10 @@ class Application
         $this->out('Check PHP version...');
 
         // full version e.g. 5.5.9-1ubuntu4.17
-        $this->Session->set('php.version.full', PHP_VERSION);
+        $this->Session->set('php.version.release', PHP_VERSION);
 
         // display version - debugging purposes
-        $this->out($this->Session->get('php.version.full'), 'simple-indent');
+        $this->out($this->Session->get('php.version.release'), 'simple-indent');
 
         // version id e.g. 505070
         $this->Session->set('php.version.id', PHP_VERSION_ID);
@@ -555,6 +555,17 @@ class Application
                     {
                         continue;
                     }
+
+                    //skip if directive is deprecated
+                    $deprecated = ['local.hostdir-create'];
+
+                    // TODO delete hostdir-create
+                    if (in_array($section['name'].'.'.$directive['name'], $deprecated))
+                    {
+                        $this->notice('Directive '.$section['name'].'.'.$directive['name'].' is deprecated.');
+                        continue;
+                    }
+
                     //check if section and directive is set
                     if($this->Config->is_set([$section['name'], $directive['name']]))
                     {
@@ -663,6 +674,7 @@ class Application
                         #####################################
                         # LIST
                         #####################################
+                        // different from allowed because it is not a single value, it is a list of values
                         if (isset($directive['validate']['list']))
                         {
                             $list = $directive['validate']['list'];
@@ -1888,7 +1900,7 @@ class Application
         $this->out("Session tagged as: $tag");
 
         //final header
-        $this->out($this->Session->get('appname').' v'.$this->Session->get('version'). " - SCRIPT ENDED " . date('Y-m-d H:i:s'), 'title');
+        $this->out($this->Session->get('appname').' v'.$this->Session->get('version.git'). " - SCRIPT ENDED " . date('Y-m-d H:i:s'), 'title');
         #####################################
         # COLORIZE OUTPUT
         #####################################
@@ -1973,7 +1985,7 @@ class Application
                         //append suffix in log
                         $m['logfile'] .= '.gz';
                     }
-                    $m['version'] = $this->Session->get('version');
+                    $m['version'] = $this->Session->get('version.git');
                     // add tag to entry
                     if($this->Options->is_set('t') && $this->Options->get('t'))
                     {

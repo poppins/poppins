@@ -1,6 +1,6 @@
 #!/usr/bin/php
 <?php
-$_poppins_version = '0.5';
+$base_version = '0.5';
 #####################################
 # LIB
 #####################################
@@ -27,34 +27,47 @@ if($git_installed)
     $git_branch = trim(shell_exec('cd "'.dirname(__FILE__).'";git rev-parse --abbrev-ref HEAD 2>/dev/null;'));
     $git_hash = trim(shell_exec('cd "'.dirname(__FILE__).'"; git rev-parse --short HEAD 2>/dev/null;'));
     // full version
-    $full_version = $_poppins_version.'.'.$git_commits.' '.$git_branch.' '.$git_hash;
+    $full_version = $base_version.'.'.$git_commits.' '.$git_branch.' '.$git_hash;
 }
 // display short version
 else
 {
-    $full_version = $_poppins_version.' (install git to display full version!)';
+    $full_version = $base_version.' (install git to display full version!)';
 }
-$Session->set('version', $full_version);
+$Session->set('version.base', $base_version);
+$Session->set('version.git', $full_version);
 // supported intervals
 $Session->set('intervals', ['incremental', 'minutely', 'hourly', 'daily', 'weekly', 'monthly', 'yearly']);
-#####################################
-# APPLICATION
-#####################################
-$App = new Application();
-$App->init();
-#####################################
-# BACKUPS
-#####################################
-//initiate
-$c = BackupFactory::create($App);
-$c->init();
-#####################################
-# ROTATE
-#####################################
-//initiate
-$c = RotatorFactory::create($App);
-$c->init();
-#####################################
-# END
-#####################################
-$App->quit();
+
+// Generate a conf file
+if(isset($argv[1]) && $argv[1] == 'new')
+{
+    // initiate the configurator
+    $ConfigGenerator = new ConfigGenerator();
+    $ConfigGenerator->init();
+}
+// Poppins backups
+else
+{
+    #####################################
+    # APPLICATION
+    #####################################
+    $App = new Application();
+    $App->init();
+    #####################################
+    # BACKUPS
+    #####################################
+    //initiate
+    $c = BackupFactory::create($App);
+    $c->init();
+    #####################################
+    # ROTATE
+    #####################################
+    //initiate
+    $c = RotatorFactory::create($App);
+    $c->init();
+    #####################################
+    # END
+    #####################################
+    $App->quit();
+}
