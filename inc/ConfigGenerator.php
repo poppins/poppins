@@ -178,7 +178,7 @@ class ConfigGenerator
         #####################################
         $message = $this->get_message('poppins-intro');
 
-        $continue = $this->Dialog->yesno($message, 'Poppins v'.$this->Session->get('version.base'));
+        $continue = $this->Dialog->yesno($message, 'Poppins v'.$this->Session->get('version.base'), true, ['yes'=>'Continue', 'no'=>'Abort']);
 
         // abort
         if (!$continue)
@@ -352,7 +352,7 @@ class ConfigGenerator
 
                         if(!$enable_includes)
                         {
-                            continue;
+                            break;
                         }
 
                         $included_db = [];
@@ -582,8 +582,14 @@ class ConfigGenerator
                         continue 2;
                         break;
                     case 'remote.port':
+                    case 'remote.retry-count':
+                    case 'remote.retry-timeout':
+                    case 'remote.host':
+                    case 'remote.user':
                         if (!$this->Config->get('remote.ssh'))
                         {
+//                             $value = '';
+//                             $this->Config->set($composed_index, $value);
                             continue 2;
                         }
                         break;
