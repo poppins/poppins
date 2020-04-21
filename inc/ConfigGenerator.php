@@ -724,7 +724,20 @@ class ConfigGenerator
         #####################################
         # WRITE CONFIG
         #####################################
-        $file_path = '~/poppins.d/config/'.$this->Config->get('remote.host').'.poppins.ini';
+        foreach(['remote.host', 'local.hostdir-name'] as $name)
+        {
+            if(!empty($this->Config->get($name))) 
+            {
+                $file_name = $this->Config->get($name);
+                break;
+            }
+            else
+            {
+                $file_name = 'remote_host';
+            }
+        }
+        
+        $file_path = '~/poppins.d/config/'.$file_name.'.poppins.ini';
         $file_path = $this->Dialog->inputbox('Config file will be written. Please provide a path:', 'output', $file_path);
 
         $file_contents = [];
