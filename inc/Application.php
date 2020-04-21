@@ -521,9 +521,12 @@ class Application
         # CHECK REMOTE HOST
         #####################################
         //check remote host - no need to get any further if not configured
-        if ($this->Config->get('remote.host') == '')
+        if ($this->Config->get('remote.ssh'))
         {
-            $this->fail("Remote host is not configured!");
+            if ($this->Config->get('remote.host') == '')
+            {
+                $this->fail("Remote host is not configured!");
+            }
         }
 
         #####################################
