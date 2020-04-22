@@ -39,35 +39,51 @@ $Session->set('version.git', $full_version);
 // supported intervals
 $Session->set('intervals', ['incremental', 'minutely', 'hourly', 'daily', 'weekly', 'monthly', 'yearly']);
 
-// Generate a conf file
-if(isset($argv[1]) && $argv[1] == 'new')
+// switch based on poppins arguments
+$first_argument = (isset($argv[1]))? $argv[1]:'';
+switch($first_argument)
 {
-    // initiate the configurator
-    $ConfigGenerator = new ConfigGenerator();
-    $ConfigGenerator->init();
+    // initiate the config generator
+    case 'new':
+    case 'generate':
+        $ConfigGenerator = new ConfigGenerator();
+        $ConfigGenerator->init();
+        break;
+    // update Poppins
+    case 'up':
+    case 'update':
+        if($git_installed)
+        {
+            shell_exec('cd "'.dirname(__FILE__).'"; git pull origin '.$git_branch.'; cd -');
+        }
+        else
+        {
+            echo "Git not installed.\n";
+        }
+        break;
+    // Poppins backups
+    default:
+        #####################################
+        # APPLICATION
+        #####################################
+        $App = new Application();
+        $App->init();
+        #####################################
+        # BACKUPS
+        #####################################
+        //initiate
+        $c = BackupFactory::create($App);
+        $c->init();
+        #####################################
+        # ROTATE
+        #####################################
+        //initiate
+        $c = RotatorFactory::create($App);
+        $c->init();
+        #####################################
+        # END
+        #####################################
+        $App->quit();
 }
-// Poppins backups
-else
-{
-    #####################################
-    # APPLICATION
-    #####################################
-    $App = new Application();
-    $App->init();
-    #####################################
-    # BACKUPS
-    #####################################
-    //initiate
-    $c = BackupFactory::create($App);
-    $c->init();
-    #####################################
-    # ROTATE
-    #####################################
-    //initiate
-    $c = RotatorFactory::create($App);
-    $c->init();
-    #####################################
-    # END
-    #####################################
-    $App->quit();
-}
+
+
