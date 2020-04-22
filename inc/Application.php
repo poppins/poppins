@@ -528,6 +528,24 @@ class Application
                 $this->fail("Remote host is not configured!");
             }
         }
+        else
+        {
+            // no need to set the remote host if ssh not enabled. it's only confusing.
+            if ($this->Config->get('remote.host') != '')
+            {
+                $this->notice("Remote host is configured. However, ssh connection is disabled.");
+            }
+            // get the hostname of the localhost
+            $hostname =  $this->Session->get('local.hostname');
+            if(!empty($hostname))
+            {
+                $this->Config->set('remote.host', $hostname);
+            }
+            else
+            {
+                $this->Config->set('remote.host', 'localhost');
+            }
+        }
 
         #####################################
         # VALIDATE BASED ON INI FILE
