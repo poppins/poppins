@@ -23,8 +23,15 @@ $git_installed = (!empty(trim(shell_exec('git --version 2>/dev/null;'))))? true:
 // display full version if git is installed
 if($git_installed)
 {
+    # output the number of commits
     $git_commits = trim(shell_exec('cd "'.dirname(__FILE__).'"; git rev-list HEAD | wc -l 2>/dev/null;'));
+
+    # git branch
     $git_branch = trim(shell_exec('cd "'.dirname(__FILE__).'";git rev-parse --abbrev-ref HEAD 2>/dev/null;'));
+    # do not output in case dettached head
+    $git_branch = ($git_branch == 'HEAD')? '---':$git_branch;
+
+    # the commit hash
     $git_hash = trim(shell_exec('cd "'.dirname(__FILE__).'"; git rev-parse --short HEAD 2>/dev/null;'));
     // full version
     $full_version = $_poppins_version.'.'.$git_commits.' '.$git_branch.' '.$git_hash;
