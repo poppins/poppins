@@ -875,8 +875,10 @@ class Backup
             //slashes are protected by -s option in rsync
             $source_dir = stripslashes($source_dir);
             $target_dir = stripslashes($target_dir);
+	    // if working over SSH, stick "user@host:" in the front of the source
             $ssh_connection = ($this->Config->get('remote.ssh'))? $this->Config->get('remote.user') . "@" . $this->Config->get('remote.host'):'';
             $rsync_seperator = ($this->Config->get('remote.ssh'))? ':':'';
+
             // the rsync command
             $cmd = "rsync $rsync_options $excluded " .$ssh_connection. $rsync_seperator. "\"$source_dir\" '$target_dir' 2>&1";
             $this->App->out($cmd);

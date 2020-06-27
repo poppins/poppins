@@ -48,6 +48,12 @@
           "validate":{}
         },
         {
+          "name":"ipv6",
+          "depends":"remote.ssh",
+          "default":false,
+          "validate":{"boolean":"error"}
+        },
+        {
           "name":"user",
           "depends":"remote.ssh",
           "default":"",

@@ -1052,6 +1052,34 @@ class Application
         $DirectoryStructure->setup_log_dir();
 
         #####################################
+        # HANDLE IPV6 ADRESSES
+        #####################################
+
+        if ( $this->Config->get('remote.ipv6') === true){
+
+            $HostAndInterfaceArray = explode('%', $this->Config->Get('remote.host'));
+            $HostWithoutInterface = $HostAndInterfaceArray[0];
+            $InterfaceArraySize = count($HostAndInterfaceArray);
+
+            // test if remote host could be specified as an ipv address (punctuation is illegal in host names as per RFC 1123
+            if (strpos($HostWithoutInterface, ':')){
+                if ( filter_var( $HostWithoutInterface, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+                    // user has set a valid ipv6 address as remote host.
+                    // is it link-local?
+                    if ( preg_match("/^fe80::/", $HostWithoutInterface )){
+                        // link local. needs interface name. did the user set it?
+                        if ( $InterfaceArraySize != 2 ){
+                            $this->fail('Remote host error: you are using a link-local ipv6 address without network interface. The notation is: <address>%<interface> eg: fe80::1234:abcd:00c0:ffee%eth0');
+                        }
+                    }
+                } else {
+                    // ipv6 failed to validate for other reasons than not specifying the interface name with it
+                    $this->fail('Remote host error: name contains colons but did not validate as an ipv6 address');
+                }
+            }
+        }
+
+        #####################################
         # SET SSH CONNECTION
         #####################################
         //set remote user - must be set in any case (fdisk check)
@@ -1065,7 +1093,8 @@ class Application
             // ssh options
             $ssh_port  = ($this->Config->get('remote.port'))? $this->Config->get('remote.port'):22;
 
-            $this->Session->Set('ssh.options', "-p $ssh_port -o BatchMode=yes -o ConnectTimeout=15 -o TCPKeepAlive=yes -o ServerAliveInterval=30");
+            $ssh_ipv6=$this->Config->get('remote.ipv6')?  '-6': '';
+            $this->Session->Set('ssh.options', "$ssh_ipv6 -p $ssh_port -o BatchMode=yes -o ConnectTimeout=15 -o TCPKeepAlive=yes -o ServerAliveInterval=30");
             $this->out('Check remote parameters...');
 
             //first ssh attempt
