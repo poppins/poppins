@@ -46,7 +46,7 @@ elseif (is_file(dirname(__FILE__).'/version.txt'))
     $lines = file(dirname(__FILE__).'/version.txt');
     
     # first line of file
-    $full_version = trim($lines[0]).' static';
+    $full_version = trim($lines[0]).' release/alpha';
 }
 // display short version
 else
