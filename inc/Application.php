@@ -1998,7 +1998,7 @@ class Application
                 }
                 else
                 {
-                    $success = file_put_contents($logfile_host, implode($this->messages, "\n")."\n");
+                    $success = file_put_contents($logfile_host, implode("\n", $this->messages)."\n");
                     if (!$success)
                     {
                         $content []= 'WARNING! Cannot write to host logfile. Write protected?';
