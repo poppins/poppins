@@ -87,7 +87,7 @@ class Application
         }
 
         // end the application
-        die($error_code);
+        exit($error_code);
     }
 
     /**
@@ -2059,7 +2059,10 @@ class Application
         //last newline
         $content [] = "";
         //output
-        exit(implode("\n", $content));
+        print(implode("\n", $content));
+
+        $exit_code = ($exit_status == 'error')? 1:0;
+        exit($exit_code);
     }
 
     /**
