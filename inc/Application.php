@@ -1171,7 +1171,7 @@ class Application
             }
             // noting to do, exit
             if (!count($config_files)) {
-                $this->fail('Cannot find any mysql config files...');
+                $this->fail('Cannot find any mysql config file of pattern .my.cnf*...');
             }
 
             #####################################
