@@ -501,8 +501,8 @@ class Backup
                 #####################################
                 # BACKUP LVM LAYOUT
                 #####################################
-                $check_lvm_installed = $this->Cmd->exe("'which pvscan 2>&1 >/dev/null && echo TRUE'", true);
-                if ($check_lvm_installed == 'TRUE')
+                $check_lvm_output = $this->Cmd->exe("'lvdisplay 2>/dev/null'", true);
+                if ($check_lvm_output != '')
                 {
 		    $vgs=$this->Cmd->Exe("vgs -o name --noheadings", true);
 		    $vgs=explode("\n", $vgs);
