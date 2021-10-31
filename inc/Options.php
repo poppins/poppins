@@ -8,9 +8,10 @@
  */
 
 //require parent class
-require_once(dirname(__FILE__).'/Store.php');
+require_once dirname(__FILE__) . '/Store.php';
 
 /**
  * Class Options contains all cli options
  */
-class Options extends Store{}
+class Options extends Store
+{}

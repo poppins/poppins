@@ -7,7 +7,6 @@
  * @author     Bruno Dooms, Frank Van Damme
  */
 
-
 /**
  * Class Cmd is used to execute shell commands locally or remotely. These may vary
  * according to a specific operating system.
@@ -18,7 +17,7 @@ class Cmd
     public $commands = [];
 
     public $exit_code = [];
-    
+
     public $output = '';
 
     // Config class
@@ -33,7 +32,7 @@ class Cmd
     /**
      * Cmd constructor.
      */
-    function __construct()
+    public function __construct()
     {
         $this->map = $this->map();
 
@@ -58,13 +57,12 @@ class Cmd
      * @param bool $remote Execute on remote host?
      * @return string The output of the command
      */
-    function exe($cmd = false, $remote = false)
+    public function exe($cmd = false, $remote = false)
     {
         // trim command
         $cmd = trim($cmd);
         // check if there is a command
-        if(!$cmd || $cmd == '')
-        {
+        if (!$cmd || $cmd == '') {
             return;
         }
 
@@ -73,13 +71,11 @@ class Cmd
         #####################################
         # Start validate
         #foreach(['rm -f /backups/poppins/server/vub-vm-02.priorweb.be/rsync.zfs/mysql/default/*', 'rm -f /home/brdooms/poppins.d/hosts/localhost/rsync.dir/meta/* 2>/dev/null', 'rm -rf /* ; ecokm.sh', '/bin/rm -rf /*', 'rm -rf //*', 'rm -r -f /*', 'rm -rf -d //*', 'rm -rf ////', 'rm /*', 'rm -r /', '/foo/bar.sh -xyz'] as $cmd)
-        if (true)
-        {
+        if (true) {
             //debugging
             # print "\n $cmd - ";
             $pattern = '|([^a-z]\/)?rm (\-[a-z]+ )*\/+\*?( *; *[^ ]*)?$|';
-            if (preg_match($pattern, $cmd))
-            {
+            if (preg_match($pattern, $cmd)) {
                 // debugging
                 # print ' match % '; continue;
                 print "\n";
@@ -90,36 +86,31 @@ class Cmd
         }
         # End validate
         //check if command is run on remote host
-        if($remote)
-        {
+        if ($remote) {
             //run cmd over ssh
-            if ($this->Config->get('remote.ssh'))
-            {
+            if ($this->Config->get('remote.ssh')) {
                 $host = $this->Config->get('remote.host');
                 $user = $this->Config->get('remote.user');
                 $sshopts = $this->Session->Get('ssh.options');
                 $cmd = "ssh $sshopts $user@$host $cmd";
             }
             // run on localhost (no ssh mode)
-            else
-            {
+            else {
                 $cmd = "eval $cmd";
             }
         }
 
         //check if parsing is needed
-        foreach (array_keys($this->map) as $c)
-        {
-            if (preg_match('/' . $c . '/', $c))
-            {
-               $cmd = $this->parse($cmd);
+        foreach (array_keys($this->map) as $c) {
+            if (preg_match('/' . $c . '/', $c)) {
+                $cmd = $this->parse($cmd);
             }
         }
 
         //store command
         $this->cmd = $cmd;
-        $this->commands []= $cmd;
-        
+        $this->commands[] = $cmd;
+
         //redirect error to standard
         exec("$cmd", $output, $status);
 
@@ -127,7 +118,7 @@ class Cmd
 
         //output is an array, we want a string
         $this->output = implode("\n", $output);
-               
+
         return $this->output;
     }
 
@@ -140,7 +131,7 @@ class Cmd
     {
         //if all is well, 0 is returned, else e.g. 127
         //we may consider to put other exit codes in the array besides 0
-        return (boolean)(!in_array($this->exit_status, [0]));
+        return (boolean) (!in_array($this->exit_status, [0]));
     }
 
     /**
@@ -150,7 +141,7 @@ class Cmd
      * @param $cmd The command to be executed
      * @return mixed The command
      */
-    function parse($cmd)
+    public function parse($cmd)
     {
         $map = $this->map;
         $search = array_keys($map);
@@ -160,6 +151,3 @@ class Cmd
     }
 
 }
-
-
-

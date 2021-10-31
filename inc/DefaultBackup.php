@@ -8,7 +8,7 @@
  * @author     Bruno Dooms, Frank Van Damme
  */
 
-require_once dirname(__FILE__).'/Backup.php';
+require_once dirname(__FILE__) . '/Backup.php';
 
 /**
  * Class DefaultBackup based on default filesystem (hardlink rotation)

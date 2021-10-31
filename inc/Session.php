@@ -8,9 +8,10 @@
  */
 
 //require parent class
-require_once(dirname(__FILE__).'/Store.php');
+require_once dirname(__FILE__) . '/Store.php';
 
 /**
  * Class Sessions contains application session variables
  */
-class Session extends Store{}
+class Session extends Store
+{}

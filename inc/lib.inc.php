@@ -35,11 +35,9 @@ function d($s = '')
 #####################################
 //scan all files and require them
 $files = scandir(dirname(__FILE__));
-foreach($files as $file)
-{
-    if (preg_match('/.php$/', $file))
-    {
+foreach ($files as $file) {
+    if (preg_match('/.php$/', $file)) {
         require_once $file;
     }
-  
+
 }

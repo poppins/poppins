@@ -8,8 +8,7 @@
  * @author     Bruno Dooms, Frank Van Damme
  */
 
-require_once dirname(__FILE__).'/Rotator.php';
-
+require_once dirname(__FILE__) . '/Rotator.php';
 
 /**
  * Class Rotator contains functions that will handle rotation based on hardlinks,
@@ -25,7 +24,7 @@ class ZfsRotator extends Rotator
      * @param $parent The parent directory
      * @return string The command
      */
-    function add($dir, $parent)
+    public function add($dir, $parent)
     {
         $rsync_dir = preg_replace('/^\//', '', $this->rsync_dir);
         $cmd = "zfs snapshot $rsync_dir@$parent-$dir";
@@ -36,13 +35,12 @@ class ZfsRotator extends Rotator
     /**
      * Wrap up the action
      */
-    function finalize()
+    public function finalize()
     {
         //create a symlink to .zfs
-        if(file_exists($this->rsync_dir.'/.zfs/snapshot') && !file_exists($this->Config->get('local.hostdir').'/archive'))
-        {
+        if (file_exists($this->rsync_dir . '/.zfs/snapshot') && !file_exists($this->Config->get('local.hostdir') . '/archive')) {
             $this->App->out("Create an archive dir symlink to zfs snapshots...");
-            $cmd = 'ln -s '.$this->rsync_dir.'/.zfs/snapshot '.$this->Config->get('local.hostdir').'/archive';
+            $cmd = 'ln -s ' . $this->rsync_dir . '/.zfs/snapshot ' . $this->Config->get('local.hostdir') . '/archive';
             $this->Cmd->exe("$cmd");
 
         }
@@ -55,7 +53,7 @@ class ZfsRotator extends Rotator
      * @param $type  The parent directory
      * @return string The command
      */
-    function remove($snapshot, $type)
+    public function remove($snapshot, $type)
     {
         $rsync_dir = preg_replace('/^\//', '', $this->rsync_dir);
         $cmd = "zfs destroy $rsync_dir@$snapshot";
@@ -67,7 +65,7 @@ class ZfsRotator extends Rotator
      * Prepare the rotation
      * Check archive dir
      */
-    function create()
+    public function create()
     {
         $this->App->out('No archive directories to create..');
     }

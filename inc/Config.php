@@ -8,9 +8,10 @@
  */
 
 //require parent class
-require_once(dirname(__FILE__).'/Store.php');
+require_once dirname(__FILE__) . '/Store.php';
 
 /**
  * Class Config contains all ini file directives
  */
-class Config extends Store{}
+class Config extends Store
+{}

@@ -7,16 +7,15 @@
  * @author     Bruno Dooms, Frank Van Damme
  */
 
-
 /**
  * Class Backup contains functions used to backup files and directories,
  * metadata and mysql databses.
  */
-require_once dirname(__FILE__).'/Backup.php';
+require_once dirname(__FILE__) . '/Backup.php';
 
 /**
-* Class ZfsBackup based on zfs filesystem (zfs snapshots)
-*/
+ * Class ZfsBackup based on zfs filesystem (zfs snapshots)
+ */
 class ZfsBackup extends Backup
 {
 

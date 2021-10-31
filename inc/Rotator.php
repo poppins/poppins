@@ -28,11 +28,11 @@ class Rotator
     // validate the archive dir
     protected $validate;
 
-        /**
+    /**
      * Rotator constructor.
      * @param $App Application class
      */
-    function __construct($App)
+    public function __construct($App)
     {
         $this->App = $App;
 
@@ -68,12 +68,11 @@ class Rotator
      * Compare datestamps
      * Check archives
      */
-    function init()
+    public function init()
     {
         $this->App->out('Rotate snapshots', 'header');
         //dry run?
-        if($this->Options->is_set('n'))
-        {
+        if ($this->Options->is_set('n')) {
             $this->App->out('DRY RUN!');
             return;
         }
@@ -89,16 +88,14 @@ class Rotator
         $arch1 = $arch2 = $this->map();
 
         #####################################
-        # SORT DATA 
+        # SORT DATA
         #####################################
-        foreach ($arch2 as $type => $snapshots)
-        {
+        foreach ($arch2 as $type => $snapshots) {
             //initiate base and end
             $base[$type] = '';
             $end[$type] = '';
             //set if archives
-            if (count($arch2[$type]))
-            {
+            if (count($arch2[$type])) {
                 asort($arch2[$type]);
                 $base[$type] = $arch2[$type][0];
                 $end[$type] = (end($arch2[$type]));
@@ -108,31 +105,23 @@ class Rotator
         #####################################
         # COMPARE DATESTAMPS
         #####################################
-        foreach ($arch2 as $type => $snapshots)
-        {
-            
+        foreach ($arch2 as $type => $snapshots) {
+
             //no datestamp comparison needed
-            if ($type == 'incremental')
-            {
-                $arch2[$type] [] = $this->new_dir;
+            if ($type == 'incremental') {
+                $arch2[$type][] = $this->new_dir;
             }
             //datestamp comparison
-            else
-            {
-                if ($end[$type])
-                {
+            else {
+                if ($end[$type]) {
                     //validate
-                    if (!preg_match("/[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{6}/", $end[$type], $m))
-                    {
+                    if (!preg_match("/[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{6}/", $end[$type], $m)) {
                         $this->App->fail("Wrong dirstamp format found, cannot continue!");
-                    }
-                    else
-                    {
+                    } else {
                         //directory timestamp
                         $ddatestamp = $m[0];
 
-                        if($ddatestamp == '')
-                        {
+                        if ($ddatestamp == '') {
                             $this->App->fail('Rotation datestamp empty!');
                         }
 
@@ -140,32 +129,25 @@ class Rotator
                         $cdatestamp2unix = $this->to_time($this->Session->get('rsync.cdatestamp'));
                         $ddatestamp2unix = $this->to_time($ddatestamp);
                         //in theory this is not possible, check it anyway - testing purposes
-                        if ($cdatestamp2unix < $ddatestamp2unix)
-                        {
+                        if ($cdatestamp2unix < $ddatestamp2unix) {
                             $this->App->fail('Cannot continue. Newer dir found: ' . $ddatestamp);
-                        }
-                        else
-                        {
+                        } else {
                             $diff = $cdatestamp2unix - $ddatestamp2unix;
-                            if ($this->time_exceed($diff, $type))
-                            {
-                                $arch2[$type] [] = $this->new_dir;
+                            if ($this->time_exceed($diff, $type)) {
+                                $arch2[$type][] = $this->new_dir;
                             }
                         }
                     }
-                }
-                else
-                {
-                    $arch2[$type] [] = $this->new_dir;
+                } else {
+                    $arch2[$type][] = $this->new_dir;
                 }
             }
         }
         #####################################
         # SLICE
         #####################################
-        //check how many dirs are desired 
-        foreach ($arch2 as $type => $snapshots)
-        {
+        //check how many dirs are desired
+        foreach ($arch2 as $type => $snapshots) {
             $n = $this->Config->get(['snapshots', $type]);
             $arch2[$type] = array_slice($arch2[$type], -$n, $n);
         }
@@ -179,35 +161,24 @@ class Rotator
         $actions['remove'] = [];
 
         //rotation
-        foreach ($arch2 as $type => $snapshots)
-        {
-            if (count($snapshots))
-            {
-                foreach ($snapshots as $snapshot)
-                {
+        foreach ($arch2 as $type => $snapshots) {
+            if (count($snapshots)) {
+                foreach ($snapshots as $snapshot) {
                     $actions['remove'][$type] = array_diff($arch1[$type], $arch2[$type]);
                     $actions['add'][$type] = array_diff($arch2[$type], $arch1[$type]);
                 }
-            }
-            else
-            {
+            } else {
                 $actions['remove'][$type] = $arch1[$type];
             }
         }
 
-        //determine actions to take 
-        foreach (array_keys($actions) as $action)
-        {
-            if (count($actions[$action]))
-            {
-                foreach ($actions[$action] as $type => $snapshots)
-                {
-                    if (count($snapshots))
-                    {
-                        foreach ($snapshots as $snapshot)
-                        {
-                            switch ($action)
-                            {
+        //determine actions to take
+        foreach (array_keys($actions) as $action) {
+            if (count($actions[$action])) {
+                foreach ($actions[$action] as $type => $snapshots) {
+                    if (count($snapshots)) {
+                        foreach ($snapshots as $snapshot) {
+                            switch ($action) {
                                 case 'add':
                                     $message = "Add $snapshot to $type...";
                                     break;
@@ -218,9 +189,8 @@ class Rotator
                             $this->App->out($message, 'indent');
                             $this->$action($snapshot, $type);
                             //check if command returned ok
-                            if($this->Cmd->is_error())
-                            {
-                                $this->App->fail('Cannot rotate snapshot "'.$snapshot.'". Command failed! Action: '.$action.' Type: '.$type);
+                            if ($this->Cmd->is_error()) {
+                                $this->App->fail('Cannot rotate snapshot "' . $snapshot . '". Command failed! Action: ' . $action . ' Type: ' . $type);
                             }
                         }
                     }
@@ -236,7 +206,7 @@ class Rotator
         #####################################
         # LIST ARCHIVES
         #####################################
-        $this->App->out('List snapshots ('.$this->Config->get('local.snapshot-backend').')', 'header');
+        $this->App->out('List snapshots (' . $this->Config->get('local.snapshot-backend') . ')', 'header');
         $this->App->out('Check archive directory...');
 
         // list the the snapshots in the output
@@ -244,13 +214,11 @@ class Rotator
         $this->App->out();
 
         // output
-        foreach($this->map() as $type => $snapshots)
-        {
+        foreach ($this->map() as $type => $snapshots) {
             $this->App->out($type);
             // sort reverse order
             krsort($snapshots);
-            foreach($snapshots as $snapshot)
-            {
+            foreach ($snapshots as $snapshot) {
                 $this->App->out($snapshot, 'indent');
             }
         }
@@ -261,27 +229,25 @@ class Rotator
     /**
      * Wrap up the action
      */
-    function finalize()
+    public function finalize()
     {
-	    return;
+        return;
     }
 
     /**
      * Prepare the rotation
      * Check archive dir
      */
-    function create()
+    public function create()
     {
         #####################################
         # CHECK ARCHIVE DIR
         #####################################
         $this->App->out('Create hostdir subdirectories...');
         //validate dir
-        foreach (['archive'] as $d)
-        {
+        foreach (['archive'] as $d) {
             $dd = $this->Config->get('local.hostdir') . '/' . $d;
-            if (!is_dir($dd))
-            {
+            if (!is_dir($dd)) {
                 $this->App->out('Create subdirectory ' . $dd . '...');
                 $this->Cmd->exe("mkdir -p " . $dd);
             }
@@ -291,11 +257,9 @@ class Rotator
         #####################################
         $this->App->out('Create archive subdirectories...');
         //validate dir
-        foreach (array_keys($this->Config->get('snapshots')) as $d)
-        {
+        foreach (array_keys($this->Config->get('snapshots')) as $d) {
             $dd = $this->archive_dir . '/' . $d;
-            if (!is_dir($dd))
-            {
+            if (!is_dir($dd)) {
                 $this->App->out('Create subdirectory ' . $dd . '...');
                 $this->Cmd->exe("mkdir -p " . $dd);
             }
@@ -307,7 +271,7 @@ class Rotator
      *
      * @return mixed
      */
-    function map()
+    public function map()
     {
 
         // construct
@@ -317,8 +281,7 @@ class Rotator
         // do not validate more than once
         $this->validate = false;
 
-        foreach($ArchiveMapper->get_messages() as $message)
-        {
+        foreach ($ArchiveMapper->get_messages() as $message) {
             $this->App->notice($message);
         }
 
@@ -333,14 +296,13 @@ class Rotator
      * @param string $format The format: unix or date
      * @return string The formatted string
      */
-    function to_time($stamp, $format = 'unix')
+    public function to_time($stamp, $format = 'unix')
     {
         $t = explode('_', $stamp);
         $date = $t[0];
         $time = implode(':', str_split($t[1], 2));
         $datetime = $date . ' ' . $time;
-        switch ($format)
-        {
+        switch ($format) {
             case 'unix':
                 $result = strtotime($datetime);
                 break;
@@ -359,23 +321,21 @@ class Rotator
      * @param $snapshot The snapshot directory, e.g. 1-daily
      * @return bool Check if time has exceeded or not
      */
-    function time_exceed($diff, $snapshot)
+    public function time_exceed($diff, $snapshot)
     {
         //parse type
         $a = explode('-', $snapshot);
         $offset = (integer) $a[0];
         $interval = $a[1];
         //validate
-        if (!in_array($interval, $this->Session->get('intervals')))
-        {
+        if (!in_array($interval, $this->Session->get('intervals'))) {
             $this->App->fail('Interval not supported!');
         }
         //check if integer, else fail!
-        if (!is_integer($diff))
-        {
+        if (!is_integer($diff)) {
             $this->App->fail('Cannot compare dates if no integer!');
         }
-        
+
         //seconds
         $seconds['minutely'] = 60;
         $seconds['hourly'] = 60 * 60;
@@ -383,7 +343,7 @@ class Rotator
         $seconds['weekly'] = $seconds['daily'] * 7;
         $seconds['monthly'] = $seconds['daily'] * 30;
         $seconds['yearly'] = $seconds['daily'] * 365;
-        return (boolean) ($diff >= ($seconds[$interval]*$offset));
+        return (boolean) ($diff >= ($seconds[$interval] * $offset));
     }
 
 }

@@ -8,7 +8,7 @@
  */
 
 //require parent class
-require_once(dirname(__FILE__).'/Parser.php');
+require_once dirname(__FILE__) . '/Parser.php';
 
 /**
  * Class PathBasedParser
@@ -23,21 +23,18 @@ class PathBasedParser extends Parser
      * @param string $default Default value is empty unless otherwise
      * @return string Value stored in array
      */
-    function get($index, $default = '')
+    public function get($index, $default = '')
     {
         //if no dotes, return index
-        if(!preg_match('/\./', $index))
-        {
+        if (!preg_match('/\./', $index)) {
             return $this->Store->stored()[$index];
         }
 
         $current = $this->Store->stored();
         $p = strtok($index, '.');
 
-        while ($p !== false)
-        {
-            if (!isset($current[$p]))
-            {
+        while ($p !== false) {
+            if (!isset($current[$p])) {
                 return $default;
             }
             $current = $current[$p];
@@ -53,11 +50,10 @@ class PathBasedParser extends Parser
      * @param string $index The index (dotted notation)
      * @return bool Is set or not?
      */
-    function is_set($index)
+    public function is_set($index)
     {
         //if no dotes, return index
-        if(!preg_match('/\./', $index))
-        {
+        if (!preg_match('/\./', $index)) {
             return isset($this->Store->stored()[$index]);
         }
 
@@ -65,10 +61,8 @@ class PathBasedParser extends Parser
         $current = $this->Store->stored();
         $p = strtok($index, '.');
 
-        while ($p !== false)
-        {
-            if (!isset($current[$p]))
-            {
+        while ($p !== false) {
+            if (!isset($current[$p])) {
                 return false;
             }
             $current = $current[$p];
@@ -85,7 +79,7 @@ class PathBasedParser extends Parser
      * @param $value The value to be set
      * @return boolean Return true if successful
      */
-    function set($index, $value)
+    public function set($index, $value)
     {
         $index = explode('.', $index);
 

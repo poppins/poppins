@@ -7,7 +7,6 @@
  * @author     Bruno Dooms, Frank Van Damme
  */
 
-
 /**
  * Class ArchiveMapper.
  */
@@ -23,7 +22,7 @@ class ArchiveMapper
 
     protected $validate;
 
-    function __construct($App)
+    public function __construct($App)
     {
         $this->App = $App;
 
@@ -52,14 +51,13 @@ class ArchiveMapper
     /**
      * @param bool $validate Validate the snapshot dir
      */
-    function init($validate = true)
+    public function init($validate = true)
     {
         // validate the arch dir
         $this->validate = $validate;
 
         // get listing
-        foreach($this->get_archive_dirs() as $dir)
-        {
+        foreach ($this->get_archive_dirs() as $dir) {
             // add dir to snapshots
             $this->snapshots[$dir] = [];
 
@@ -67,31 +65,25 @@ class ArchiveMapper
             $unclean_files = [];
 
             // iterate through all snapshots
-            foreach (scandir($dir) as $file_found)
-            {
+            foreach (scandir($dir) as $file_found) {
                 $regex = $this->snapshot_regex();
 
                 // check end
-                if (preg_match("/$regex/", $file_found))
-                {
+                if (preg_match("/$regex/", $file_found)) {
                     // add to whitelist
-                    $this->snapshots[$dir] []= $file_found;
+                    $this->snapshots[$dir][] = $file_found;
                 }
                 // ignore dot
-                elseif(!in_array($file_found, ['.', '..']) && !preg_match('/^_/', $file_found))
-                {
-                    $unclean_files [$file_found] = filetype($dir.'/'.$file_found);
+                elseif (!in_array($file_found, ['.', '..']) && !preg_match('/^_/', $file_found)) {
+                    $unclean_files[$file_found] = filetype($dir . '/' . $file_found);
                 }
             }
 
             // warn if unclean file
-            if($this->validate)
-            {
-                if (count($unclean_files))
-                {
-                    foreach ($unclean_files as $file => $type)
-                    {
-                        $this->messages [] = "Archive (snapshot) subdirectory $dir not clean, unknown $type '$file'. Remove or rename to '_$file'..";
+            if ($this->validate) {
+                if (count($unclean_files)) {
+                    foreach ($unclean_files as $file => $type) {
+                        $this->messages[] = "Archive (snapshot) subdirectory $dir not clean, unknown $type '$file'. Remove or rename to '_$file'..";
                     }
                 }
             }
@@ -104,24 +96,22 @@ class ArchiveMapper
      * @param $validate Validate if unknown files or directories
      * @return array The directories
      */
-    function get_archive_dirs()
+    public function get_archive_dirs()
     {
         // dirs
         $dirs = [];
 
         //  get the types e.g. incremental, 10-minutely, etc
-        foreach (array_keys($this->Config->get('snapshots')) as $sub_dir)
-        {
+        foreach (array_keys($this->Config->get('snapshots')) as $sub_dir) {
             // base archive dir
             $base_dir = $this->Config->get('local.hostdir') . '/archive';
 
             // full path
             $dir = $base_dir . '/' . $sub_dir;
 
-            if(is_dir($dir))
-            {
+            if (is_dir($dir)) {
                 // get all snapshots from certain type e.g. incrementals
-                $dirs []= $dir;
+                $dirs[] = $dir;
             }
 
         }
@@ -129,7 +119,7 @@ class ArchiveMapper
         return $dirs;
     }
 
-    function get_messages()
+    public function get_messages()
     {
         return $this->messages;
     }
@@ -139,12 +129,11 @@ class ArchiveMapper
      *
      * @return array
      */
-    function map()
+    public function map()
     {
         $map = [];
 
-        foreach($this->snapshots as $path => $files)
-        {
+        foreach ($this->snapshots as $path => $files) {
             $pieces = explode('/', $path);
             $index = count($pieces) - 1;
             $map[$pieces[$index]] = $files;
@@ -153,13 +142,12 @@ class ArchiveMapper
         return $map;
     }
 
-
     /**
      * The regular expression of the snapshot
      *
      * @return string
      */
-    function snapshot_regex()
+    public function snapshot_regex()
     {
         //check if dir
         $hostname = str_replace('.', '\.', $this->Config->get('local.hostdir-name'));

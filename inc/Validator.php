@@ -18,9 +18,9 @@ class Validator
      * @param $path The string to be validated
      * @return bool Valid or not?
      */
-    static function is_absolute_path($path)
+    public static function is_absolute_path($path)
     {
-        return (preg_match('/^\//', $path))? true:false;
+        return (preg_match('/^\//', $path)) ? true : false;
     }
 
     /**
@@ -29,9 +29,9 @@ class Validator
      * @param $string The string to be validated
      * @return bool Valid or not?
      */
-    static function is_integer($string)
+    public static function is_integer($string)
     {
-        return (preg_match("/^[0-9]+$/", $string))? true:false;
+        return (preg_match("/^[0-9]+$/", $string)) ? true : false;
     }
 
     /**
@@ -40,9 +40,9 @@ class Validator
      * @param $path The string to be validated
      * @return bool Valid or not?
      */
-    static function is_relative_home_path($path)
+    public static function is_relative_home_path($path)
     {
-        return ($path == '~' || preg_match('/^~\//', $path))? true:false;
+        return ($path == '~' || preg_match('/^~\//', $path)) ? true : false;
     }
 
     /**
@@ -55,35 +55,30 @@ class Validator
      * @param boolean $exact_match Search must match string exactly
      * @return array Files or directories that differ
      */
-    static function scan_dir_unclean_files($dir, $whitelist = [])
+    public static function scan_dir_unclean_files($dir, $whitelist = [])
     {
         $unclean_files = [];
         $scan = scandir($dir);
 
-        if(!is_array($scan))
-        {
+        if (!is_array($scan)) {
             return [];
         }
 
-        foreach($scan as $found)
-        {
+        foreach ($scan as $found) {
             # echo $found."\n";
             // ignore dot
-            if(in_array($found, ['.', '..']))
-            {
+            if (in_array($found, ['.', '..'])) {
                 continue;
             }
             // ignore underscore
-            if(preg_match('/^_/', $found))
-            {
+            if (preg_match('/^_/', $found)) {
                 continue;
             }
 
             // TODO implenent fuzzy match??
             //check if the file is in the whitelist
-            if(!in_array($found, $whitelist))
-            {
-                $unclean_files [$found] = filetype($dir.'/'.$found);
+            if (!in_array($found, $whitelist)) {
+                $unclean_files[$found] = filetype($dir . '/' . $found);
             }
         }
         return $unclean_files;
@@ -95,9 +90,9 @@ class Validator
      * @param $string The string to be validated
      * @return bool Valid or not?
      */
-    static function contains_allowed_characters($string)
+    public static function contains_allowed_characters($string)
     {
-        return (empty($string) || preg_match("#^[A-Za-z0-9/\\\\ \-\._\+\pL]+$#u", $string))? true:false;
+        return (empty($string) || preg_match("#^[A-Za-z0-9/\\\\ \-\._\+\pL]+$#u", $string)) ? true : false;
     }
 
     /**
@@ -106,8 +101,8 @@ class Validator
      * @param $path The string to be validated
      * @return bool Valid or not?
      */
-    static function contains_trailing_slash($path)
+    public static function contains_trailing_slash($path)
     {
-        return (preg_match('/.+\/$/', $path))? true:false;
+        return (preg_match('/.+\/$/', $path)) ? true : false;
     }
 }

@@ -36,7 +36,7 @@ class DirectoryStructure
     // rsync dir
     protected $rsync_dir;
 
-    function __construct($App)
+    public function __construct($App)
     {
         //Config from ini file
         $this->App = $App;
@@ -55,19 +55,14 @@ class DirectoryStructure
 
     }
 
-    function setup_host_dir()
+    public function setup_host_dir()
     {
         // host dir
-        if($this->Config->get('local.hostdir-name'))
-        {
+        if ($this->Config->get('local.hostdir-name')) {
             $host_dir_name = $this->Config->get('local.hostdir-name');
-        }
-        elseif($this->Config->get('remote.host'))
-        {
+        } elseif ($this->Config->get('remote.host')) {
             $host_dir_name = $this->Config->get('remote.host');
-        }
-        else
-        {
+        } else {
             $this->fail('Cannot create hostdir! hostdir-name [local] or host [remote] not configured!');
         }
 
@@ -77,24 +72,22 @@ class DirectoryStructure
 
     }
 
-    function setup_log_dir()
+    public function setup_log_dir()
     {
         //check log dir early so we can log stuff
         $log_dir = $this->Config->get('local.logdir');
 
         //validate dir, create if required
-        if (!file_exists($log_dir))
-        {
+        if (!file_exists($log_dir)) {
             $this->App->out('Create logdir  ' . $log_dir . '...');
             $this->Cmd->exe("mkdir -p " . $log_dir);
-            if ($this->Cmd->is_error())
-            {
+            if ($this->Cmd->is_error()) {
                 $this->App->fail('Cannot create log dir ' . $log_dir);
             }
         }
     }
 
-    function setup_root_dir()
+    public function setup_root_dir()
     {
         $this->App->out('Check root dir...');
 
@@ -102,8 +95,7 @@ class DirectoryStructure
         $this->root_dir = $this->Config->get('local.rootdir');
 
         //root dir must exist!
-        if (!file_exists($this->root_dir))
-        {
+        if (!file_exists($this->root_dir)) {
             $this->App->fail("Root dir '" . $this->root_dir . "' does not exist!");
         }
 
@@ -114,31 +106,26 @@ class DirectoryStructure
 
         // validate filesystem
         $allowed_fs_types = ['ext2', 'ext3', 'ext4', 'btrfs', 'zfs', 'xfs', 'ufs', 'jfs', 'nfs', 'gfs', 'ocfs', 'fuse.osxfs', 'fuse.vmhgfs-fuse'];
-        if (!in_array($this->filesystem_type, $allowed_fs_types))
-        {
-            $this->App->fail('Filesystem type of root dir "'.$this->filesystem_type.'"" not supported! Supported: '.implode('/', $allowed_fs_types));
+        if (!in_array($this->filesystem_type, $allowed_fs_types)) {
+            $this->App->fail('Filesystem type of root dir "' . $this->filesystem_type . '"" not supported! Supported: ' . implode('/', $allowed_fs_types));
         }
 
     }
 
-    function setup_rsync_sub_dirs()
+    public function setup_rsync_sub_dirs()
     {
         // sub dirs
         $dirs = ['meta', 'files', 'restore', 'restore/scripts'];
-        if ($this->Config->get('mysql.enabled'))
-        {
-            $dirs [] = 'mysql';
+        if ($this->Config->get('mysql.enabled')) {
+            $dirs[] = 'mysql';
         }
         // create directories
-        foreach ($dirs as $dir)
-        {
-            if (!file_exists($this->rsync_dir . '/' . $dir))
-            {
+        foreach ($dirs as $dir) {
+            if (!file_exists($this->rsync_dir . '/' . $dir)) {
                 $this->App->out("Create $dir dir $this->rsync_dir/$dir...");
                 $this->Cmd->exe("mkdir -p $this->rsync_dir/$dir");
 
-                if ($this->Cmd->is_error())
-                {
+                if ($this->Cmd->is_error()) {
                     $this->App->fail("Failed to create dir $this->rsync_dir/$dir");
                 }
             }
