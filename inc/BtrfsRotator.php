@@ -8,8 +8,7 @@
  * @author     Bruno Dooms, Frank Van Damme
  */
 
-require_once dirname(__FILE__).'/Rotator.php';
-
+require_once dirname(__FILE__) . '/Rotator.php';
 
 /**
  * Class Rotator contains functions that will handle rotation based on hardlinks,
@@ -24,9 +23,9 @@ class BtrfsRotator extends Rotator
      * @param $parent The parent directory
      * @return string The command
      */
-    function add($dir, $parent)
+    public function add($dir, $parent)
     {
-        $cmd = "btrfs subvolume snapshot -r $this->rsync_dir ". $this->archive_dir."/$parent/$dir";
+        $cmd = "btrfs subvolume snapshot -r $this->rsync_dir " . $this->archive_dir . "/$parent/$dir";
         $this->App->out("Create btrfs snapshot: $cmd");
         return $this->Cmd->exe("$cmd");
     }
@@ -38,9 +37,9 @@ class BtrfsRotator extends Rotator
      * @param $type  The type of snapshot: 2-minutely, 1-hourly, etc...
      * @return string The command
      */
-    function remove($snapshot, $type)
+    public function remove($snapshot, $type)
     {
-        $cmd = "btrfs subvolume delete ". $this->archive_dir."/$type/$snapshot";
+        $cmd = "btrfs subvolume delete " . $this->archive_dir . "/$type/$snapshot";
         $this->App->out("Remove btrfs snapshot: $cmd");
         return $this->Cmd->exe("$cmd");
     }

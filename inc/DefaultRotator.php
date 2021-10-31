@@ -8,8 +8,7 @@
  * @author     Bruno Dooms, Frank Van Damme
  */
 
-require_once dirname(__FILE__).'/Rotator.php';
-
+require_once dirname(__FILE__) . '/Rotator.php';
 
 /**
  * Class Rotator contains functions that will handle rotation based on hardlinks,
@@ -24,21 +23,19 @@ class DefaultRotator extends Rotator
      * @param $parent The parent directory
      * @return string The command
      */
-    function add($dir, $parent)
+    public function add($dir, $parent)
     {
         // check permissions
-        if (!is_writable($this->archive_dir."/$parent"))
-        {
-            $this->App->fail('Cannot add snapshot! Archive dir '.$dir.' is not writable!');
+        if (!is_writable($this->archive_dir . "/$parent")) {
+            $this->App->fail('Cannot add snapshot! Archive dir ' . $dir . ' is not writable!');
         }
 
-        if (!is_executable($this->archive_dir."/$parent"))
-        {
-            $this->App->fail('Cannot add snapshot! Archive dir '.$dir.' is not executable!');
+        if (!is_executable($this->archive_dir . "/$parent")) {
+            $this->App->fail('Cannot add snapshot! Archive dir ' . $dir . ' is not executable!');
         }
 
-        $cmd = "{CP} -la $this->rsync_dir ". $this->archive_dir."/$parent/$dir";
-        $this->App->out('Create hardlink copy: '.$this->Cmd->parse($cmd));
+        $cmd = "{CP} -la $this->rsync_dir " . $this->archive_dir . "/$parent/$dir";
+        $this->App->out('Create hardlink copy: ' . $this->Cmd->parse($cmd));
         return $this->Cmd->exe("$cmd");
     }
 
@@ -49,19 +46,17 @@ class DefaultRotator extends Rotator
      * @param $type  The snapshot type
      * @return string The command
      */
-    function remove($snapshot, $type)
+    public function remove($snapshot, $type)
     {
         // take precautions when executing an rm command!
-        foreach([$this->archive_dir, $snapshot, $type] as $variable)
-        {
+        foreach ([$this->archive_dir, $snapshot, $type] as $variable) {
             $variable = trim($variable);
-            if (!$variable || empty($variable) || $variable == '' || preg_match('/^\/+$/', $variable))
-            {
+            if (!$variable || empty($variable) || $variable == '' || preg_match('/^\/+$/', $variable)) {
                 $this->App->fail('Cannot execute a rm command as a variable is empty!');
             }
         }
-        $cmd = "{RM} -rf ". $this->archive_dir."/$type/$snapshot";
-        $this->App->out('Remove direcory: '.$this->Cmd->parse($cmd));
+        $cmd = "{RM} -rf " . $this->archive_dir . "/$type/$snapshot";
+        $this->App->out('Remove direcory: ' . $this->Cmd->parse($cmd));
         return $this->Cmd->exe("$cmd");
     }
 }

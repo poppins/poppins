@@ -1,6 +1,6 @@
 <?php
 //require parent class
-require_once(dirname(__FILE__).'/ArchiveMapper.php');
+require_once dirname(__FILE__) . '/ArchiveMapper.php';
 
 class ZfsArchiveMapper extends ArchiveMapper
 {
@@ -10,7 +10,7 @@ class ZfsArchiveMapper extends ArchiveMapper
      * @param $validate Validate if unknown files or directories
      * @return array The directories
      */
-    function get_archive_dirs()
+    public function get_archive_dirs()
     {
         // just one dir in ZFS case
         return [$this->Config->get('local.hostdir') . '/archive'];
@@ -22,7 +22,7 @@ class ZfsArchiveMapper extends ArchiveMapper
      *
      * @return array
      */
-    function map()
+    public function map()
     {
         $map = [];
 
@@ -31,17 +31,14 @@ class ZfsArchiveMapper extends ArchiveMapper
         $path = key($snapshots);
 
         //scan thru all intervals
-        foreach (array_keys($this->Config->get('snapshots')) as $snapshot_type)
-        {
+        foreach (array_keys($this->Config->get('snapshots')) as $snapshot_type) {
             //types must be stored as keys in array!
             $map[$snapshot_type] = [];
 
-            foreach($this->snapshots[$path] as $snapshot)
-            {
+            foreach ($this->snapshots[$path] as $snapshot) {
                 // check which snapshot belongs to which type
-                if(preg_match('/^'.$snapshot_type.'/', $snapshot))
-                {
-                    $map[$snapshot_type][]= $snapshot;
+                if (preg_match('/^' . $snapshot_type . '/', $snapshot)) {
+                    $map[$snapshot_type][] = $snapshot;
                 }
             }
         }
@@ -54,7 +51,7 @@ class ZfsArchiveMapper extends ArchiveMapper
      *
      * @return string
      */
-    function snapshot_regex()
+    public function snapshot_regex()
     {
         //check if dir
         $hostname = str_replace('.', '\.', $this->Config->get('local.hostdir-name'));

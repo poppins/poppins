@@ -19,7 +19,7 @@ class Store
     /**
      * Store constructor.
      */
-    function __construct()
+    public function __construct()
     {
         $this->stored = [];
     }
@@ -32,8 +32,7 @@ class Store
     public static function get_instance()
     {
         static $instance = null;
-        if (null === $instance)
-        {
+        if (null === $instance) {
             $instance = new static();
         }
 
@@ -59,19 +58,17 @@ class Store
     protected function select_parser($method, $index, $value = null)
     {
         //array
-        if(is_array($index))
-        {
+        if (is_array($index)) {
             $class = new KeyBasedParser($this);
         }
         //string
-        else
-        {
+        else {
             $class = new PathBasedParser($this);
         }
 
         return ($method == 'is_set')
-            ? $class->{$method}($index)
-            : $class->{$method}($index, $value);
+        ? $class->{$method}($index)
+        : $class->{$method}($index, $value);
     }
 
     /**
@@ -84,14 +81,12 @@ class Store
     public function get($index = false, $value = '')
     {
         //get all values
-        if(!$index)
-        {
+        if (!$index) {
             ksort($this->stored);
             return $this->stored;
         }
         // select parser
-        else
-        {
+        else {
             return $this->select_parser('get', $index, $value);
         }
     }
@@ -131,5 +126,3 @@ class Store
     }
 
 }
-
-

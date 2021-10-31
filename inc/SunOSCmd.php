@@ -7,7 +7,7 @@
  * @author     Bruno Dooms, Frank Van Damme
  */
 
-require_once dirname(__FILE__).'/Cmd.php';
+require_once dirname(__FILE__) . '/Cmd.php';
 
 /**
  * Class SunOSCmd is used for all SunOS commands
@@ -15,7 +15,7 @@ require_once dirname(__FILE__).'/Cmd.php';
 class SunOSCmd extends Cmd
 {
 
-    function map()
+    public function map()
     {
         $cmd = [];
         $cmd['{CP}'] = '/bin/cp';
@@ -27,4 +27,4 @@ class SunOSCmd extends Cmd
         return $cmd;
     }
 
-} 
+}

@@ -7,7 +7,7 @@
  * @author     Bruno Dooms, Frank Van Damme
  */
 
-require_once dirname(__FILE__).'/Cmd.php';
+require_once dirname(__FILE__) . '/Cmd.php';
 
 /**
  * Class LinuxCmd is used for all linux commands
@@ -15,7 +15,7 @@ require_once dirname(__FILE__).'/Cmd.php';
 class LinuxCmd extends Cmd
 {
 
-    function map()
+    public function map()
     {
         $cmd = [];
         $cmd['{CP}'] = 'cp';
@@ -27,4 +27,4 @@ class LinuxCmd extends Cmd
         return $cmd;
     }
 
-} 
+}

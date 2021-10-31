@@ -7,7 +7,7 @@
  * @author     Bruno Dooms, Frank Van Damme
  */
 
-require_once dirname(__FILE__).'/Factory.php';
+require_once dirname(__FILE__) . '/Factory.php';
 
 /**
  * Class DirectoryStructureFactory creates a DirectoryStructure class
@@ -28,7 +28,7 @@ class DirectoryStructureFactory extends Factory
         $Config = Config::get_instance();
         // build the class
         $classname = self::base;
-        $classname = ucfirst($Config->get('local.snapshot-backend')).$classname;
+        $classname = ucfirst($Config->get('local.snapshot-backend')) . $classname;
         return new $classname($App);
     }
 }

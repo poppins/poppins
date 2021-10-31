@@ -6,8 +6,8 @@
  * @license    http://www.gnu.org/licenses/gpl-3.0.en.html  GNU Public License
  * @author     Bruno Dooms, Frank Van Damme
  */
- 
-require_once dirname(__FILE__).'/Factory.php';
+
+require_once dirname(__FILE__) . '/Factory.php';
 
 /**
  * Class CmdFactory creates a Cmd class
@@ -26,7 +26,7 @@ class CmdFactory extends Factory
     {
         // build the class
         $classname = self::base;
-        $classname = $operating_system.self::base;
+        $classname = $operating_system . self::base;
         return new $classname();
     }
 }

@@ -8,7 +8,7 @@
  */
 
 //require parent class
-require_once(dirname(__FILE__).'/Parser.php');
+require_once dirname(__FILE__) . '/Parser.php';
 
 /**
  * Class PathBasedParser
@@ -23,28 +23,21 @@ class KeyBasedParser extends Parser
      * @param string $default Default value is empty unless otherwise
      * @return string Value stored in array
      */
-    function get($index, $default = '')
+    public function get($index, $default = '')
     {
         $i = 1;
         $c = count($index);
 
         $tmp = $this->Store->stored();
 
-        foreach ($index as $k)
-        {
-            if($i == $c)
-            {
-                if(isset($tmp[$k]))
-                {
+        foreach ($index as $k) {
+            if ($i == $c) {
+                if (isset($tmp[$k])) {
                     return $tmp[$k];
-                }
-                else
-                {
+                } else {
                     return $default;
                 }
-            }
-            else
-            {
+            } else {
                 $tmp = $tmp[$k];
             }
             $i++;
@@ -58,21 +51,17 @@ class KeyBasedParser extends Parser
      * @param array $index The index (array)
      * @return bool Is set or not?
      */
-    function is_set($index)
+    public function is_set($index)
     {
         $i = 1;
         $c = count($index);
 
         $tmp = $this->Store->stored();
 
-        foreach ($index as $k)
-        {
-            if($i == $c)
-            {
+        foreach ($index as $k) {
+            if ($i == $c) {
                 return (isset($tmp[$k]));
-            }
-            else
-            {
+            } else {
                 $tmp = $tmp[$k];
             }
             $i++;
@@ -87,15 +76,14 @@ class KeyBasedParser extends Parser
      * @param $value The value to be set
      * @return boolean Return true if successful
      */
-    function set($index, $value)
+    public function set($index, $value)
     {
         $res = array();
-        $tmp =& $res;
+        $tmp = &$res;
 
-        foreach ($index as $k)
-        {
+        foreach ($index as $k) {
             $tmp[$k] = array();
-            $tmp =& $tmp[$k];
+            $tmp = &$tmp[$k];
         }
 
         $tmp = $value;

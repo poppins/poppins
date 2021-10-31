@@ -8,7 +8,7 @@
  */
 
 /**
- * Class Parser 
+ * Class Parser
  */
 abstract class Parser
 {
@@ -19,7 +19,7 @@ abstract class Parser
      * Parser constructor.
      * @param Store $Store The Store class
      */
-    function __construct(Store $Store)
+    public function __construct(Store $Store)
     {
         $this->Store = $Store;
     }
@@ -31,7 +31,7 @@ abstract class Parser
      * @param string $default Default value if nothing found
      * @return string Returns the value
      */
-    abstract function get($index, $default = '');
+    abstract public function get($index, $default = '');
 
     /**
      * Function to check if a value is is set
@@ -39,7 +39,7 @@ abstract class Parser
      * @param $index Dotted string or array of keys
      * @return boolean If is set or not
      */
-    abstract function is_set($index);
+    abstract public function is_set($index);
 
     /**
      * Setter function
@@ -48,6 +48,6 @@ abstract class Parser
      * @param $value Default value if no value
      * @return boolean Return true if successful
      */
-    abstract function set($index, $value);
+    abstract public function set($index, $value);
 
 }

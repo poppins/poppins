@@ -10,5 +10,5 @@
 /**
  * Class Factory creates classes (factory pattern)
  */
-class Factory {}
-
+class Factory
+{}
