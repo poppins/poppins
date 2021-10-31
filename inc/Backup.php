@@ -651,10 +651,10 @@ class Backup
     function prepare()
     {
         #####################################
-        # VALIDATE RSYNC DIR
+        # VALIDATE RSYNC DIRS
         #####################################
         // validate rsync dir
-        $this->validate_sync_dir();
+        $this->validate_sync_dirs();
 
         #####################################
         # EMPTY META DIRS
@@ -772,6 +772,7 @@ class Backup
             }
         }
         $this->App->out();
+
         #####################################
         # RSYNC OPTIONS
         #####################################
@@ -966,12 +967,34 @@ class Backup
     /**
      * Vaidate rsync dir
      */
-    function validate_sync_dir()
+    function validate_sync_dirs()
     {
-        // check if rsync dir exists
+        $fail = false;
+        
+        $this->App->out('Validate rsync dirs...!');
+
+        // check if rsync destination dir exists
         if (!file_exists($this->rsync_dir))
         {
             $this->App->fail("Rsync dir does not exist!");
+        }
+
+        //check if remote dirs exist
+        $included = array_keys($this->Config->get('included'));
+
+        foreach($included as $remote_dir)
+        {
+            $exists = $this->Cmd->exe('test -d "'.$remote_dir.'" && echo true', true);
+            if ($exists != "true")
+            {
+                $fail = true;
+                $this->App->warn('Remote dir '.$remote_dir.' does not exist!');
+            }
+        }
+
+        if ($fail)
+        {
+            $this->App->fail('One or more remote dirs does not exist!');
         }
     }
 
