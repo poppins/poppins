@@ -1231,7 +1231,7 @@ class Application
                 {
                     //check if installed
                     $remote = ($host == 'remote') ? true : false;
-                    $this->Cmd->exe($command, $remote);
+                    $this->Cmd->exe("$command 2>/dev/null", $remote);
                     if ($this->Cmd->is_error())
                     {
                         $action = ($type == 'hard')? 'fail':'notice';
