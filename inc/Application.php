@@ -240,7 +240,7 @@ class Application
         # TOP HEADER
         #####################################
         // add version and time to header
-        $this->out($this->Session->get('appname').' v'.$this->Session->get('version')." - SCRIPT STARTED " . date('Y-m-d H:i:s', $this->Session->get('chrono.session.start')), 'title');
+        $this->out($this->Session->get('appname').' v'.$this->Session->get('version')." - SCRIPT STARTED " . date('Y-m-d H:i:s', $this->Session->get('chrono.session.start')), 'header+');
 
         // -n dry run
         if($this->Options->is_set('n'))
@@ -1602,22 +1602,19 @@ class Application
         $bgcolor = false;
 
         $header_length = 90;
+        $indent_length = 3;
+        $notice_length = $header_length-(2*$indent_length);
         $arrow_length = 5;
+
+        // foreach(range(1,10) as $i) $space .= ' ';
+        $styles = [];
+        $styles['error'] = ['symbol'=>'@', 'color'=>'light_red'];
+        $styles['notice'] = ['symbol'=>'|', 'color'=>'blue'];
+        $styles['warning'] = ['symbol'=>'#', 'color'=>'brown'];
+        $styles['success'] = ['symbol'=>'-', 'color'=>'green'];
 
         switch ($type)
         {
-            case 'error':
-                $fgcolor = 'light_red';
-                $symbol = "$";
-                $line1 = str_pad(strtoupper(' FATAL ERROR '), $header_length, $symbol, STR_PAD_BOTH);
-                $line2 = '';
-                foreach(range(1,$header_length) as $i) $line2 .= $symbol;
-                $content [] = '';
-                $content [] = $line1;
-                $content [] = wordwrap($message, $header_length);
-                $content [] = $line2;
-                $content [] = '';
-                break;
             case 'final-error':
                 $fgcolor = 'light_red';
                 $content [] = '';
@@ -1632,11 +1629,19 @@ class Application
                 break;
             case 'header':
                 $line = '';
-                $symbol = "-";
+                $symbol = "_";
                 foreach(range(1,$header_length) as $i) $line .= $symbol;
                 $content [] = '';
                 $content [] = $line;
                 $content [] = str_pad(strtoupper(' '.$message.' '), $header_length, $symbol, STR_PAD_BOTH);
+                $content [] = $line;
+                break;
+            case 'header+':
+                $symbol = "%";
+                $line = '';
+                foreach(range(1,$header_length) as $i) $line .= $symbol;
+                $content [] = $line;
+                $content [] = str_pad(' '.$message.' ', $header_length, $symbol, STR_PAD_BOTH);
                 $content [] = $line;
                 break;
             case 'indent':
@@ -1687,41 +1692,36 @@ class Application
                 $fgcolor = 'green';
                 $content [] = $message;
                 break;
-            case 'title':
-                $symbol = "%";
-                $line = '';
-                foreach(range(1,$header_length) as $i) $line .= $symbol;
-                $content [] = $line;
-                $content [] = str_pad(' '.$message.' ', $header_length, $symbol, STR_PAD_BOTH);
-                $content [] = $line;
-                break;
+            case 'error':
             case 'notice':
-                $fgcolor = 'blue';
-                $symbol = "+";
-                $line1 = str_pad(strtoupper(' NOTICE '), $header_length, $symbol, STR_PAD_BOTH);
-                $line2 = '';
-                foreach(range(1,$header_length) as $i) $line2 .= $symbol;
-                $content [] = '';
-                $content [] = $line1;
-                $content [] = wordwrap($message, $header_length);
-                $content [] = $line2;
-                $content [] = '';
-                break;
             case 'warning':
-                $fgcolor = 'brown';
-                $symbol = "|";
-                $line1 = str_pad(strtoupper(' WARNING '), $header_length, $symbol, STR_PAD_BOTH);
+            case 'success':
+                $style = $styles[$type];
+                $header_length = $notice_length;
+                $fgcolor = $style['color'];
+                $symbol = $style['symbol'];
+                $line1 = str_pad(strtoupper(' '.strtoupper($type).' '), $header_length, $symbol, STR_PAD_BOTH);
                 $line2 = '';
                 foreach(range(1,$header_length) as $i) $line2 .= $symbol;
+                $title = wordwrap($message, $header_length);
+                $title = str_pad(wordwrap($message, $header_length), $notice_length, ' ', STR_PAD_BOTH);
                 $content [] = '';
                 $content [] = $line1;
-                $content [] = wordwrap($message, $header_length);
+                $content [] = $title;
                 $content [] = $line2;
                 $content [] = '';
                 break;
             case 'default':
                 $content [] = $message;
                 break;
+        }
+
+        if (in_array($type, ['notice', 'warning', 'error', 'success']))
+        {
+            // does not work
+            // $space = '';
+            // foreach(range(1,$indent_length) as $i) $space.= ' ';
+            array_walk($content, function(&$value, $key) { $space = '   '; $value = $space.preg_replace('/\n/', "\n$space", $value); } );
         }
         $message = implode("\n", $content);
         //log to file
@@ -1922,7 +1922,7 @@ class Application
         {
             $exit_status = 'success';
         }
-        $this->out('Exit status: "'.strtoupper($exit_status).'"');
+        $this->out('Exit status: "'.strtoupper($exit_status).'"', $exit_status);
         #####################################
         # ADD TAG
         #####################################
@@ -1938,7 +1938,7 @@ class Application
         $this->out("Session tagged as: $tag");
 
         //final header
-        $this->out($this->Session->get('appname').' v'.$this->Session->get('version'). " - SCRIPT ENDED " . date('Y-m-d H:i:s'), 'title');
+        $this->out($this->Session->get('appname').' v'.$this->Session->get('version'). " - SCRIPT ENDED " . date('Y-m-d H:i:s'), 'header+');
         #####################################
         # COLORIZE OUTPUT
         #####################################
