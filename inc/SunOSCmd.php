@@ -22,7 +22,7 @@ class SunOSCmd extends Cmd
         $cmd['{MV}'] = '/usr/bin/mv';
         $cmd['{RM}'] = '/usr/gnu/bin/rm';
         $cmd['{SSH}'] = '/opt/csw/bin/ssh';
-        $cmd['{GREP}'] = '/usr/bin/ggrep';
+        $cmd['{GREP}'] = '/usr/bin/grep';
         $cmd['{DF}'] = '/usr/gnu/bin/df';
         return $cmd;
     }
