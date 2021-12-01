@@ -248,7 +248,7 @@ class Application
         $operating_system = trim(shell_exec('uname'));
 
         // check supported operating system
-        if (!in_array($operating_system, ['Linux', 'SunOS', 'FreeBSD'])) {
+        if (!in_array($operating_system, ['Linux', 'FreeBSD'])) {
             $this->abort("Local OS currently not supported!");
         }
         $this->out($operating_system, 'simple-indent');
@@ -982,7 +982,7 @@ class Application
                 $this->fail('Cannot discover remote distro!');
             }
         }
-        foreach (['Ubuntu', 'Debian', 'SunOS', 'OpenIndiana', 'Red Hat', 'CentOS', 'Fedora', 'Manjaro', 'Arch'] as $d) {
+        foreach (['Ubuntu', 'Debian', 'FreeBSD', 'OpenIndiana', 'Red Hat', 'CentOS', 'Fedora', 'Manjaro', 'Arch'] as $d) {
             if (preg_match("/$d/i", $output)) {
                 $this->Config->set('remote.distro', $d);
                 break;
