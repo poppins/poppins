@@ -248,7 +248,7 @@ class Application
         $operating_system = trim(shell_exec('uname'));
 
         // check supported operating system
-        if (!in_array($operating_system, ['Linux', 'SunOS'])) {
+        if (!in_array($operating_system, ['Linux', 'FreeBSD'])) {
             $this->abort("Local OS currently not supported!");
         }
         $this->out($operating_system, 'simple-indent');
@@ -982,7 +982,7 @@ class Application
                 $this->fail('Cannot discover remote distro!');
             }
         }
-        foreach (['Ubuntu', 'Debian', 'SunOS', 'OpenIndiana', 'Red Hat', 'CentOS', 'Fedora', 'Manjaro', 'Arch'] as $d) {
+        foreach (['Ubuntu', 'Debian', 'FreeBSD', 'OpenIndiana', 'Red Hat', 'CentOS', 'Fedora', 'Manjaro', 'Arch'] as $d) {
             if (preg_match("/$d/i", $output)) {
                 $this->Config->set('remote.distro', $d);
                 break;
@@ -1495,6 +1495,30 @@ class Application
                 $content[] = $line2;
                 $content[] = '';
                 break;
+            case 'final_status':
+                $style = $styles[$message];
+                // $header_length = $notice_length;
+                $message = strtoupper($message);
+                # add space between letters
+                $message = implode(' ', str_split($message));
+                $header_length = strlen($message);
+                $fgcolor = $style['color'];
+                $symbol = $style['symbol'];
+                $symbol = '~';
+
+                $line = '';
+                foreach (range(1, $header_length) as $i) {
+                    $line .= $symbol;
+                }
+                $line = str_pad($line, $notice_length, ' ', STR_PAD_BOTH);
+
+                $title = str_pad(wordwrap($message, $header_length), $notice_length, ' ', STR_PAD_BOTH);
+                $content[] = '';
+                $content[] = $line;
+                $content[] = $title;
+                $content[] = $line;
+                $content[] = '';
+                break;
             case 'default':
                 $content[] = $message;
                 break;
@@ -1647,15 +1671,17 @@ class Application
             $this->out();
         }
         //log message
+        $lhost = $this->Session->get('local.hostname');
+        $rhost = $this->Config->get('remote.host');
+
         if (!$error) {
             if ($this->Options->is_set('n')) {
-                $this->out("DRY RUN RAN SUCCESSFULLY!", 'final-success');
+                $this->out("Dry ryn on $lhost ran successfully for host $rhost...", 'final-success');
             } else {
-                $this->out("SCRIPT RAN SUCCESSFULLY!", 'final-success');
+                $this->out("Backup on $lhost ran successfully for host $rhost...", 'final-success');
             }
         } else {
-            $this->out("SCRIPT FAILED!", 'final-error');
-
+            $this->out("Backup on $lhost failed for host $rhost...", 'final-error');
         }
         #####################################
         # EXIT STATUS
@@ -1670,7 +1696,8 @@ class Application
         } else {
             $exit_status = 'success';
         }
-        $this->out('Exit status: "' . strtoupper($exit_status) . '"', $exit_status);
+
+        $this->out($exit_status, 'final_status');
         #####################################
         # ADD TAG
         #####################################

@@ -10,7 +10,7 @@
 require_once dirname(__FILE__) . '/Factory.php';
 
 /**
- * Class CmdFactory creates a Cmd class
+ * Class RotatorFactory creates a Rotator class
  */
 class RotatorFactory extends Factory
 {

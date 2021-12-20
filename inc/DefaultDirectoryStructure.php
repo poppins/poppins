@@ -6,23 +6,6 @@ require_once dirname(__FILE__) . '/DirectoryStructure.php';
 
 class DefaultDirectoryStructure extends DirectoryStructure
 {
-    public function setup_host_dir()
-    {
-        parent::setup_host_dir();
-
-        //check if dir exists
-        if (!file_exists($this->Config->get('local.hostdir'))) {
-            if ($this->Config->get('local.hostdir-create')) {
-                $this->App->out("Directory " . $this->Config->get('local.hostdir') . " does not exist, creating it..");
-                $this->Cmd->exe("mkdir " . $this->Config->get('local.hostdir'));
-                if ($this->Cmd->is_error()) {
-                    $this->App->fail("Could not create directory:  " . $this->Config->get('local.hostdir') . "!");
-                }
-            } else {
-                $this->App->fail("Directory " . $this->Config->get('local.hostdir') . " does not exist!");
-            }
-        }
-    }
 
     public function setup_rsync_dir()
     {

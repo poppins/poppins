@@ -26,8 +26,10 @@ class ZfsRotator extends Rotator
      */
     public function add($dir, $parent)
     {
-        $rsync_dir = preg_replace('/^\//', '', $this->rsync_dir);
-        $cmd = "zfs snapshot $rsync_dir@$parent-$dir";
+        $rsync_dir_name = 'rsync.zfs';
+        $zfs_snapshot_host_path = $this->App->Session->get('zfs.snapshot_host_path');
+        $rsync_path = $zfs_snapshot_host_path . '/' . $rsync_dir_name;
+        $cmd = "zfs snapshot $rsync_path@$parent-$dir";
         $this->App->out("Create zfs snapshot: $cmd");
         return $this->Cmd->exe("$cmd");
     }
@@ -55,8 +57,10 @@ class ZfsRotator extends Rotator
      */
     public function remove($snapshot, $type)
     {
-        $rsync_dir = preg_replace('/^\//', '', $this->rsync_dir);
-        $cmd = "zfs destroy $rsync_dir@$snapshot";
+        $rsync_dir_name = 'rsync.zfs';
+        $zfs_snapshot_host_path = $this->App->Session->get('zfs.snapshot_host_path');
+        $rsync_path = $zfs_snapshot_host_path . '/' . $rsync_dir_name;
+        $cmd = "zfs destroy $rsync_path@$snapshot";
         $this->App->out("Remove zfs snapshot: $cmd");
         return $this->Cmd->exe("$cmd");
     }

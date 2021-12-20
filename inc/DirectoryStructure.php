@@ -70,6 +70,19 @@ class DirectoryStructure
         $this->Config->set('local.hostdir-name', $host_dir_name);
         $this->Config->set('local.hostdir', $this->Config->get('local.rootdir') . '/' . $this->Config->get('local.hostdir-name'));
 
+        //check if dir exists
+        if (!file_exists($this->Config->get('local.hostdir'))) {
+            if ($this->Config->get('local.hostdir-create')) {
+                $this->App->out("Directory " . $this->Config->get('local.hostdir') . " does not exist, creating it..");
+                $this->Cmd->exe("mkdir " . $this->Config->get('local.hostdir'));
+                if ($this->Cmd->is_error()) {
+                    $this->App->fail("Could not create directory:  " . $this->Config->get('local.hostdir') . "!");
+                }
+            } else {
+                $this->App->fail("Directory " . $this->Config->get('local.hostdir') . " does not exist!");
+            }
+        }
+
     }
 
     public function setup_log_dir()
