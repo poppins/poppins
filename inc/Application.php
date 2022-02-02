@@ -1366,15 +1366,21 @@ class Application
         $bgcolor = false;
 
         $header_length = 90;
-        $indent_length = 3;
+        $indent_length = 10;
         $notice_length = $header_length - (2 * $indent_length);
-        $arrow_length = 5;
+        $arrow_length = 4;
 
-        // foreach(range(1,10) as $i) $space .= ' ';
+        // does not work
+        $indent_space = '';
+        foreach (range(1, $indent_length) as $i) {
+            $indent_space .= ' ';
+        }
+
+        // foreach(range(1,10) as $i) $indent_space .= ' ';
         $styles = [];
-        $styles['error'] = ['symbol' => '@', 'color' => 'light_red'];
-        $styles['notice'] = ['symbol' => '|', 'color' => 'blue'];
-        $styles['warning'] = ['symbol' => '#', 'color' => 'brown'];
+        $styles['error'] = ['symbol' => '#', 'color' => 'light_red'];
+        $styles['warning'] = ['symbol' => '*', 'color' => 'brown'];
+        $styles['notice'] = ['symbol' => '~', 'color' => 'blue'];
         $styles['success'] = ['symbol' => '-', 'color' => 'green'];
 
         switch ($type) {
@@ -1398,20 +1404,21 @@ class Application
                 }
 
                 $content[] = '';
-                $content[] = $line;
                 $content[] = str_pad(strtoupper(' ' . $message . ' '), $header_length, $symbol, STR_PAD_BOTH);
-                $content[] = $line;
+                $content[] = '';
                 break;
             case 'header+':
-                $symbol = "%";
+                $symbol = ":";
                 $line = '';
                 foreach (range(1, $header_length) as $i) {
                     $line .= $symbol;
                 }
 
+                $content[] = '';
                 $content[] = $line;
                 $content[] = str_pad(' ' . $message . ' ', $header_length, $symbol, STR_PAD_BOTH);
                 $content[] = $line;
+                $content[] = '';
                 break;
             case 'indent':
                 $fgcolor = 'cyan';
@@ -1429,7 +1436,7 @@ class Application
                     $arrow .= '-';
                 }
 
-                $content[] = $arrow . "> " . $message;
+                $content[] = wordwrap($arrow . "> " . $message, $header_length);
                 break;
             case 'indent-notice':
                 $fgcolor = 'blue';
@@ -1486,36 +1493,31 @@ class Application
                 foreach (range(1, $header_length) as $i) {
                     $line2 .= $symbol;
                 }
-
-                $title = wordwrap($message, $header_length);
-                $title = str_pad(wordwrap($message, $header_length), $notice_length, ' ', STR_PAD_BOTH);
+                $message = wordwrap($message, $notice_length, " \n$indent_space");
                 $content[] = '';
                 $content[] = $line1;
-                $content[] = $title;
+                $content[] = $message;
                 $content[] = $line2;
                 $content[] = '';
                 break;
             case 'final_status':
                 $style = $styles[$message];
-                // $header_length = $notice_length;
                 $message = strtoupper($message);
-                # add space between letters
+                # add indent_space between letters
                 $message = implode(' ', str_split($message));
-                $header_length = strlen($message);
+                $message_length = strlen($message);
                 $fgcolor = $style['color'];
                 $symbol = $style['symbol'];
-                $symbol = '~';
 
                 $line = '';
-                foreach (range(1, $header_length) as $i) {
+                foreach (range(1, $message_length) as $i) {
                     $line .= $symbol;
                 }
-                $line = str_pad($line, $notice_length, ' ', STR_PAD_BOTH);
-
-                $title = str_pad(wordwrap($message, $header_length), $notice_length, ' ', STR_PAD_BOTH);
+                $line = str_pad($line, ($header_length / 2) + ($message_length / 2), ' ', STR_PAD_LEFT);
+                $message = str_pad($message, ($header_length / 2) + ($message_length / 2), ' ', STR_PAD_LEFT);
                 $content[] = '';
                 $content[] = $line;
-                $content[] = $title;
+                $content[] = $message;
                 $content[] = $line;
                 $content[] = '';
                 break;
@@ -1525,10 +1527,14 @@ class Application
         }
 
         if (in_array($type, ['notice', 'warning', 'error', 'success'])) {
-            // does not work
-            // $space = '';
-            // foreach(range(1,$indent_length) as $i) $space.= ' ';
-            array_walk($content, function (&$value, $key) {$space = '   '; $value = $space . preg_replace('/\n/', "\n$space", $value);});
+
+            $content1 = [];
+            foreach ($content as $c) {
+                $content1[] = $indent_space . $c;
+            }
+
+            $content = $content1;
+
         }
         $message = implode("\n", $content);
         //log to file
@@ -1615,7 +1621,7 @@ class Application
         #####################################
         # TIMED RUNS
         #####################################
-        $this->out('Runs', 'header');
+        $this->out('Run', 'header');
         // mark time
         $this->Session->set('chrono.session.stop', date('U'));
         // output all times
