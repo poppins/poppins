@@ -303,6 +303,22 @@ class Application
         #####################################
         $this->out("Parse ini file", 'header');
 
+        $config_files = [];
+
+        // load default options
+        $defaultfiles = [];
+        $defaultfiles[] = '/etc/poppins/default.poppins.ini';
+        $defaultfiles[] = getenv("HOME") . '/.poppins/default.poppins.ini';
+
+        // check if default config files exist
+        foreach ($defaultfiles as $defaultfile) {
+
+            if (file_exists($defaultfile)) {
+                $this->out("Default file $defaultfile found...");
+                $config_files[] = $defaultfile;
+            }
+        }
+
         // require the config file option
         if (!$this->Options->is_set('c')) {
             $this->abort("Option -c {configfile} is required!");
@@ -327,26 +343,35 @@ class Application
             $configfile_full_path = $this->Cmd->exe('readlink -nf ' . $configfile);
             $this->out(' ' . $configfile_full_path);
 
-            //check for illegal comments in ini file
-            $lines = file($configfile);
-            $i = 1;
-            foreach ($lines as $line) {
-                // lines may not start with hash
-                if (preg_match('/^#/', $line)) {
-                    $this->fail("Error on line $i. Hash (#) found! Use semicolon for comments!");
+            $config_files[] = $configfile;
+
+            #####################################
+            # VALIDATE CONFIG
+            #####################################
+            foreach ($config_files as $f) {
+                //check for illegal comments in ini file
+                $lines = file($f);
+                $i = 1;
+                foreach ($lines as $line) {
+                    // lines may not start with hash
+                    if (preg_match('/^#/', $line)) {
+                        $this->fail("Error on line $i in $f. Illegal comment, use semicolon!");
+                    }
+                    $i++;
                 }
-                $i++;
             }
 
             #####################################
             # PARSE CONFIG
             #####################################
-            $typed = true;
+            $scanner_mode = INI_SCANNER_TYPED; # INI_SCANNER_NORMAL
 
-            if ($typed) {
-                $config = parse_ini_file($configfile, 1, INI_SCANNER_TYPED);
-            } else {
-                $config = parse_ini_file($configfile, 1);
+            $config = [];
+
+            // merge configs
+            foreach ($config_files as $f) {
+                $config_replace = parse_ini_file($f, 1, $scanner_mode);
+                $config = array_replace_recursive($config, $config_replace);
             }
 
             // this variable will be false in case of an error
