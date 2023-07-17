@@ -14,4 +14,19 @@ require_once dirname(__FILE__) . '/Store.php';
  * Class Options contains all cli options
  */
 class Options extends Store
-{}
+{
+    /**
+     * Returns instance (singleton)
+     *
+     * @return null|static
+     */
+    public static function get_instance()
+    {
+        static $instance = null;
+        if (null === $instance) {
+            $instance = new static();
+        }
+
+        return $instance;
+    }
+}
