@@ -14,4 +14,19 @@ require_once dirname(__FILE__) . '/Store.php';
  * Class Sessions contains application session variables
  */
 class Session extends Store
-{}
+{
+    /**
+     * Returns instance (singleton)
+     *
+     * @return null|static
+     */
+    public static function get_instance()
+    {
+        static $instance = null;
+        if (null === $instance) {
+            $instance = new static();
+        }
+
+        return $instance;
+    }
+}
